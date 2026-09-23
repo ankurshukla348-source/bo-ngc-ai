@@ -1,33 +1,99 @@
-## Overview
+# Shop Bảo Ngọc — MAMA & CO.
 
-This project uses the following tech stack:
-- Vite
-- Typescript
-- React Router v7 (all imports from `react-router` instead of `react-router-dom`)
-- React 19 (for frontend components)
-- Tailwind v4 (for styling)
-- Shadcn UI (for UI components library)
-- Lucide Icons (for icons)
-- Convex (for backend & database)
-- Convex Auth (for authentication)
-- Framer Motion (for animations)
-- Three js (for 3d models)
+Production-ready e-commerce app for a Vietnamese clothing boutique: bilingual
+(VI/EN) storefront, PIN-gated seller dashboard, and a three-step checkout with
+VietQR display, cash on delivery, and server-side order pricing.
 
-All relevant files live in the 'src' directory.
+**Three routes:**
+- `/` — storefront: hero, value props, category filter badges, search, wishlist,
+  responsive product grid with VND prices, cart counter
+- `/admin` — seller dashboard behind a PIN (**demo PIN: `8888`**, change it in
+  `src/lib/admin.ts`): camera/dropzone photo upload, bilingual names, category,
+  price, size toggles, inline edit, stock toggle, delete, VietQR bank settings
+- `/checkout` — accordion flow: Vietnamese address (province/district/ward/street)
+  → payment (VietQR QR / COD / e-wallet placeholder) → order summary → unique
+  order ID confirmation
 
-Use bun for the package manager.
+## Tech stack
+
+- Vite + React 19 + TypeScript, React Router v7 (imports from `react-router`)
+- Tailwind v4 + shadcn/ui + Lucide icons, Framer Motion
+- **Convex** — backend, database, file storage, auth
+- `qrcode.react` for the VietQR display, `sonner` toasts
+- bun package manager; all app code under `src/`
+
+## Resolved spec decisions
+
+| # | Decision | Resolution |
+|---|----------|------------|
+| 1 | Backend & database | **Convex** — realtime reactive queries give the seller instant storefront sync with no extra plumbing |
+| 2 | Image storage | **Convex file storage** — admin dropzone requests an upload URL, stores a blob, storefront resolves a signed URL |
+| 3 | Payments | **Display-only VietQR** — EMVCo payload + CRC16 generated locally, no payment processor (decision #3 from the spec: showing the QR is sufficient for v1) |
+| 4 | Orders | **Real database** — `orders` table with `by_code` index so the seller can add order history later |
+| 5 | Admin auth | **Hardcoded PIN** (`8888`) scoped to the browser session — fast for v1; template Convex Auth stays wired for `/auth` if proper accounts are needed later |
+| 6 | Deployment | **Vite static build + hosted Convex deployment** — `bun run build` outputs `dist/`, deployable to Vercel or any static host |
+
+The original spec suggested Next.js; this environment's template is Vite +
+Convex, which covers every required behavior (App-Router-style route tree via
+React Router, server mutations, storage) without changing scope.
+
+## Project structure
+
+```
+src/
+  pages/         Landing.tsx · Admin.tsx · Checkout.tsx · Auth.tsx · Dashboard.tsx
+  components/
+    store/       Header.tsx · ProductCard.tsx · StoreFooter.tsx
+    ui/          shadcn primitives (square-corner theme applied)
+  lib/
+    cart.tsx     cart state, localStorage persistence
+    i18n.tsx     VI/EN dictionaries (~150 keys) + language toggle
+    catalog.ts   categories, sizes, shipping rules (shared client/Convex)
+    vietqr.ts    EMVCo payload builder (CRC16-CCITT)
+    admin.ts     PIN gate helpers
+    format.ts    VND formatting · art.ts placeholder images
+  convex/
+    schema.ts    products · orders · settings (+ auth tables)
+    products.ts  list/upload/add/update/setStock/remove/seedIfEmpty
+    orders.ts    create (unique BN-YYMMDD-XXXX ID, server-side pricing)
+    settings.ts  VietQR bank details (defaults in DEFAULT_PAYMENT)
+```
 
 ## Setup
 
-This project is set up already and running on a cloud environment, as well as a convex development in the sandbox.
+The project runs on this cloud environment: the Vite dev server and Convex dev
+process are started by the platform, and file edits hot-reload automatically.
 
-## Environment Variables
+Local commands (bun):
+```bash
+bun install              # install deps
+bun run dev              # Vite dev server
+bun convex dev --once    # push schema/functions + regenerate types (non-interactive)
+bun tsc -b --noEmit       # typecheck
+bun run build            # typecheck + production bundle to dist/
+```
 
-The project is set up with project specific CONVEX_DEPLOYMENT and VITE_CONVEX_URL environment variables on the client side.
+## Environment variables
 
-The convex server has a separate set of environment variables that are accessible by the convex backend.
+Managed through the platform's **Keys / API keys UI** (no `.env.example` —
+secrets are not stored in the repo):
 
-Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, and SITE_URL.
+- `CONVEX_DEPLOYMENT`, `VITE_CONVEX_URL` — provisioned automatically for the
+  client
+- Convex-side auth keys (`JWKS`, `JWT_PRIVATE_KEY`, `SITE_URL`) — set on the
+  Convex deployment, readable only by backend functions
+
+## Version 1 scope (exactly this)
+
+1. Seller uploads products → they appear on the storefront instantly
+2. Real paying customers browse, wishlist, cart, and check out
+
+Everything else — order history view, email notifications, galleries,
+multi-account auth — is deliberately out of v1. Seeds run on first load
+(`products.seedIfEmpty`) so the storefront is never empty; cart, wishlist, and
+language preference persist in localStorage; order totals and shipping
+(30.000₫, free over 2.000.000₫) are recomputed server-side so a stale cart
+can never underpay.
 
 
 # Using Authentication (Important!)
