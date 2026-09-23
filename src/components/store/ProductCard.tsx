@@ -1,14 +1,16 @@
+import type { Id } from "@/convex/_generated/dataModel";
 import { monogram } from "@/lib/art";
 import { useCart } from "@/lib/cart";
+import type { Category } from "@/lib/catalog";
 import { formatVnd } from "@/lib/format";
-import { useI18n, type Category } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Heart, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export type StoreProduct = {
-  _id: string;
+  _id: Id<"products">;
   nameVi: string;
   nameEn: string;
   category: Category;

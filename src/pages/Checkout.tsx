@@ -601,7 +601,7 @@ export default function Checkout() {
               className="border-2 border-black bg-card nb-shadow"
             >
               {/* Step 1 — shipping */}
-              <AccordionItem className="border-b-2 border-black last:border-b-0">
+              <AccordionItem value="ship" className="border-b-2 border-black last:border-b-0">
                 <AccordionTrigger className="px-5 py-5 hover:no-underline">
                   <span className="flex items-center gap-3 text-left">
                     <StepBadge step="01" done={shipDone} />
@@ -684,7 +684,7 @@ export default function Checkout() {
               </AccordionItem>
 
               {/* Step 2 — payment */}
-              <AccordionItem className="border-b-2 border-black last:border-b-0">
+              <AccordionItem value="pay" className="border-b-2 border-black last:border-b-0">
                 <AccordionTrigger className="px-5 py-5 hover:no-underline">
                   <span className="flex items-center gap-3 text-left">
                     <StepBadge step="02" done={payDone} />
@@ -784,7 +784,7 @@ export default function Checkout() {
               </AccordionItem>
 
               {/* Step 3 — review & place */}
-              <AccordionItem className="last:border-b-0">
+              <AccordionItem value="review" className="last:border-b-0">
                 <AccordionTrigger className="px-5 py-5 hover:no-underline">
                   <span className="flex items-center gap-3 text-left">
                     <StepBadge

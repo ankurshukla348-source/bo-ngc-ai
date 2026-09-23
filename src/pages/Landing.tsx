@@ -268,9 +268,9 @@ export default function Landing() {
             </p>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: "2.000+", labelKey: "statCustomers" },
-                { value: "4,9/5", labelKey: "statRating" },
-                { value: "24h", labelKey: "statDispatch" },
+                { value: "2.000+", labelKey: "statCustomers" as const },
+                { value: "4,9/5", labelKey: "statRating" as const },
+                { value: "24h", labelKey: "statDispatch" as const },
               ].map((stat) => (
                 <div
                   key={stat.labelKey}
