@@ -156,6 +156,24 @@
     0 2px 4px rgb(47 29 38 / 0.05),
     0 16px 40px rgb(47 29 38 / 0.12);
 }
+/* ── Accordion: keep React the only owner of the DOM ──────────
+   Radix Presence unmounts collapsed content on `animationend`, i.e. a DOM
+   removal that happens outside React's commit. If React then commits into
+   that subtree it throws:
+     NotFoundError: Failed to execute 'insertBefore' on 'Node'
+   So no CSS *animation* on accordion content — a plain opacity transition
+   gives the same feel while React stays in charge of mount/unmount. */
+[data-slot="accordion-content"] {
+  animation: none !important;
+  transition: opacity 160ms ease;
+}
+[data-slot="accordion-content"][data-state="closed"] {
+  opacity: 0;
+}
+[data-slot="accordion-content"][data-state="open"] {
+  opacity: 1;
+}
+
 /* `card-lift` is only ever used as a static class, so plain CSS is correct
    here (@utility silently drops the nested hover). */
 .card-lift {

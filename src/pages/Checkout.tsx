@@ -383,7 +383,15 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
             <div className="flex flex-col gap-5 sm:flex-row">
               <div className="shrink-0 self-start rounded-2xl border border-border bg-white p-2 shadow-soft">
                 {payload ? (
-                  <QRCodeSVG value={payload} size={168} />
+                  <SafeBoundary
+                    fallback={
+                      <div className="flex h-[168px] w-[168px] items-center justify-center px-3 text-center text-[11px] leading-snug text-muted-foreground">
+                        {t("qrUnavailable")}
+                      </div>
+                    }
+                  >
+                    <QRCodeSVG value={payload} size={168} />
+                  </SafeBoundary>
                 ) : (
                   <div className="flex h-[168px] w-[168px] items-center justify-center text-xs text-muted-foreground">
                     …
@@ -830,7 +838,15 @@ export default function Checkout() {
                     <div className="mt-4 flex flex-col gap-4 border border-border bg-background p-4 sm:flex-row">
                       <div className="shrink-0 self-center rounded-2xl border border-border bg-white p-2 shadow-soft sm:self-start">
                         {qrPayload ? (
-                          <QRCodeSVG value={qrPayload} size={168} />
+                          <SafeBoundary
+                            fallback={
+                              <div className="flex h-[168px] w-[168px] items-center justify-center px-3 text-center text-[11px] leading-snug text-muted-foreground">
+                                {t("qrUnavailable")}
+                              </div>
+                            }
+                          >
+                            <QRCodeSVG value={qrPayload} size={168} />
+                          </SafeBoundary>
                         ) : (
                           <div className="flex h-[168px] w-[168px] items-center justify-center text-xs text-muted-foreground">
                             …
