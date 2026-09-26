@@ -105,7 +105,7 @@ export function ProductCard({
           <Heart
             className={cn(
               "size-4 transition-colors",
-              wished ? "fill-accent text-accent" : "text-foreground",
+              wished ? "fill-brand-rose text-brand-rose" : "text-foreground",
             )}
           />
         </button>
@@ -130,7 +130,7 @@ export function ProductCard({
                   className={cn(
                     "size-3",
                     i < Math.round(rating)
-                      ? "fill-accent text-accent"
+                      ? "fill-brand-rose text-brand-rose"
                       : "fill-border text-border",
                   )}
                 />

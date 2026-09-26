@@ -62,10 +62,10 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     <div className="flex min-h-screen bg-background">
       {/* ── Brand panel ── */}
       <aside className="relative hidden w-[46%] overflow-hidden lg:block">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#f9e4ec] via-[#f2d9e4] to-[#e3bcd0]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#fdf2f6] via-[#fbeaf1] to-[#f7dfe9]" />
         <div className="absolute inset-0 flex flex-col justify-between p-12">
           <Link to="/" className="relative font-display text-2xl font-bold tracking-[0.08em]">
-            MAMA <span className="text-accent">&amp;</span> CO.
+            MAMA <span className="text-brand-rose">&amp;</span> CO.
             <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.35em] text-muted-foreground">
               Shop Bảo Ngọc
             </span>
@@ -90,7 +90,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
             to="/"
             className="mb-8 block text-center font-display text-2xl font-bold tracking-[0.08em] lg:hidden"
           >
-            MAMA <span className="text-accent">&amp;</span> CO.
+            MAMA <span className="text-brand-rose">&amp;</span> CO.
           </Link>
 
           {/* Tabs */}
@@ -223,7 +223,7 @@ function CustomerForm({
       <form onSubmit={handleOtpSubmit} className="flex flex-col gap-5">
         <div className="text-center">
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-secondary">
-            <Mail className="size-5 text-accent" />
+            <Mail className="size-5 text-brand-rose" />
           </div>
           <h1 className="mt-4 font-display text-2xl font-bold">
             {t("codeSent")}
@@ -370,7 +370,7 @@ function SellerForm({ onUnlocked }: { onUnlocked: () => void }) {
     <form onSubmit={submit} className="flex flex-col gap-5">
       <div className="text-center">
         <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-secondary">
-          <Lock className="size-5 text-accent" />
+          <Lock className="size-5 text-brand-rose" />
         </div>
         <h1 className="mt-4 font-display text-2xl font-bold">
           {t("sellerTitle")}

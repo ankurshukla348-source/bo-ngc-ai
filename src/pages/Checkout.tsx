@@ -1,10 +1,4 @@
 import { Header } from "@/components/store/Header";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { api } from "@/convex/_generated/api";
 import { useCart, type CartItem } from "@/lib/cart";
 import { shippingFeeFor } from "@/lib/catalog";
@@ -20,6 +14,7 @@ import {
   AlertCircle,
   Banknote,
   Check,
+  ChevronDown,
   Copy,
   Loader2,
   Minus,
@@ -121,11 +116,71 @@ function StepBadge({ step, done }: { step: string; done: boolean }) {
     <span
       className={cn(
         "flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-xs font-semibold",
-        done ? "bg-accent text-white" : "bg-background text-foreground",
+        done ? "bg-primary text-primary-foreground" : "bg-background text-foreground",
       )}
     >
       {done ? <Check className="size-4" strokeWidth={3} /> : step}
     </span>
+  );
+}
+
+/**
+ * One checkout step.
+ *
+ * Deliberately NOT a Radix Accordion: Radix `Presence` unmounts collapsed
+ * content from an `animationend` callback, i.e. it edits the DOM outside
+ * React's commit. The next React commit into that subtree then throws
+ * `NotFoundError: Failed to execute 'insertBefore' on 'Node'`, which tears
+ * down the whole page right after the order is placed.
+ *
+ * Here the body is always mounted and only its `hidden` attribute changes, so
+ * React is the only thing that ever adds or removes a node in this flow.
+ */
+function Step({
+  n,
+  title,
+  sub,
+  done,
+  open,
+  onToggle,
+  children,
+}: {
+  n: string;
+  title: string;
+  sub?: string;
+  done: boolean;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-b border-border last:border-b-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-5 py-5 text-left transition-colors hover:bg-secondary/40"
+      >
+        <StepBadge step={n} done={done} />
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-lg font-bold">{title}</span>
+          {sub && (
+            <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+              {sub}
+            </span>
+          )}
+        </span>
+        <ChevronDown
+          className={cn(
+            "size-4 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      <div hidden={!open} className="px-5 pb-6">
+        {children}
+      </div>
+    </section>
   );
 }
 
@@ -340,8 +395,8 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12 sm:px-6">
       {/* Success */}
       <div className="flex flex-col items-center gap-4 text-center">
-        <span className="flex size-16 items-center justify-center border border-border bg-accent shadow-soft">
-          <Check className="size-8 text-white" strokeWidth={3} />
+        <span className="flex size-16 items-center justify-center border border-border bg-accent text-accent-foreground shadow-soft">
+          <Check className="size-8" strokeWidth={3} />
         </span>
         <h1 className="font-display text-4xl font-bold tracking-tight">
           {t("confirmTitle")}
@@ -571,6 +626,9 @@ export default function Checkout() {
   const setField = (field: keyof Shipping, value: string) =>
     setShipping((prev) => ({ ...prev, [field]: value }));
 
+  const toggle = (step: string) =>
+    setOpen((prev) => (prev.includes(step) ? [] : [step]));
+
   const addressValid =
     shipping.name.trim() &&
     shipping.phone.trim() &&
@@ -706,29 +764,17 @@ export default function Checkout() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-            {/* ── Accordion flow ── */}
-            <Accordion
-              type="multiple"
-              value={open}
-              onValueChange={setOpen}
-              className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
-            >
+            {/* ── Checkout steps ── */}
+            <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
               {/* Step 1 — shipping */}
-              <AccordionItem value="ship" className="border-b border-border last:border-b-0">
-                <AccordionTrigger className="px-5 py-5 hover:no-underline">
-                  <span className="flex items-center gap-3 text-left">
-                    <StepBadge step="01" done={shipDone} />
-                    <span>
-                      <span className="block font-display text-lg font-bold">
-                        {t("step1")}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {paymentSummary}
-                      </span>
-                    </span>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-5 pb-6">
+              <Step
+                n="01"
+                title={t("step1")}
+                sub={paymentSummary}
+                done={shipDone}
+                open={open.includes("ship")}
+                onToggle={() => toggle("ship")}
+              >
                   <p className="mb-4 text-sm text-muted-foreground">
                     {t("step1Sub")}
                   </p>
@@ -789,25 +835,17 @@ export default function Checkout() {
                     {t("continuePayment")}
                     <ArrowRight className="size-4" />
                   </button>
-                </AccordionContent>
-              </AccordionItem>
+              </Step>
 
               {/* Step 2 — payment */}
-              <AccordionItem value="pay" className="border-b border-border last:border-b-0">
-                <AccordionTrigger className="px-5 py-5 hover:no-underline">
-                  <span className="flex items-center gap-3 text-left">
-                    <StepBadge step="02" done={payDone} />
-                    <span>
-                      <span className="block font-display text-lg font-bold">
-                        {t("step2")}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {payDone ? methodLabel(method, lang) : t("step2Sub")}
-                      </span>
-                    </span>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-5 pb-6">
+              <Step
+                n="02"
+                title={t("step2")}
+                sub={payDone ? methodLabel(method, lang) : t("step2Sub")}
+                done={payDone}
+                open={open.includes("pay")}
+                onToggle={() => toggle("pay")}
+              >
                   <div className="grid gap-3" role="radiogroup">
                     <PayOption
                       selected={method === "vietqr"}
@@ -897,28 +935,17 @@ export default function Checkout() {
                     {t("continueReview")}
                     <ArrowRight className="size-4" />
                   </button>
-                </AccordionContent>
-              </AccordionItem>
+              </Step>
 
               {/* Step 3 — review & place */}
-              <AccordionItem value="review" className="last:border-b-0">
-                <AccordionTrigger className="px-5 py-5 hover:no-underline">
-                  <span className="flex items-center gap-3 text-left">
-                    <StepBadge
-                      step="03"
-                      done={shipDone && payDone && confirmed !== null}
-                    />
-                    <span>
-                      <span className="block font-display text-lg font-bold">
-                        {t("step3")}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {t("step3Sub")}
-                      </span>
-                    </span>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-5 pb-6">
+              <Step
+                n="03"
+                title={t("step3")}
+                sub={t("step3Sub")}
+                done={confirmed !== null}
+                open={open.includes("review")}
+                onToggle={() => toggle("review")}
+              >
                   {/* Address + payment recap */}
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="border border-border bg-background p-3.5">
@@ -1010,7 +1037,7 @@ export default function Checkout() {
                     type="button"
                     onClick={handlePlaceOrder}
                     disabled={placing}
-                    className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-accent py-4 text-sm font-semibold uppercase tracking-widest text-white transition-all hover:-translate-y-0.5 hover:shadow-soft disabled:pointer-events-none disabled:opacity-60"
+                    className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary py-4 text-sm font-semibold uppercase tracking-widest text-primary-foreground transition-all hover:-translate-y-0.5 hover:shadow-soft disabled:pointer-events-none disabled:opacity-60"
                   >
                     {placing ? (
                       <>
@@ -1023,9 +1050,8 @@ export default function Checkout() {
                       </>
                     )}
                   </button>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+              </Step>
+            </div>
 
             {/* ── Live cart summary ── */}
             <aside className="self-start lg:sticky lg:top-32">
@@ -1054,7 +1080,7 @@ export default function Checkout() {
                             type="button"
                             onClick={() => remove(item.key)}
                             aria-label={t("delete")}
-                            className="shrink-0 border border-border bg-background p-0.5 transition-colors hover:bg-accent hover:text-white"
+                            className="shrink-0 border border-border bg-background p-0.5 transition-colors hover:bg-primary hover:text-primary-foreground"
                           >
                             <X className="size-3" />
                           </button>

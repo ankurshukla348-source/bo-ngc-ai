@@ -729,8 +729,8 @@ function ProductRow({ product }: { product: StoreProduct }) {
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase transition-colors disabled:opacity-60",
             confirmDelete
-              ? "bg-accent text-white"
-              : "bg-card hover:bg-accent hover:text-white",
+              ? "bg-primary text-primary-foreground"
+              : "bg-card hover:bg-primary hover:text-primary-foreground",
           )}
         >
           <Trash2 className="size-3.5" />

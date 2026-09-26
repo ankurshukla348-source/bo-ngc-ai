@@ -25,14 +25,14 @@ export function StoreFooter({
   return (
     <footer
       id="contact"
-      className="scroll-mt-32 rounded-t-[2rem] bg-[#2c1622] text-[#fdf3f7]"
+      className="scroll-mt-32 rounded-t-[2rem] bg-[#3a2030] text-[#fdf2f6]"
     >
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-8 lg:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           {/* Brand */}
           <div className="flex flex-col gap-4">
             <span className="font-display text-2xl font-bold tracking-[0.08em]">
-              MAMA <span className="text-[#e695b9]">&amp;</span> CO.
+              MAMA <span className="text-[#efb4cd]">&amp;</span> CO.
             </span>
             <p className="max-w-xs text-sm leading-relaxed text-white/60">
               {t("footerTagline")}

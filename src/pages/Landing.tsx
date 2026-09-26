@@ -18,12 +18,12 @@ import { useEffect, useMemo, useState } from "react";
 
 /** Warm tints used when a category/card has no product photo yet. */
 const TINTS = [
-  "#f9e4ec",
-  "#f4dbe6",
+  "#fdf2f6",
   "#fbeaf1",
-  "#f2e7ee",
-  "#f7dfeb",
-  "#eedfe8",
+  "#f9e0ea",
+  "#f7dfe9",
+  "#f5dbe6",
+  "#f3d6e2",
 ];
 
 const HERO_TRUST = [
@@ -174,7 +174,7 @@ export default function Landing() {
               {HERO_TRUST.map(({ icon: Icon, titleKey, subKey }) => (
                 <div key={titleKey} className="flex items-center gap-3">
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary">
-                    <Icon className="size-4 text-accent" />
+                    <Icon className="size-4 text-brand-rose" />
                   </span>
                   <span>
                     <span className="block text-xs font-semibold">
@@ -205,7 +205,7 @@ export default function Landing() {
               ))
             ) : (
               <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#f9e4ec] via-[#f2d9e4] to-[#e5bfd1]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#fdf2f6] via-[#fbeaf1] to-[#f7dfe9]" />
                 <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none font-display text-[10rem] font-bold text-white/50">
                   M&amp;C
                 </span>
@@ -553,7 +553,7 @@ export default function Landing() {
             {TRUST_STRIP.map(({ icon: Icon, titleKey, subKey }) => (
               <div key={titleKey} className="flex items-center gap-4">
                 <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-secondary">
-                  <Icon className="size-5 text-accent" />
+                  <Icon className="size-5 text-brand-rose" />
                 </span>
                 <span>
                   <span className="block text-sm font-semibold">
@@ -586,7 +586,7 @@ export default function Landing() {
               )}
             </div>
             <div className="flex flex-col justify-center gap-4 p-8 sm:p-12">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-brand-ink">
                 {t("newsOffer")}
               </p>
               <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">

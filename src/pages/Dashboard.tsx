@@ -46,7 +46,7 @@ export default function Dashboard() {
           {/* Orders */}
           <section className="flex flex-col rounded-3xl border border-border bg-card p-6 shadow-soft">
             <span className="flex size-11 items-center justify-center rounded-full bg-secondary">
-              <Package className="size-5 text-accent" />
+              <Package className="size-5 text-brand-rose" />
             </span>
             <h2 className="mt-4 font-display text-xl font-bold">
               {t("ordersTitle")}
@@ -64,7 +64,7 @@ export default function Dashboard() {
           {/* Wishlist */}
           <section className="flex flex-col rounded-3xl border border-border bg-card p-6 shadow-soft">
             <span className="flex size-11 items-center justify-center rounded-full bg-secondary">
-              <Heart className="size-5 text-accent" />
+              <Heart className="size-5 text-brand-rose" />
             </span>
             <h2 className="mt-4 font-display text-xl font-bold">
               {t("wishlistTitle")}
@@ -89,7 +89,7 @@ export default function Dashboard() {
           {/* Account details */}
           <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
             <span className="flex size-11 items-center justify-center rounded-full bg-secondary">
-              <UserRound className="size-5 text-accent" />
+              <UserRound className="size-5 text-brand-rose" />
             </span>
             <h2 className="mt-4 font-display text-xl font-bold">
               {t("accountInfo")}
@@ -108,7 +108,7 @@ export default function Dashboard() {
           {/* Seller shortcut */}
           <section className="flex flex-col rounded-3xl border border-border bg-secondary p-6">
             <span className="flex size-11 items-center justify-center rounded-full bg-card">
-              <Store className="size-5 text-accent" />
+              <Store className="size-5 text-brand-rose" />
             </span>
             <h2 className="mt-4 font-display text-xl font-bold">
               {t("sellerShortcutTitle")}

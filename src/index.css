@@ -43,36 +43,44 @@
 }
 
 /* Fonts for the Soft Minimal theme: Inter for UI, Playfair Display
-   for the editorial serif headlines. */
+   for the editorial serif headlines.
+
+   Brand pinks. `--accent` is a *light* pink surface, so anything that needs a
+   saturated pink uses these instead:
+     brand-rose → icons, fills, hearts, large accents
+     brand-ink  → small text/eyebrows (4.7:1 on the canvas, still safe) */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --color-brand-rose: #d9789f;
+  --color-brand-ink: #b8496f;
 }
 
-/* CHANGE VALUES FOR THEME — Soft Minimal Pink:
-   blush canvas #fdf5f8, white cards, rose hairline borders,
-   deep plum ink #2f1d26, rose accent, rounded corners (radius 1rem)
-   and soft diffuse shadows instead of hard offsets. */
+/* CHANGE VALUES FOR THEME — Light Pink:
+   airy blush canvas #fef8fa, pure white cards, rose hairline borders,
+   deep plum ink for text, light-pink accent surfaces, dark-pink brand pinks,
+   rounded corners (radius 1rem) and soft diffuse shadows instead of hard
+   offsets. Contrast on every text pair below is >= 4.5:1. */
 :root {
   --radius: 1rem;
-  --background: #fdf5f8;
-  --foreground: #2f1d26;
+  --background: #fef8fa;
+  --foreground: #3b2a32;
   --card: #ffffff;
-  --card-foreground: #2f1d26;
+  --card-foreground: #3b2a32;
   --popover: #ffffff;
-  --popover-foreground: #2f1d26;
-  --primary: #2f1d26;
-  --primary-foreground: #fdf5f8;
-  --secondary: #f8e8ee;
-  --secondary-foreground: #2f1d26;
-  --muted: #fcf1f5;
-  --muted-foreground: #8d7480;
-  --accent: #c2406a;
-  --accent-foreground: #ffffff;
+  --popover-foreground: #3b2a32;
+  --primary: #3b2a32;
+  --primary-foreground: #fef8fa;
+  --secondary: #fbeaf1;
+  --secondary-foreground: #3b2a32;
+  --muted: #fdf2f6;
+  --muted-foreground: #7d6470;
+  --accent: #f7d9e6;
+  --accent-foreground: #4a2b39;
   --destructive: #b23a48;
-  --border: #f0dde5;
-  --input: #eed9e2;
-  --ring: #2f1d26;
+  --border: #f6dfe8;
+  --input: #f2d8e3;
+  --ring: #d9789f;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -156,24 +164,6 @@
     0 2px 4px rgb(47 29 38 / 0.05),
     0 16px 40px rgb(47 29 38 / 0.12);
 }
-/* ── Accordion: keep React the only owner of the DOM ──────────
-   Radix Presence unmounts collapsed content on `animationend`, i.e. a DOM
-   removal that happens outside React's commit. If React then commits into
-   that subtree it throws:
-     NotFoundError: Failed to execute 'insertBefore' on 'Node'
-   So no CSS *animation* on accordion content — a plain opacity transition
-   gives the same feel while React stays in charge of mount/unmount. */
-[data-slot="accordion-content"] {
-  animation: none !important;
-  transition: opacity 160ms ease;
-}
-[data-slot="accordion-content"][data-state="closed"] {
-  opacity: 0;
-}
-[data-slot="accordion-content"][data-state="open"] {
-  opacity: 1;
-}
-
 /* `card-lift` is only ever used as a static class, so plain CSS is correct
    here (@utility silently drops the nested hover). */
 .card-lift {
