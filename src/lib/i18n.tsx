@@ -16,7 +16,7 @@ export type Lang = "vi" | "en";
 const vi = {
   // ── Header / nav ─────────────────────────────────────────────
   announce:
-    "Miễn phí vận chuyển cho đơn từ 2.000.000₫ · Đổi trả trong 30 ngày",
+    "MIỄN PHÍ VẬN CHUYỂN TOÀN QUỐC CHO ĐƠN TỪ 400.000 VND TRỞ LÊN. · Đổi trả trong 30 ngày.",
   seller: "Khu bán hàng",
   navShop: "Hàng Mới Về Mỗi Ngày.",
   navCategories: "Danh mục",
@@ -28,7 +28,7 @@ const vi = {
 
   // ── Hero ─────────────────────────────────────────────────────
   heroEyebrow: "HÀNG MỚI VỀ MỖI NGÀY.",
-  heroTitle: "Nâng tầm phong cách mỗi ngày",
+  heroTitle: "Thoải Mái & Tự Tin Mỗi Ngày.",
   heroBody:
     "Những món đồ được tuyển chọn kỹ lưỡng cho tủ đồ hiện đại — được làm để mặc, được làm để yêu.",
   ctaShop: "Mua ngay",
@@ -68,7 +68,7 @@ const vi = {
   storyEyebrow: "CÂU CHUYỆN CỦA CHÚNG TÔI",
   storyTitle: "Bảo Ngọc chọn đồ như chọn bạn",
   storyP1:
-    "Shop Bảo Ngọc là một boutique nhỏ ở Hà Nội: mỗi chiếc đầm, mỗi chiếc áo khoác len đều được mẹ con Bảo Ngọc sờ tận tay, chọn từng đường may trước khi lên kệ.",
+"",
   storyP2:
     "Chúng tôi tin rằng thời trang đẹp không cần ồn ào — chỉ cần vải tốt, phom dáng chuẩn và một người thật sự hiểu bạn.",
   statCustomers: "Khách hàng",
@@ -128,7 +128,7 @@ const vi = {
   supportHotline: "Hotline: 0909 123 456",
   companyStory: "Câu chuyện",
   companyReviews: "Đánh giá khách hàng",
-  rights: "© 2026 MAMA & CO. · Shop Bảo Ngọc. Mọi quyền được bảo lưu.",
+  rights: "© 2026 Shop Thời Trang Nữ Bảo Ngọc. Mọi quyền được bảo lưu.",
 
   // ── Cart / checkout ──────────────────────────────────────────
   checkoutTitle: "Thanh toán",
@@ -190,7 +190,7 @@ const vi = {
 
   // ── Admin ────────────────────────────────────────────────────
   adminTitle: "Khu bán hàng",
-  adminSub: "MAMA & CO. · Seller Dashboard",
+  adminSub: "Shop Thời Trang Nữ Bảo Ngọc. · Seller Dashboard",
   pinPlaceholder: "Nhập PIN",
   unlock: "Mở khóa",
   pinError: "PIN không đúng. Thử lại.",
@@ -235,7 +235,7 @@ const vi = {
   orderCodeLabel: "Đơn hàng",
 
   // ── Auth (customer / seller login) ─────────────────────────
-  authEyebrow: "Đăng nhập MAMA & CO.",
+  authEyebrow: "Đăng nhập Shop Thời Trang Nữ Bảo Ngọc.",
   authWelcome: "Chào mừng trở lại",
   authSub: "Đăng nhập để mua sắm nhanh hơn và theo dõi đơn hàng của bạn.",
   tabCustomer: "Khách hàng",
@@ -252,7 +252,7 @@ const vi = {
   backToEmail: "Dùng email khác",
   resendCode: "Gửi lại mã",
   authTerms:
-    "Bằng việc tiếp tục, bạn đồng ý với điều khoản & chính sách của MAMA & CO.",
+    "Bằng việc tiếp tục, bạn đồng ý với điều khoản & chính sách của Shop Thời Trang Nữ Bảo Ngọc.",
   sellerTitle: "Đăng nhập người bán",
   sellerSub:
     "Khu vực dành riêng cho chủ shop — quản lý sản phẩm và đơn hàng.",
@@ -272,7 +272,7 @@ const vi = {
   trustSupport: "Hỗ trợ 24/7",
   trustSupportSub: "Luôn sẵn lòng giúp bạn",
   heroTagline:
-    "Khám phá những thiết kế vượt thời gian — may để mặc thoải mái, tôn dáng và bền đẹp theo năm tháng.",
+    "Khám phá các dòng đồ lót mềm mại, áo bra nâng dáng và váy ngủ lụa cao cấp — mang lại cảm giác dễ chịu tuyệt đối và nữ tính dành cho bạn.",
   slideLabel: "Slide",
   circleSale: "SALE",
   viewAllCategories: "Xem tất cả danh mục",
@@ -487,7 +487,7 @@ const en: Record<TKey, string> = {
 
   // Admin
   adminTitle: "Seller dashboard",
-  adminSub: "MAMA & CO. · Khu bán hàng",
+  adminSub: "Shop Thời Trang Nữ Bảo Ngọc. · Khu bán hàng",
   pinPlaceholder: "Enter PIN",
   unlock: "Unlock",
   pinError: "Incorrect PIN. Try again.",
@@ -532,7 +532,7 @@ const en: Record<TKey, string> = {
   orderCodeLabel: "Order",
 
   // Auth (customer / seller login)
-  authEyebrow: "MAMA & CO. sign in",
+  authEyebrow: "Shop Thời Trang Nữ Bảo Ngọc. sign in",
   authWelcome: "Welcome back",
   authSub: "Sign in for faster checkout and to track your orders.",
   tabCustomer: "Customer",
@@ -549,7 +549,7 @@ const en: Record<TKey, string> = {
   backToEmail: "Use a different email",
   resendCode: "Resend code",
   authTerms:
-    "By continuing you agree to MAMA & CO.'s terms & privacy policy.",
+    "By continuing you agree to Shop Thời Trang Nữ Bảo Ngọc.'s terms & privacy policy.",
   sellerTitle: "Seller sign in",
   sellerSub:
     "Restricted area for the shop owner — manage products and orders.",
