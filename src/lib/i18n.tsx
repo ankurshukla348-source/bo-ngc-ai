@@ -288,6 +288,24 @@ const vi = {
   signOutLabel: "Đăng xuất",
   myAccount: "Tài khoản của tôi",
   footerNewsSub: "Đăng ký nhận tin và ưu đãi 10% cho đơn đầu tiên.",
+
+  // ── Account page ───────────────────────────────────────────
+  accountTitle: "Tài khoản của tôi",
+  accountEmail: "Email",
+  accountInfo: "Thông tin tài khoản",
+  accountInfoHint:
+    "Thông tin này dùng để gửi xác nhận đơn hàng và thông báo khi shop nhận hàng.",
+  ordersTitle: "Đơn hàng của tôi",
+  ordersEmpty: "Bạn chưa có đơn hàng nào.",
+  ordersNote:
+    "Lịch sử đơn hàng sẽ hiển thị tại đây ngay sau khi bạn đặt hàng lần đầu.",
+  wishlistTitle: "Danh sách yêu thích",
+  wishlistEmpty: "Chưa lưu món nào — chạm vào trái tim trên sản phẩm để lưu lại.",
+  wishlistCount: "món đã lưu",
+  sellerShortcutTitle: "Bạn là chủ shop?",
+  sellerShortcutBody:
+    "Mở khu bán hàng bằng mã truy cập để quản lý sản phẩm và đơn hàng.",
+  sellerShortcutCta: "Đăng nhập người bán",
 };
 
 export type TKey = keyof typeof vi;
@@ -565,6 +583,24 @@ const en: Record<TKey, string> = {
   signOutLabel: "Sign out",
   myAccount: "My account",
   footerNewsSub: "Sign up for updates and get 10% off your first order.",
+
+  // Account page
+  accountTitle: "My account",
+  accountEmail: "Email",
+  accountInfo: "Account details",
+  accountInfoHint:
+    "We use this to confirm orders and notify you when your parcel ships.",
+  ordersTitle: "My orders",
+  ordersEmpty: "You have no orders yet.",
+  ordersNote:
+    "Your order history will appear here once you've placed your first order.",
+  wishlistTitle: "Wishlist",
+  wishlistEmpty: "Nothing saved yet — tap the heart on a product to save it.",
+  wishlistCount: "items saved",
+  sellerShortcutTitle: "Are you the shop owner?",
+  sellerShortcutBody:
+    "Open the seller area with your access code to manage products and orders.",
+  sellerShortcutCta: "Seller sign in",
 };
 
 const CATEGORY_LABELS: Record<Lang, Record<Category, string>> = {

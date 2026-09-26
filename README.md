@@ -1,15 +1,28 @@
 # Shop Bảo Ngọc — MAMA & CO.
 
 Production-ready e-commerce app for a Vietnamese clothing boutique: bilingual
-(VI/EN) storefront, PIN-gated seller dashboard, and a three-step checkout with
-VietQR display, cash on delivery, and server-side order pricing.
+(VI/EN) storefront, one login for everyone with a special seller login, and a
+three-step checkout with VietQR display, cash on delivery, and server-side
+order pricing.
 
-**Three routes:**
-- `/` — storefront: hero, value props, category filter badges, search, wishlist,
-  responsive product grid with VND prices, cart counter
-- `/admin` — seller dashboard behind a PIN (**demo PIN: `8888`**, change it in
-  `src/lib/admin.ts`): camera/dropzone photo upload, bilingual names, category,
-  price, size toggles, inline edit, stock toggle, delete, VietQR bank settings
+**Design language:** soft minimal — warm cream canvas, white cards, beige
+hairline borders, caramel accent, Playfair Display serif headlines, rounded
+corners and soft diffuse shadows. Tokens live in `src/index.css`.
+
+**Routes:**
+- `/` — storefront built to the reference mockup: hero with a product-photo
+  slider (01/02/03), an overlapping circular category bar with a SALE circle,
+  "Find Your Perfect Style" cards, two sale banners, "Our Most Loved Picks"
+  with star ratings, brand story, 4-badge trust strip, newsletter, dark footer
+- `/auth` — one login for everyone, two tabs: **Customer** (email OTP or guest)
+  and **Seller** (access code → opens the dashboard directly). Deep link with
+  `?tab=seller`.
+- `/dashboard` — protected customer account page: orders empty state, wishlist
+  count, account details, seller shortcut, sign out
+- `/admin` — seller dashboard behind the access code (**demo code: `8888`**,
+  change it in `src/lib/admin.ts`): camera/dropzone photo upload, bilingual
+  names, category, price, size toggles, inline edit, stock toggle, delete,
+  VietQR bank settings
 - `/checkout` — accordion flow: Vietnamese address (province/district/ward/street)
   → payment (VietQR QR / COD / e-wallet placeholder) → order summary → unique
   order ID confirmation
@@ -30,7 +43,7 @@ VietQR display, cash on delivery, and server-side order pricing.
 | 2 | Image storage | **Convex file storage** — admin dropzone requests an upload URL, stores a blob, storefront resolves a signed URL |
 | 3 | Payments | **Display-only VietQR** — EMVCo payload + CRC16 generated locally, no payment processor (decision #3 from the spec: showing the QR is sufficient for v1) |
 | 4 | Orders | **Real database** — `orders` table with `by_code` index so the seller can add order history later |
-| 5 | Admin auth | **Hardcoded PIN** (`8888`) scoped to the browser session — fast for v1; template Convex Auth stays wired for `/auth` if proper accounts are needed later |
+| 5 | Seller auth | **Special seller login** — customers sign in normally on `/auth` (email OTP or guest); the seller picks the Seller tab, enters the access code (`8888`), and lands in `/admin` directly. Session-scoped, upgradeable to real seller accounts later |
 | 6 | Deployment | **Vite static build + hosted Convex deployment** — `bun run build` outputs `dist/`, deployable to Vercel or any static host |
 
 The original spec suggested Next.js; this environment's template is Vite +
@@ -44,13 +57,13 @@ src/
   pages/         Landing.tsx · Admin.tsx · Checkout.tsx · Auth.tsx · Dashboard.tsx
   components/
     store/       Header.tsx · ProductCard.tsx · StoreFooter.tsx
-    ui/          shadcn primitives (square-corner theme applied)
+    ui/          shadcn primitives (soft-minimal tokens applied)
   lib/
     cart.tsx     cart state, localStorage persistence
     i18n.tsx     VI/EN dictionaries (~150 keys) + language toggle
     catalog.ts   categories, sizes, shipping rules (shared client/Convex)
     vietqr.ts    EMVCo payload builder (CRC16-CCITT)
-    admin.ts     PIN gate helpers
+    admin.ts     seller access-code gate helpers
     format.ts    VND formatting · art.ts placeholder images
   convex/
     schema.ts    products · orders · settings (+ auth tables)

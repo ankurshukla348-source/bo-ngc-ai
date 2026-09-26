@@ -46,6 +46,12 @@ const STYLE_CARDS: { category: Category; tintIndex: number }[] = [
   { category: "accessories", tintIndex: 3 },
 ];
 
+/** "bestsellers" is represented by the black SALE circle instead. */
+const CIRCLE_CATEGORIES = [
+  "all",
+  ...CATEGORIES.filter((c) => c !== "bestsellers"),
+] as const;
+
 /** Stable pseudo-rating per product id (deterministic across renders). */
 function ratingFor(id: string) {
   let hash = 0;
@@ -234,7 +240,7 @@ export default function Landing() {
         {/* Overlapping circular category bar */}
         <div className="relative z-10 mx-auto -mt-10 max-w-7xl px-4 sm:px-8">
           <div className="flex justify-start gap-6 overflow-x-auto rounded-3xl border border-border bg-card px-6 py-6 shadow-soft-lg sm:justify-center sm:gap-8">
-            {(["all", ...CATEGORIES] as const).map((category, i) => {
+            {CIRCLE_CATEGORIES.map((category, i) => {
               const isActive = active === category && !search;
               const label =
                 category === "all"
@@ -280,13 +286,13 @@ export default function Landing() {
             >
               <span
                 className={cn(
-                  "flex aspect-square w-full items-center justify-center rounded-full bg-primary font-display text-xs font-bold tracking-[0.2em] text-primary-foreground transition-transform duration-200 group-hover:-translate-y-1",
+                  "flex aspect-square w-full items-center justify-center rounded-full bg-primary font-display text-2xl font-bold text-primary-foreground transition-transform duration-200 group-hover:-translate-y-1",
                   active === "bestsellers" &&
                     !search &&
                     "ring-2 ring-ring ring-offset-2 ring-offset-card",
                 )}
               >
-                SALE
+                %
               </span>
               <span className="text-center text-[11px] font-medium text-foreground/80">
                 {t("circleSale")}
