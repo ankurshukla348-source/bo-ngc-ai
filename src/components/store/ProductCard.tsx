@@ -5,7 +5,7 @@ import type { Category } from "@/lib/catalog";
 import { formatVnd } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { Heart, Plus } from "lucide-react";
+import { Heart, Plus, Star } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -39,7 +39,14 @@ function writeWishlist(ids: string[]) {
   }
 }
 
-export function ProductCard({ product }: { product: StoreProduct }) {
+export function ProductCard({
+  product,
+  rating,
+}: {
+  product: StoreProduct;
+  /** Optional fixed rating (e.g. 4.8) shown as a star chip, mockup-style. */
+  rating?: number;
+}) {
   const { t, lang, categoryLabel } = useI18n();
   const { add } = useCart();
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -88,6 +95,13 @@ export function ProductCard({ product }: { product: StoreProduct }) {
         <span className="absolute left-0 top-0 border-b-2 border-r-2 border-black bg-background px-2 py-1 text-[10px] font-bold uppercase tracking-widest">
           {categoryLabel(product.category)}
         </span>
+
+        {rating !== undefined && (
+          <span className="absolute bottom-2 right-2 flex items-center gap-1 border-2 border-black bg-background px-1.5 py-1 text-[11px] font-bold tabular-nums">
+            <Star className="size-3 fill-[#e4552e] text-[#e4552e]" />
+            {rating.toFixed(1)}
+          </span>
+        )}
 
         <button
           type="button"

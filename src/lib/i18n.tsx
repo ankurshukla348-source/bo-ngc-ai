@@ -96,6 +96,26 @@ const vi = {
   ctaBody: "Bộ sưu tập mới về mỗi tuần — giao toàn quốc.",
   ctaButton: "Mua chỉnh sửa mới",
 
+  // ── Mockup sections (circles, cards, banners, newsletter) ────
+  vp4Title: "Giao hàng nhanh",
+  vp4Sub: "Toàn quốc 1–4 ngày",
+  exploreNow: "Khám phá ngay",
+  picksEyebrow: "MỌI NGƯỜI ĐỀU MÊ",
+  picksTitle: "Những món được yêu nhất",
+  banner1Tag: "SALE MÙA XUÂN",
+  banner1Title: "GIẢM ĐẾN 50%",
+  banner1Sub: "Một số mẫu đầm chọn lọc — số lượng giới hạn.",
+  banner1Cta: "Săn deal ngay",
+  banner2Tag: "VỪA VỀ KHO",
+  banner2Title: "ĐỒ MỚI CỰC ĐẸP",
+  banner2Sub: "Áo len & phụ kiện mới cập bến mỗi tuần.",
+  banner2Cta: "Xem đồ mới",
+  newsTitle: "Tham gia danh sách phong cách",
+  newsBody: "Ưu đãi, BST mới và mẹo phối đồ — mỗi tuần một email, không spam.",
+  newsPlaceholder: "Email của bạn",
+  newsCta: "Đăng ký",
+  newsThanks: "Cảm ơn! Bạn đã vào danh sách rồi nhé.",
+
   // ── Footer ───────────────────────────────────────────────────
   footerTagline:
     "Boutique thời trang được tuyển chọn tại Hà Nội. Thanh lịch, tự nhiên, dành cho bạn.",
@@ -296,6 +316,26 @@ const en: Record<TKey, string> = {
   ctaTitle: "Ready for a fresh wardrobe?",
   ctaBody: "New pieces land every week — shipped nationwide.",
   ctaButton: "Shop the new edit",
+
+  // Mockup sections (circles, cards, banners, newsletter)
+  vp4Title: "Fast delivery",
+  vp4Sub: "Nationwide in 1–4 days",
+  exploreNow: "Explore now",
+  picksEyebrow: "MOST LOVED",
+  picksTitle: "Our most loved picks",
+  banner1Tag: "SPRING SALE",
+  banner1Title: "UP TO 50% OFF",
+  banner1Sub: "Selected dresses only — limited stock.",
+  banner1Cta: "Grab the deal",
+  banner2Tag: "JUST LANDED",
+  banner2Title: "FRESH NEW STYLES",
+  banner2Sub: "New knits & accessories every week.",
+  banner2Cta: "Shop new arrivals",
+  newsTitle: "Join our style list",
+  newsBody: "Offers, new drops and styling tips — one email a week, no spam.",
+  newsPlaceholder: "Your email",
+  newsCta: "Subscribe",
+  newsThanks: "Thanks! You're on the list.",
 
   // Footer
   footerTagline:
