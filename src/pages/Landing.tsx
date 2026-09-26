@@ -8,39 +8,43 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
   ArrowRight,
-  Heart,
+  Headphones,
   Play,
   RotateCcw,
   ShieldCheck,
-  Sparkles,
-  Star,
   Truck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-/** Mockup-style category shortcuts; one extra circle uses a 7-step palette. */
-const CIRCLE_TINTS = [
-  "#e7e0d2",
-  "#f3d9c8",
-  "#f9e7d2",
-  "#dce5d6",
-  "#e8d9e4",
-  "#d8e2e8",
-  "#f3d0c4",
+/** Warm tints used when a category/card has no product photo yet. */
+const TINTS = [
+  "#efe6d8",
+  "#e7ddd0",
+  "#ead9c9",
+  "#e3e0d5",
+  "#e9d6c6",
+  "#e6dfd2",
 ];
 
-const VALUE_PROPS = [
-  { icon: Sparkles, titleKey: "vp1Title", subKey: "vp1Sub" },
-  { icon: RotateCcw, titleKey: "vp2Title", subKey: "vp2Sub" },
-  { icon: ShieldCheck, titleKey: "vp3Title", subKey: "vp3Sub" },
-  { icon: Truck, titleKey: "vp4Title", subKey: "vp4Sub" },
+const HERO_TRUST = [
+  { icon: Truck, titleKey: "trustShip", subKey: "trustShipSub" },
+  { icon: RotateCcw, titleKey: "trustReturns", subKey: "trustReturnsSub" },
+  { icon: ShieldCheck, titleKey: "trustPay", subKey: "trustPaySub" },
 ] as const;
 
-const TESTIMONIALS = [
-  { quoteKey: "quote1", nameKey: "quote1Name", cityKey: "quote1City" },
-  { quoteKey: "quote2", nameKey: "quote2Name", cityKey: "quote2City" },
-  { quoteKey: "quote3", nameKey: "quote3Name", cityKey: "quote3City" },
+const TRUST_STRIP = [
+  { icon: Truck, titleKey: "trustShip", subKey: "trustShipSub" },
+  { icon: RotateCcw, titleKey: "trustReturns", subKey: "trustReturnsSub" },
+  { icon: ShieldCheck, titleKey: "trustPay", subKey: "trustPaySub" },
+  { icon: Headphones, titleKey: "trustSupport", subKey: "trustSupportSub" },
 ] as const;
+
+const STYLE_CARDS: { category: Category; tintIndex: number }[] = [
+  { category: "dresses", tintIndex: 0 },
+  { category: "tops", tintIndex: 1 },
+  { category: "cardigans", tintIndex: 2 },
+  { category: "accessories", tintIndex: 3 },
+];
 
 /** Stable pseudo-rating per product id (deterministic across renders). */
 function ratingFor(id: string) {
@@ -53,6 +57,7 @@ export default function Landing() {
   const { t, lang, categoryLabel } = useI18n();
   const [search, setSearch] = useState("");
   const [active, setActive] = useState<Category | "all">("all");
+  const [slide, setSlide] = useState(0);
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
@@ -87,20 +92,30 @@ export default function Landing() {
     });
   }, [products, active, search]);
 
-  const scrollToShop = () =>
-    document.getElementById("shop")?.scrollIntoView({ behavior: "smooth" });
+  // Hero slides: up to three product photos, else fallback panels.
+  const heroImages = useMemo(
+    () =>
+      (products ?? [])
+        .filter((p) => p.image)
+        .slice(0, 3)
+        .map((p) => ({ src: p.image as string, alt: lang === "vi" ? p.nameVi : p.nameEn })),
+    [products, lang],
+  );
+  const activeSlide = Math.min(slide, Math.max(heroImages.length, 1) - 1);
 
-  const scrollToGrid = () =>
+  const scrollToShop = () =>
     document.getElementById("shop")?.scrollIntoView({ behavior: "smooth" });
 
   // Mockup entry points reset any previous filter/search, then dive into the grid.
   const applyCategory = (category: Category | "all") => {
     setActive(category);
     setSearch("");
-    scrollToGrid();
+    scrollToShop();
   };
 
-  const heroTagName = lang === "vi" ? "Đầm xòe hoa nhí" : "Floral Midi Dress";
+  const firstImageIn = (category: Category) =>
+    (products ?? []).find((p) => p.category === category && p.image)?.image ??
+    null;
 
   const subscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,93 +128,110 @@ export default function Landing() {
       <Header query={search} onQueryChange={setSearch} showNav />
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="border-b-2 border-black">
+      <section className="relative">
         <div className="mx-auto grid max-w-7xl md:grid-cols-2">
-          <div className="flex flex-col justify-center gap-6 border-b-2 border-black px-4 py-12 sm:px-8 md:border-b-0 md:border-r-2 lg:py-20">
-            <span className="inline-flex w-fit border-2 border-black bg-[#e4552e] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.25em] text-white nb-shadow-sm">
+          {/* Copy */}
+          <div className="flex flex-col justify-center gap-6 px-4 py-12 sm:px-8 lg:py-20">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground">
               {t("heroEyebrow")}
-            </span>
-            <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+            </p>
+            <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
               {t("heroTitle")}
             </h1>
-            <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-              {t("heroBody")}
+            <p className="max-w-md text-[15px] leading-relaxed text-muted-foreground">
+              {t("heroTagline")}
             </p>
-            <div className="flex flex-wrap gap-3">
+            <div className="mt-2 flex flex-wrap items-center gap-5">
               <button
                 type="button"
                 onClick={scrollToShop}
-                className="inline-flex items-center gap-2 border-2 border-black bg-primary px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground nb-shadow nb-press"
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-soft-lg"
               >
                 {t("ctaShop")}
                 <ArrowRight className="size-4" />
               </button>
               <a
                 href="#story"
-                className="inline-flex items-center gap-2 border-2 border-black bg-card px-6 py-3.5 text-sm font-bold uppercase tracking-wider nb-shadow nb-press"
+                className="inline-flex items-center gap-3 text-sm font-semibold"
               >
-                <span className="flex size-5 items-center justify-center border-2 border-black bg-background">
-                  <Play className="size-2.5" />
+                <span className="flex size-11 items-center justify-center rounded-full border border-border bg-card shadow-soft transition-transform hover:scale-105">
+                  <Play className="ml-0.5 size-4 fill-foreground" />
                 </span>
                 {t("ctaLookbook")}
               </a>
             </div>
-          </div>
 
-          {/* Flat geometric collage */}
-          <div className="relative min-h-[380px] overflow-hidden bg-[#e7e0d2] sm:min-h-[460px] md:min-h-full">
-            <div className="absolute right-0 top-0 h-[58%] w-[72%] bg-[#e4552e]" />
-            <div className="absolute bottom-0 left-0 h-[42%] w-[58%] border-r-2 border-t-2 border-black bg-primary" />
-            <div className="absolute left-[14%] top-[14%] size-32 rotate-45 border-2 border-black bg-background sm:size-44" />
-            <div className="absolute left-[8%] top-[42%] h-4 w-4 border-2 border-black bg-[#e4552e]" />
-            <div className="absolute right-[16%] top-[12%] flex flex-col gap-2">
-              <span className="block h-3 w-24 border-2 border-black bg-background" />
-              <span className="block h-3 w-16 border-2 border-black bg-background" />
-            </div>
-            <div className="absolute bottom-6 right-4 border-2 border-black bg-background px-4 py-3 nb-shadow-sm sm:right-6">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                {t("heroTag")}
-              </p>
-              <p className="mt-1 font-display text-base font-bold sm:text-lg">
-                {heroTagName}
-              </p>
-              <p className="text-sm font-bold tabular-nums">685.000₫</p>
+            {/* Inline trust row */}
+            <div className="mt-6 grid grid-cols-1 gap-4 border-t border-border pt-6 sm:grid-cols-3">
+              {HERO_TRUST.map(({ icon: Icon, titleKey, subKey }) => (
+                <div key={titleKey} className="flex items-center gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary">
+                    <Icon className="size-4 text-accent" />
+                  </span>
+                  <span>
+                    <span className="block text-xs font-semibold">
+                      {t(titleKey)}
+                    </span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      {t(subKey)}
+                    </span>
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ── Trust badges (value props) ───────────────────────── */}
-      <section className="border-b-2 border-black bg-card">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 divide-y-2 divide-black sm:grid-cols-2 lg:grid-cols-4 lg:divide-x-2 lg:divide-y-0">
-          {VALUE_PROPS.map(({ icon: Icon, titleKey, subKey }) => (
-            <div
-              key={titleKey}
-              className="flex items-center gap-4 px-5 py-5 sm:px-6"
-            >
-              <span className="flex size-11 shrink-0 items-center justify-center border-2 border-black bg-background">
-                <Icon className="size-5" />
-              </span>
-              <span>
-                <span className="block text-sm font-bold uppercase tracking-wide">
-                  {t(titleKey)}
+          {/* Visual */}
+          <div className="relative min-h-[420px] overflow-hidden bg-secondary sm:min-h-[520px] md:min-h-full">
+            {heroImages.length > 0 ? (
+              heroImages.map((img, i) => (
+                <img
+                  key={img.src}
+                  src={img.src}
+                  alt={img.alt}
+                  className={cn(
+                    "absolute inset-0 h-full w-full object-cover transition-opacity duration-700",
+                    i === activeSlide ? "opacity-100" : "opacity-0",
+                  )}
+                />
+              ))
+            ) : (
+              <div className="absolute inset-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#efe6d8] via-[#e7ddd0] to-[#dccfbd]" />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none font-display text-[10rem] font-bold text-white/50">
+                  M&amp;C
                 </span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {t(subKey)}
-                </span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
+              </div>
+            )}
 
-      {/* ── Circular category shortcuts ──────────────────────── */}
-      <section
-        id="categories"
-        className="scroll-mt-36 border-b-2 border-black"
-      >
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-12">
-          <div className="flex justify-center gap-5 overflow-x-auto pb-2 sm:gap-8">
+            {/* Slide pager */}
+            {heroImages.length > 1 && (
+              <div className="absolute right-5 top-1/2 hidden -translate-y-1/2 flex-col items-center gap-3 md:flex">
+                {heroImages.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setSlide(i)}
+                    aria-label={`${t("slideLabel")} ${i + 1}`}
+                    className={cn(
+                      "text-[11px] font-semibold tracking-widest transition-colors",
+                      i === activeSlide
+                        ? "text-foreground"
+                        : "text-foreground/40 hover:text-foreground/70",
+                    )}
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </button>
+                ))}
+                <span className="my-1 h-10 w-px bg-foreground/20" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Overlapping circular category bar */}
+        <div className="relative z-10 mx-auto -mt-10 max-w-7xl px-4 sm:px-8">
+          <div className="flex justify-start gap-6 overflow-x-auto rounded-3xl border border-border bg-card px-6 py-6 shadow-soft-lg sm:justify-center sm:gap-8">
             {(["all", ...CATEGORIES] as const).map((category, i) => {
               const isActive = active === category && !search;
               const label =
@@ -212,192 +244,234 @@ export default function Landing() {
                   type="button"
                   onClick={() => applyCategory(category)}
                   aria-pressed={isActive}
-                  className="group flex w-16 shrink-0 flex-col items-center gap-2 sm:w-20"
+                  className="group flex w-16 shrink-0 flex-col items-center gap-2.5"
                 >
                   <span
-                    style={{ background: CIRCLE_TINTS[i % CIRCLE_TINTS.length] }}
+                    style={
+                      category === "all"
+                        ? undefined
+                        : { background: TINTS[(i - 1) % TINTS.length] }
+                    }
                     className={cn(
-                      "flex aspect-square w-full items-center justify-center rounded-full border-2 border-black font-display text-xl font-bold uppercase transition-transform duration-150 group-hover:-translate-y-1 group-active:translate-y-0",
-                      isActive && "ring-2 ring-black ring-offset-2 ring-offset-background",
+                      "flex aspect-square w-full items-center justify-center rounded-full font-display text-xl font-bold transition-all duration-200 group-hover:-translate-y-1",
+                      category === "all"
+                        ? "border border-border bg-secondary text-foreground"
+                        : "text-foreground/80",
+                      isActive &&
+                        "ring-2 ring-ring ring-offset-2 ring-offset-card",
                     )}
                   >
                     {label.charAt(0)}
                   </span>
-                  <span className="text-center text-[11px] font-semibold uppercase tracking-wide">
+                  <span className="text-center text-[11px] font-medium text-foreground/80">
                     {label}
                   </span>
                 </button>
               );
             })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Category style cards ─────────────────────────────── */}
-      <section className="border-b-2 border-black bg-card">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14">
-          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
-            {t("shopEyebrow")}
-          </p>
-          <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            {t("shopTitle")}
-          </h2>
-
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:gap-6">
-            {CATEGORIES.map((category, i) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => applyCategory(category)}
-                className="group relative block aspect-[4/5] overflow-hidden border-2 border-black bg-background text-left nb-shadow nb-press"
-              >
-                <span
-                  style={{ background: CIRCLE_TINTS[i % CIRCLE_TINTS.length] }}
-                  className="absolute inset-0 transition-transform duration-300 group-hover:scale-105"
-                />
-                <span className="absolute inset-0 flex items-center justify-center font-display text-6xl font-bold text-black/15 sm:text-7xl">
-                  {categoryLabel(category).charAt(0)}
-                </span>
-                <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 border-t-2 border-black bg-background px-4 py-3">
-                  <span>
-                    <span className="block text-sm font-bold uppercase tracking-wide">
-                      {categoryLabel(category)}
-                    </span>
-                    <span className="block text-xs text-muted-foreground tabular-nums">
-                      {counts.get(category) ?? 0} {t("productsUnit")}
-                    </span>
-                  </span>
-                  <span className="flex size-9 shrink-0 items-center justify-center border-2 border-black bg-primary text-primary-foreground transition-transform group-hover:translate-x-1">
-                    <ArrowRight className="size-4" />
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Sale banners ─────────────────────────────────────── */}
-      <section className="border-b-2 border-black">
-        <div className="mx-auto grid max-w-7xl gap-5 px-4 py-10 sm:px-8 sm:py-12 lg:grid-cols-2">
-          {(
-            [
-              {
-                tagKey: "banner1Tag",
-                titleKey: "banner1Title",
-                subKey: "banner1Sub",
-                ctaKey: "banner1Cta",
-                panel: "bg-[#e4552e] text-white",
-                chip: "border-white bg-white text-foreground",
-                target: "dresses" as const,
-              },
-              {
-                tagKey: "banner2Tag",
-                titleKey: "banner2Title",
-                subKey: "banner2Sub",
-                ctaKey: "banner2Cta",
-                panel: "bg-primary text-primary-foreground",
-                chip: "border-primary-foreground bg-primary-foreground text-primary",
-                target: "cardigans" as const,
-              },
-            ] as const
-          ).map((banner) => (
-            <div
-              key={banner.tagKey}
-              className={cn(
-                "relative overflow-hidden border-2 border-black p-6 nb-shadow sm:p-10",
-                banner.panel,
-              )}
+            {/* Black SALE circle, mockup-style */}
+            <button
+              type="button"
+              onClick={() => applyCategory("bestsellers")}
+              aria-pressed={active === "bestsellers" && !search}
+              className="group flex w-16 shrink-0 flex-col items-center gap-2.5"
             >
-              <div className="relative z-10 max-w-xs">
-                <span
-                  className={cn(
-                    "inline-block border-2 border-black px-2 py-1 text-[10px] font-bold uppercase tracking-[0.2em] nb-shadow-sm",
-                    banner.chip,
-                  )}
-                >
-                  {t(banner.tagKey)}
-                </span>
-                <h3 className="mt-4 font-display text-3xl font-bold leading-tight sm:text-4xl">
-                  {t(banner.titleKey)}
-                </h3>
-                <p className="mt-2 text-sm opacity-80">{t(banner.subKey)}</p>
-                <button
-                  type="button"
-                  onClick={() => applyCategory(banner.target)}
-                  className="mt-5 inline-flex items-center gap-2 border-2 border-black bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-foreground nb-press"
-                >
-                  {t(banner.ctaKey)}
-                  <ArrowRight className="size-4" />
-                </button>
-              </div>
-              <span className="absolute -right-4 -top-4 select-none font-display text-[7rem] font-bold leading-none text-white/15 sm:text-[9rem]">
-                %
+              <span
+                className={cn(
+                  "flex aspect-square w-full items-center justify-center rounded-full bg-primary font-display text-xs font-bold tracking-[0.2em] text-primary-foreground transition-transform duration-200 group-hover:-translate-y-1",
+                  active === "bestsellers" &&
+                    !search &&
+                    "ring-2 ring-ring ring-offset-2 ring-offset-card",
+                )}
+              >
+                SALE
               </span>
-            </div>
-          ))}
+              <span className="text-center text-[11px] font-medium text-foreground/80">
+                {t("circleSale")}
+              </span>
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* ── Bestsellers / product grid ───────────────────────── */}
-      <section id="shop" className="scroll-mt-36 border-b-2 border-black">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14">
-          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
-            {t("picksEyebrow")}
-          </p>
-          <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            {t("picksTitle")}
-          </h2>
+      {/* ── Find your perfect style ──────────────────────────── */}
+      <section id="categories" className="scroll-mt-36">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-8 sm:py-16">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                {t("shopEyebrow")}
+              </p>
+              <h2 className="mt-2 max-w-xs font-display text-4xl font-bold leading-tight tracking-tight sm:text-[2.6rem]">
+                {t("shopTitle")}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => applyCategory("all")}
+              className="inline-flex items-center gap-2 text-sm font-semibold underline-offset-4 hover:underline"
+            >
+              {t("viewAllCategories")}
+              <ArrowRight className="size-4" />
+            </button>
+          </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            {(["all", ...CATEGORIES] as const).map((category) => {
-              const isActive = active === category;
-              const label =
-                category === "all" ? t("allCategories") : categoryLabel(category);
-              const count = counts.get(category) ?? 0;
+          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {STYLE_CARDS.map(({ category, tintIndex }) => {
+              const img = firstImageIn(category);
               return (
                 <button
                   key={category}
                   type="button"
-                  onClick={() => {
-                    setActive(category);
-                    scrollToGrid();
-                  }}
-                  aria-pressed={isActive}
-                  className={cn(
-                    "inline-flex items-center gap-2 border-2 border-black px-3.5 py-2 text-xs font-bold uppercase tracking-wide nb-shadow-sm nb-press sm:text-sm",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card hover:bg-[#e7e0d2]",
-                  )}
+                  onClick={() => applyCategory(category)}
+                  className="card-lift group relative block aspect-[4/5] overflow-hidden rounded-3xl border border-border text-left shadow-soft"
                 >
-                  {label}
-                  <span
-                    className={cn(
-                      "flex h-5 min-w-5 items-center justify-center border-2 border-current px-1 text-[10px] font-bold",
-                      isActive
-                        ? "bg-primary-foreground text-primary"
-                        : "bg-background text-foreground",
-                    )}
-                  >
-                    {count}
+                  {img ? (
+                    <img
+                      src={img}
+                      alt=""
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <span
+                      style={{ background: TINTS[tintIndex] }}
+                      className="absolute inset-0"
+                    />
+                  )}
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                  <span className="absolute inset-x-5 bottom-5">
+                    <span className="block font-display text-xl font-bold text-white">
+                      {categoryLabel(category)}
+                    </span>
+                    <span className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-white/85">
+                      {t("exploreNow")}
+                      <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+                    </span>
                   </span>
                 </button>
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* ── Sale banners ─────────────────────────────────────── */}
+      <section>
+        <div className="mx-auto grid max-w-7xl gap-5 px-4 pb-6 sm:px-8 lg:grid-cols-2">
+          {(
+            [
+              {
+                eyebrowKey: "banner1Eyebrow",
+                titleKey: "banner1Tag",
+                subKey: "banner1Title",
+                ctaKey: "shopTheSale",
+                target: "dresses" as const,
+                imgCategory: "dresses" as const,
+              },
+              {
+                eyebrowKey: "banner2Eyebrow",
+                titleKey: "banner2Tag",
+                subKey: "banner2Title",
+                ctaKey: "exploreNewIn",
+                target: "cardigans" as const,
+                imgCategory: "cardigans" as const,
+              },
+            ] as const
+          ).map((banner) => {
+            const img = firstImageIn(banner.imgCategory);
+            return (
+              <div
+                key={banner.eyebrowKey}
+                className="relative grid overflow-hidden rounded-3xl border border-border bg-secondary shadow-soft sm:grid-cols-[1.2fr_1fr]"
+              >
+                <div className="flex flex-col items-start justify-center gap-3 p-7 sm:p-10">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                    {t(banner.eyebrowKey)}
+                  </span>
+                  <h3 className="font-display text-3xl font-bold leading-tight sm:text-4xl">
+                    {t(banner.titleKey)}
+                  </h3>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t(banner.subKey)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => applyCategory(banner.target)}
+                    className="mt-2 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 hover:shadow-soft"
+                  >
+                    {t(banner.ctaKey)}
+                    <ArrowRight className="size-3.5" />
+                  </button>
+                </div>
+                <div className="relative min-h-[160px]">
+                  {img ? (
+                    <img
+                      src={img}
+                      alt=""
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#e7ddd0] to-[#d8c9b6]" />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Most loved picks ─────────────────────────────────── */}
+      <section id="shop" className="scroll-mt-36">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-8 sm:py-16">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                {t("picksEyebrow")}
+              </p>
+              <h2 className="mt-2 font-display text-4xl font-bold tracking-tight">
+                {t("picksTitle")}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => applyCategory("all")}
+              className="inline-flex items-center gap-2 text-sm font-semibold underline-offset-4 hover:underline"
+            >
+              {t("viewAllProducts")}
+              <ArrowRight className="size-4" />
+            </button>
+          </div>
+
+          {(active !== "all" || search) && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              {active === "all" ? `“${search}”` : categoryLabel(active)} ·{" "}
+              {filtered.length} {t("productsUnit")}
+              <button
+                type="button"
+                onClick={() => {
+                  setActive("all");
+                  setSearch("");
+                }}
+                className="ml-3 font-semibold text-foreground underline-offset-4 hover:underline"
+              >
+                {t("clearFilters")}
+              </button>
+            </p>
+          )}
 
           {products === undefined ? (
-            <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+            <div className="mt-8 grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-[3/4] animate-pulse border-2 border-black bg-card"
+                  className="aspect-[3/4] animate-pulse rounded-3xl bg-secondary"
                 />
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="mt-6 border-2 border-black bg-card p-10 text-center nb-shadow">
+            <div className="mt-8 rounded-3xl border border-border bg-card p-12 text-center shadow-soft">
               <p className="font-display text-2xl font-bold">{t("emptyTitle")}</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 {t("emptyBody")}
@@ -408,14 +482,14 @@ export default function Landing() {
                   setActive("all");
                   setSearch("");
                 }}
-                className="mt-5 border-2 border-black bg-primary px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-primary-foreground nb-shadow-sm nb-press"
+                className="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 hover:shadow-soft"
               >
                 {t("clearFilters")}
               </button>
             </div>
           ) : (
-            <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
-              {filtered.map((product) => (
+            <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+              {filtered.slice(0, 8).map((product) => (
                 <ProductCard
                   key={product._id}
                   product={product as StoreProduct}
@@ -428,144 +502,118 @@ export default function Landing() {
       </section>
 
       {/* ── Story ────────────────────────────────────────────── */}
-      <section id="story" className="scroll-mt-36 border-b-2 border-black">
-        <div className="mx-auto grid max-w-7xl md:grid-cols-2">
-          <div className="flex flex-col justify-between gap-8 border-b-2 border-black bg-[#e4552e] p-6 text-white sm:p-10 md:border-b-0 md:border-r-2">
-            <p className="font-display text-3xl font-semibold italic leading-snug sm:text-4xl">
-              “{t("storyTitle")}”
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { value: "2.000+", labelKey: "statCustomers" as const },
-                { value: "4,9/5", labelKey: "statRating" as const },
-                { value: "24h", labelKey: "statDispatch" as const },
-              ].map((stat) => (
-                <div
-                  key={stat.labelKey}
-                  className="border-2 border-black bg-background p-3 text-foreground"
-                >
-                  <p className="font-display text-xl font-bold sm:text-2xl">
-                    {stat.value}
-                  </p>
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {t(stat.labelKey)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-col justify-center gap-5 bg-background p-6 sm:p-10 lg:p-14">
-            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
-              {t("storyEyebrow")}
-            </p>
-            <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              {t("storyTitle")}
-            </h2>
-            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              {t("storyP1")}
-            </p>
-            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              {t("storyP2")}
-            </p>
-            <p className="font-display text-lg font-bold italic">— Bảo Ngọc</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Social proof ─────────────────────────────────────── */}
-      <section id="love" className="scroll-mt-36 border-b-2 border-black bg-card">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14">
-          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
-            {t("loveEyebrow")}
+      <section id="story" className="scroll-mt-36">
+        <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-8 sm:py-20">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+            {t("storyEyebrow")}
           </p>
-          <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            {t("loveTitle")}
+          <h2 className="mt-4 font-display text-3xl font-bold leading-snug tracking-tight sm:text-4xl">
+            “{t("storyTitle")}”
           </h2>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            {TESTIMONIALS.map((item) => (
-              <figure
-                key={item.quoteKey}
-                className="flex flex-col gap-4 border-2 border-black bg-background p-5 nb-shadow"
+          <p className="mx-auto mt-6 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
+            {t("storyP1")}
+          </p>
+          <p className="mt-4 font-display text-lg font-semibold italic">
+            — Bảo Ngọc
+          </p>
+          <div className="mx-auto mt-8 grid max-w-lg grid-cols-3 gap-4">
+            {[
+              { value: "2.000+", labelKey: "statCustomers" as const },
+              { value: "4,9/5", labelKey: "statRating" as const },
+              { value: "24h", labelKey: "statDispatch" as const },
+            ].map((stat) => (
+              <div
+                key={stat.labelKey}
+                className="rounded-2xl border border-border bg-card p-4 shadow-soft"
               >
-                <span className="font-display text-4xl leading-none text-[#e4552e]">
-                  “
-                </span>
-                <blockquote className="font-display text-base italic leading-relaxed">
-                  {t(item.quoteKey)}
-                </blockquote>
-                <figcaption className="mt-auto border-t-2 border-black pt-3">
-                  <span className="block text-sm font-bold uppercase tracking-wide">
-                    {t(item.nameKey)}
-                  </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {t(item.cityKey)}
-                  </span>
-                </figcaption>
-              </figure>
+                <p className="font-display text-2xl font-bold">
+                  {stat.value}
+                </p>
+                <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  {t(stat.labelKey)}
+                </p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── CTA band ─────────────────────────────────────────── */}
-      <section className="border-b-2 border-black bg-primary text-primary-foreground">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-6 px-4 py-14 text-center sm:px-8">
-          <h2 className="font-display text-3xl font-bold tracking-tight sm:text-5xl">
-            {t("ctaTitle")}
-          </h2>
-          <p className="max-w-md text-sm text-primary-foreground/70 sm:text-base">
-            {t("ctaBody")}
-          </p>
-          <button
-            type="button"
-            onClick={scrollToShop}
-            className="inline-flex items-center gap-2 border-2 border-black bg-[#e4552e] px-8 py-4 text-sm font-bold uppercase tracking-wider text-white shadow-[4px_4px_0_#fdfbf7] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#fdfbf7] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
-          >
-            {t("ctaButton")}
-            <ArrowRight className="size-4" />
-          </button>
+      {/* ── Trust strip ──────────────────────────────────────── */}
+      <section>
+        <div className="mx-auto max-w-7xl px-4 sm:px-8">
+          <div className="grid grid-cols-1 gap-6 rounded-3xl border border-border bg-card px-6 py-8 shadow-soft sm:grid-cols-2 lg:grid-cols-4">
+            {TRUST_STRIP.map(({ icon: Icon, titleKey, subKey }) => (
+              <div key={titleKey} className="flex items-center gap-4">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-secondary">
+                  <Icon className="size-5 text-accent" />
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold">
+                    {t(titleKey)}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {t(subKey)}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── Newsletter ───────────────────────────────────────── */}
-      <section className="border-b-2 border-black bg-card">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-8 sm:py-16">
-          <div className="mx-auto max-w-xl border-2 border-black bg-background p-6 text-center nb-shadow sm:p-10">
-            <span className="inline-flex size-12 items-center justify-center rounded-full border-2 border-black bg-[#e4552e]">
-              <Heart className="size-5 fill-white text-white" />
-            </span>
-            <h2 className="mt-4 font-display text-3xl font-bold tracking-tight">
-              {t("newsTitle")}
-            </h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-              {t("newsBody")}
-            </p>
-            {subscribed ? (
-              <p className="mt-6 inline-block border-2 border-black bg-primary px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-primary-foreground nb-shadow-sm">
-                {t("newsThanks")}
-              </p>
-            ) : (
-              <form
-                onSubmit={subscribe}
-                className="mx-auto mt-6 flex max-w-sm flex-col gap-3 sm:flex-row"
-              >
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t("newsPlaceholder")}
-                  aria-label={t("newsPlaceholder")}
-                  className="h-11 flex-1 border-2 border-black bg-card px-3 text-sm outline-none placeholder:text-muted-foreground focus:bg-background"
+      <section>
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-8 sm:py-16">
+          <div className="grid overflow-hidden rounded-3xl border border-border bg-card shadow-soft lg:grid-cols-[1fr_1.4fr]">
+            <div className="relative min-h-[220px]">
+              {firstImageIn("bestsellers") ? (
+                <img
+                  src={firstImageIn("bestsellers")}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
-                <button
-                  type="submit"
-                  className="h-11 shrink-0 border-2 border-black bg-primary px-6 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[4px_4px_0_#1a1a1a] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1a1a1a] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-[#efe6d8] to-[#dccfbd]" />
+              )}
+            </div>
+            <div className="flex flex-col justify-center gap-4 p-8 sm:p-12">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
+                {t("newsOffer")}
+              </p>
+              <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+                {t("newsTitle")}
+              </h2>
+              <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+                {t("newsBody")}
+              </p>
+              {subscribed ? (
+                <p className="mt-2 w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground">
+                  {t("newsThanks")}
+                </p>
+              ) : (
+                <form
+                  onSubmit={subscribe}
+                  className="mt-2 flex max-w-md items-center gap-2 rounded-full border border-border bg-background p-1.5 pl-5"
                 >
-                  {t("newsCta")}
-                </button>
-              </form>
-            )}
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t("newsPlaceholder")}
+                    aria-label={t("newsPlaceholder")}
+                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  />
+                  <button
+                    type="submit"
+                    className="shrink-0 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-foreground"
+                  >
+                    {t("newsCta")}
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       </section>

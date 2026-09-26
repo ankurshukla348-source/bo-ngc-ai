@@ -42,35 +42,37 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* Fonts for the Neobrutalism Minimalism theme */
+/* Fonts for the Soft Minimal theme: Inter for UI, Playfair Display
+   for the editorial serif headlines. */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
 }
 
-/* CHANGE VALUES FOR THEME — Neobrutalism Minimalism:
-   cream canvas, warm beige cards, charcoal ink, terracotta accent,
-   square corners (radius 0) and strong black borders. */
+/* CHANGE VALUES FOR THEME — Soft Minimal:
+   warm cream canvas #faf6ef, white cards, beige hairline borders,
+   warm ink #2b2620, caramel accent, rounded corners (radius 1rem)
+   and soft diffuse shadows instead of hard offsets. */
 :root {
-  --radius: 0px;
-  --background: #fdfbf7;
-  --foreground: #1a1a1a;
-  --card: #efece6;
-  --card-foreground: #1a1a1a;
-  --popover: #fdfbf7;
-  --popover-foreground: #1a1a1a;
-  --primary: #1a1a1a;
-  --primary-foreground: #fdfbf7;
-  --secondary: #efece6;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f3efe7;
-  --muted-foreground: #6e6a61;
-  --accent: #e4552e;
-  --accent-foreground: #fdfbf7;
-  --destructive: #b4341c;
-  --border: #1a1a1a;
-  --input: #1a1a1a;
-  --ring: #1a1a1a;
+  --radius: 1rem;
+  --background: #faf6ef;
+  --foreground: #2b2620;
+  --card: #ffffff;
+  --card-foreground: #2b2620;
+  --popover: #ffffff;
+  --popover-foreground: #2b2620;
+  --primary: #2b2620;
+  --primary-foreground: #faf6ef;
+  --secondary: #f1ebe0;
+  --secondary-foreground: #2b2620;
+  --muted: #f4efe6;
+  --muted-foreground: #8a8175;
+  --accent: #a9744f;
+  --accent-foreground: #ffffff;
+  --destructive: #b4452f;
+  --border: #e7dfd1;
+  --input: #e7dfd1;
+  --ring: #2b2620;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -137,38 +139,66 @@
     cursor: pointer;
   }
   ::selection {
-    background: #1a1a1a;
-    color: #fdfbf7;
+    background: #2b2620;
+    color: #faf6ef;
   }
 }
 
-/* ── Neobrutalist helpers ──────────────────────────────────────
-   Hard offset shadows with a physical press interaction. Pair
-   .nb-press with .nb-shadow on the same element. */
+/* ── Soft Minimal helpers ──────────────────────────────────────
+   Diffuse, low-opacity shadows and gentle lift interactions. */
+.shadow-soft {
+  box-shadow:
+    0 1px 2px rgb(43 38 32 / 0.04),
+    0 8px 24px rgb(43 38 32 / 0.06);
+}
+.shadow-soft-lg {
+  box-shadow:
+    0 2px 4px rgb(43 38 32 / 0.05),
+    0 16px 40px rgb(43 38 32 / 0.1);
+}
+.card-lift {
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 2px 4px rgb(43 38 32 / 0.05),
+    0 16px 40px rgb(43 38 32 / 0.1);
+}
+
+/* Legacy neobrutalist class names — softened so any straggler
+   still matches the Soft Minimal theme. */
 .nb-shadow {
-  box-shadow: 4px 4px 0 0 #1a1a1a;
+  box-shadow:
+    0 1px 2px rgb(43 38 32 / 0.04),
+    0 8px 24px rgb(43 38 32 / 0.06);
 }
 .nb-shadow-sm {
-  box-shadow: 2px 2px 0 0 #1a1a1a;
+  box-shadow: 0 1px 2px rgb(43 38 32 / 0.05);
 }
 .nb-press {
   transition:
-    transform 120ms ease,
-    box-shadow 120ms ease;
+    transform 150ms ease,
+    box-shadow 150ms ease;
 }
 .nb-press:hover {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 0 #1a1a1a;
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 4px rgb(43 38 32 / 0.05),
+    0 12px 28px rgb(43 38 32 / 0.08);
 }
 .nb-press:active {
-  transform: translate(4px, 4px);
-  box-shadow: 0 0 0 0 #1a1a1a;
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgb(43 38 32 / 0.05);
 }
 .nb-card {
   background: var(--card);
-  border: 2px solid #1a1a1a;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 .nb-focus:focus-visible {
-  outline: 2px solid #1a1a1a;
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }

@@ -99,7 +99,7 @@ function Field({
   return (
     <label
       className={cn(
-        "text-xs font-bold uppercase tracking-widest text-muted-foreground",
+        "text-xs font-semibold uppercase tracking-widest text-muted-foreground",
         className,
       )}
     >
@@ -109,7 +109,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1.5 h-10 w-full border-2 border-black bg-background px-3 text-sm normal-case tracking-normal text-foreground outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/60 focus:bg-card"
+        className="mt-1.5 h-10 w-full rounded-full border border-border bg-background px-4 text-sm normal-case tracking-normal text-foreground outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/60 focus:bg-card"
       />
     </label>
   );
@@ -119,8 +119,8 @@ function StepBadge({ step, done }: { step: string; done: boolean }) {
   return (
     <span
       className={cn(
-        "flex size-8 shrink-0 items-center justify-center border-2 border-black text-xs font-bold",
-        done ? "bg-[#e4552e] text-white" : "bg-background text-foreground",
+        "flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-xs font-semibold",
+        done ? "bg-accent text-white" : "bg-background text-foreground",
       )}
     >
       {done ? <Check className="size-4" strokeWidth={3} /> : step}
@@ -153,10 +153,10 @@ function PayOption({
       disabled={disabled}
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-3 border-2 border-black p-4 text-left transition-colors",
+        "flex w-full items-center gap-3 border border-border p-4 text-left transition-colors",
         selected
           ? "bg-primary text-primary-foreground"
-          : "bg-background hover:bg-[#e7e0d2]",
+          : "bg-background hover:bg-secondary",
         disabled &&
           "cursor-not-allowed bg-muted text-muted-foreground opacity-70 hover:bg-muted",
       )}
@@ -210,8 +210,8 @@ function Totals({
           {fee === 0 ? t("free") : formatVnd(fee)}
         </span>
       </div>
-      <div className="flex items-baseline justify-between border-t-2 border-black pt-3">
-        <span className="text-sm font-bold uppercase tracking-widest">
+      <div className="flex items-baseline justify-between border-t border-border pt-3">
+        <span className="text-sm font-semibold uppercase tracking-widest">
           {t("total")}
         </span>
         <span className="font-display text-2xl font-bold tabular-nums">
@@ -255,7 +255,7 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12 sm:px-6">
       {/* Success */}
       <div className="flex flex-col items-center gap-4 text-center">
-        <span className="flex size-16 items-center justify-center border-2 border-black bg-[#e4552e] nb-shadow">
+        <span className="flex size-16 items-center justify-center border border-border bg-accent shadow-soft">
           <Check className="size-8 text-white" strokeWidth={3} />
         </span>
         <h1 className="font-display text-4xl font-bold tracking-tight">
@@ -265,7 +265,7 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
       </div>
 
       {/* Order ID */}
-      <div className="border-2 border-black bg-card p-6 text-center nb-shadow">
+      <div className="border border-border bg-card p-6 text-center shadow-soft">
         <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
           {t("orderCode")}
         </p>
@@ -275,7 +275,7 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
         <button
           type="button"
           onClick={copyCode}
-          className="mt-4 inline-flex items-center gap-1.5 border-2 border-black bg-background px-3 py-1.5 text-xs font-bold uppercase nb-shadow-sm nb-press"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-xs font-semibold uppercase transition-colors"
         >
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
           {copied ? t("copied") : t("copy")}
@@ -289,14 +289,14 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
       </div>
 
       {/* Payment instructions */}
-      <div className="border-2 border-black bg-card">
-        <h2 className="border-b-2 border-black px-5 py-3.5 font-display text-lg font-bold">
+      <div className="border border-border bg-card">
+        <h2 className="border-b border-border px-5 py-3.5 font-display text-lg font-bold">
           {t("paymentInstructions")}
         </h2>
         <div className="p-5">
           {order.paymentMethod === "vietqr" ? (
             <div className="flex flex-col gap-5 sm:flex-row">
-              <div className="shrink-0 self-start border-2 border-black bg-white p-2">
+              <div className="shrink-0 self-start rounded-2xl border border-border bg-white p-2 shadow-soft">
                 {payload ? (
                   <QRCodeSVG value={payload} size={168} />
                 ) : (
@@ -306,7 +306,7 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
                 )}
               </div>
               <div className="flex-1 space-y-2 text-sm">
-                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   {t("bankDetails")}
                 </p>
                 <p className="font-display text-lg font-bold">
@@ -324,8 +324,8 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
                     {payment?.accountHolder ?? "…"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between border-2 border-black bg-[#efece6] px-3 py-2.5">
-                  <span className="text-xs font-bold uppercase tracking-widest">
+                <div className="flex items-center justify-between border border-border bg-secondary px-3 py-2.5">
+                  <span className="text-xs font-semibold uppercase tracking-widest">
                     {t("amountDue")}
                   </span>
                   <span className="font-display text-xl font-bold tabular-nums">
@@ -346,14 +346,14 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
       </div>
 
       {/* Order detail */}
-      <div className="border-2 border-black bg-card">
-        <h2 className="border-b-2 border-black px-5 py-3.5 font-display text-lg font-bold">
+      <div className="border border-border bg-card">
+        <h2 className="border-b border-border px-5 py-3.5 font-display text-lg font-bold">
           {t("orderDetail")}
         </h2>
-        <ul className="divide-y-2 divide-black">
+        <ul className="divide-y divide-border">
           {order.items.map((item) => (
             <li key={item.key} className="flex items-center gap-3 p-4">
-              <div className="h-14 w-12 shrink-0 overflow-hidden border-2 border-black bg-[#e7e0d2]">
+              <div className="h-14 w-12 shrink-0 overflow-hidden rounded-xl border border-border bg-secondary">
                 {item.image && (
                   <img
                     src={item.image}
@@ -376,7 +376,7 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
             </li>
           ))}
         </ul>
-        <div className="border-t-2 border-black p-5">
+        <div className="border-t border-border p-5">
           <Totals
             subtotal={order.subtotal}
             fee={order.shippingFee}
@@ -384,9 +384,9 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
             t={t}
           />
         </div>
-        <div className="grid gap-5 border-t-2 border-black p-5 text-sm sm:grid-cols-2">
+        <div className="grid gap-5 border-t border-border p-5 text-sm sm:grid-cols-2">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               {t("reviewShipTo")}
             </p>
             <p className="mt-2 font-semibold">{order.customer.name}</p>
@@ -404,7 +404,7 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
             )}
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               {t("reviewPayment")}
             </p>
             <p className="mt-2 font-semibold">
@@ -416,7 +416,7 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
 
       <Link
         to="/"
-        className="flex h-12 items-center justify-center gap-2 border-2 border-black bg-primary text-sm font-bold uppercase tracking-widest text-primary-foreground nb-shadow nb-press"
+        className="flex h-12 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
       >
         {t("continueShopping")}
         <ArrowRight className="size-4" />
@@ -431,14 +431,14 @@ function EmptyCart() {
   const { t } = useI18n();
   return (
     <div className="mx-auto flex min-h-[55vh] max-w-md flex-col items-center justify-center gap-5 px-4 text-center">
-      <span className="flex size-16 items-center justify-center border-2 border-black bg-card nb-shadow">
+      <span className="flex size-16 items-center justify-center overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
         <ShoppingBag className="size-7" />
       </span>
       <h1 className="font-display text-3xl font-bold">{t("emptyCartTitle")}</h1>
       <p className="text-sm text-muted-foreground">{t("emptyCartBody")}</p>
       <Link
         to="/"
-        className="border-2 border-black bg-primary px-6 py-3 text-sm font-bold uppercase tracking-widest text-primary-foreground nb-shadow nb-press"
+        className="rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
       >
         {t("continueShopping")}
       </Link>
@@ -578,7 +578,7 @@ export default function Checkout() {
             <div>
               <Link
                 to="/"
-                className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground underline-offset-4 hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground underline-offset-4 hover:underline"
               >
                 <ArrowLeft className="size-3.5" />
                 {t("continueShopping")}
@@ -598,10 +598,10 @@ export default function Checkout() {
               type="multiple"
               value={open}
               onValueChange={setOpen}
-              className="border-2 border-black bg-card nb-shadow"
+              className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
             >
               {/* Step 1 — shipping */}
-              <AccordionItem value="ship" className="border-b-2 border-black last:border-b-0">
+              <AccordionItem value="ship" className="border-b border-border last:border-b-0">
                 <AccordionTrigger className="px-5 py-5 hover:no-underline">
                   <span className="flex items-center gap-3 text-left">
                     <StepBadge step="01" done={shipDone} />
@@ -667,7 +667,7 @@ export default function Checkout() {
                   </div>
 
                   {error && (
-                    <p className="mt-4 border-2 border-black bg-[#e4552e] px-3 py-2 text-xs font-bold text-white">
+                    <p className="mt-4 border border-border bg-accent px-3 py-2 text-xs font-bold text-white">
                       {error}
                     </p>
                   )}
@@ -675,7 +675,7 @@ export default function Checkout() {
                   <button
                     type="button"
                     onClick={handleShipContinue}
-                    className="mt-5 flex h-11 w-full items-center justify-center gap-2 border-2 border-black bg-primary text-sm font-bold uppercase tracking-widest text-primary-foreground nb-shadow-sm nb-press sm:w-auto sm:px-8"
+                    className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 sm:w-auto sm:px-8"
                   >
                     {t("continuePayment")}
                     <ArrowRight className="size-4" />
@@ -684,7 +684,7 @@ export default function Checkout() {
               </AccordionItem>
 
               {/* Step 2 — payment */}
-              <AccordionItem value="pay" className="border-b-2 border-black last:border-b-0">
+              <AccordionItem value="pay" className="border-b border-border last:border-b-0">
                 <AccordionTrigger className="px-5 py-5 hover:no-underline">
                   <span className="flex items-center gap-3 text-left">
                     <StepBadge step="02" done={payDone} />
@@ -726,8 +726,8 @@ export default function Checkout() {
                   </div>
 
                   {method === "vietqr" && (
-                    <div className="mt-4 flex flex-col gap-4 border-2 border-black bg-background p-4 sm:flex-row">
-                      <div className="shrink-0 self-center border-2 border-black bg-white p-2 sm:self-start">
+                    <div className="mt-4 flex flex-col gap-4 border border-border bg-background p-4 sm:flex-row">
+                      <div className="shrink-0 self-center rounded-2xl border border-border bg-white p-2 shadow-soft sm:self-start">
                         {qrPayload ? (
                           <QRCodeSVG value={qrPayload} size={168} />
                         ) : (
@@ -737,7 +737,7 @@ export default function Checkout() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1 space-y-2 text-sm">
-                        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                           {t("bankDetails")}
                         </p>
                         <p className="font-display text-lg font-bold">
@@ -757,8 +757,8 @@ export default function Checkout() {
                             {paymentSettings?.accountHolder ?? "…"}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between border-2 border-black bg-[#efece6] px-3 py-2.5">
-                          <span className="text-xs font-bold uppercase tracking-widest">
+                        <div className="flex items-center justify-between border border-border bg-secondary px-3 py-2.5">
+                          <span className="text-xs font-semibold uppercase tracking-widest">
                             {t("amountDue")}
                           </span>
                           <span className="font-display text-xl font-bold tabular-nums">
@@ -775,7 +775,7 @@ export default function Checkout() {
                   <button
                     type="button"
                     onClick={handlePayContinue}
-                    className="mt-5 flex h-11 w-full items-center justify-center gap-2 border-2 border-black bg-primary text-sm font-bold uppercase tracking-widest text-primary-foreground nb-shadow-sm nb-press sm:w-auto sm:px-8"
+                    className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 sm:w-auto sm:px-8"
                   >
                     {t("continueReview")}
                     <ArrowRight className="size-4" />
@@ -804,9 +804,9 @@ export default function Checkout() {
                 <AccordionContent className="px-5 pb-6">
                   {/* Address + payment recap */}
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="border-2 border-black bg-background p-3.5">
+                    <div className="border border-border bg-background p-3.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                           {t("reviewShipTo")}
                         </p>
                         <button
@@ -826,9 +826,9 @@ export default function Checkout() {
                         {shipping.province}
                       </p>
                     </div>
-                    <div className="border-2 border-black bg-background p-3.5">
+                    <div className="border border-border bg-background p-3.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                           {t("reviewPayment")}
                         </p>
                         <button
@@ -854,11 +854,11 @@ export default function Checkout() {
                   </div>
 
                   {/* Itemized breakdown */}
-                  <div className="mt-4 border-2 border-black bg-background">
-                    <p className="border-b-2 border-black px-4 py-2.5 text-xs font-bold uppercase tracking-widest">
+                  <div className="mt-4 border border-border bg-background">
+                    <p className="border-b border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-widest">
                       {t("orderSummary")}
                     </p>
-                    <ul className="divide-y-2 divide-black">
+                    <ul className="divide-y divide-border">
                       {items.map((item) => (
                         <li
                           key={item.key}
@@ -877,7 +877,7 @@ export default function Checkout() {
                         </li>
                       ))}
                     </ul>
-                    <div className="border-t-2 border-black px-4 py-4">
+                    <div className="border-t border-border px-4 py-4">
                       <Totals
                         subtotal={subtotal}
                         fee={fee}
@@ -888,7 +888,7 @@ export default function Checkout() {
                   </div>
 
                   {error && (
-                    <p className="mt-4 border-2 border-black bg-[#e4552e] px-3 py-2 text-xs font-bold text-white">
+                    <p className="mt-4 border border-border bg-accent px-3 py-2 text-xs font-bold text-white">
                       {error}
                     </p>
                   )}
@@ -897,7 +897,7 @@ export default function Checkout() {
                     type="button"
                     onClick={handlePlaceOrder}
                     disabled={placing}
-                    className="mt-5 flex h-13 w-full items-center justify-center gap-2 border-2 border-black bg-[#e4552e] py-4 text-sm font-bold uppercase tracking-widest text-white shadow-[4px_4px_0_#1a1a1a] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#1a1a1a] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none disabled:pointer-events-none disabled:opacity-60"
+                    className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-accent py-4 text-sm font-semibold uppercase tracking-widest text-white transition-all hover:-translate-y-0.5 hover:shadow-soft disabled:pointer-events-none disabled:opacity-60"
                   >
                     {placing ? (
                       <>
@@ -916,14 +916,14 @@ export default function Checkout() {
 
             {/* ── Live cart summary ── */}
             <aside className="self-start lg:sticky lg:top-32">
-              <div className="border-2 border-black bg-card nb-shadow">
-                <h2 className="border-b-2 border-black px-5 py-3.5 font-display text-lg font-bold">
+              <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+                <h2 className="border-b border-border px-5 py-3.5 font-display text-lg font-bold">
                   {t("yourCart")}
                 </h2>
-                <ul className="max-h-[340px] divide-y-2 divide-black overflow-y-auto">
+                <ul className="max-h-[340px] divide-y divide-border overflow-y-auto">
                   {items.map((item) => (
                     <li key={item.key} className="flex gap-3 p-4">
-                      <div className="h-16 w-14 shrink-0 overflow-hidden border-2 border-black bg-[#e7e0d2]">
+                      <div className="h-16 w-14 shrink-0 overflow-hidden rounded-xl border border-border bg-secondary">
                         {item.image && (
                           <img
                             src={item.image}
@@ -941,7 +941,7 @@ export default function Checkout() {
                             type="button"
                             onClick={() => remove(item.key)}
                             aria-label={t("delete")}
-                            className="shrink-0 border-2 border-black bg-background p-0.5 transition-colors hover:bg-[#e4552e] hover:text-white"
+                            className="shrink-0 border border-border bg-background p-0.5 transition-colors hover:bg-accent hover:text-white"
                           >
                             <X className="size-3" />
                           </button>
@@ -950,12 +950,12 @@ export default function Checkout() {
                           {item.size}
                         </p>
                         <div className="mt-2 flex items-center justify-between gap-2">
-                          <div className="flex items-center border-2 border-black">
+                          <div className="flex items-center border border-border">
                             <button
                               type="button"
                               onClick={() => setQty(item.key, item.qty - 1)}
                               aria-label="−"
-                              className="flex size-7 items-center justify-center transition-colors hover:bg-[#e7e0d2]"
+                              className="flex size-7 items-center justify-center transition-colors hover:bg-secondary"
                             >
                               <Minus className="size-3" />
                             </button>
@@ -966,7 +966,7 @@ export default function Checkout() {
                               type="button"
                               onClick={() => setQty(item.key, item.qty + 1)}
                               aria-label="+"
-                              className="flex size-7 items-center justify-center transition-colors hover:bg-[#e7e0d2]"
+                              className="flex size-7 items-center justify-center transition-colors hover:bg-secondary"
                             >
                               <Plus className="size-3" />
                             </button>
@@ -979,7 +979,7 @@ export default function Checkout() {
                     </li>
                   ))}
                 </ul>
-                <div className="border-t-2 border-black p-5">
+                <div className="border-t border-border p-5">
                   <Totals subtotal={subtotal} fee={fee} total={total} t={t} />
                 </div>
               </div>

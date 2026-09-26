@@ -5,7 +5,7 @@ import type { Category } from "@/lib/catalog";
 import { formatVnd } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { Heart, Plus, Star } from "lucide-react";
+import { Heart, Star } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -42,10 +42,13 @@ function writeWishlist(ids: string[]) {
 export function ProductCard({
   product,
   rating,
+  onQuickAdd,
 }: {
   product: StoreProduct;
   /** Optional fixed rating (e.g. 4.8) shown as a star chip, mockup-style. */
   rating?: number;
+  /** Skip the size picker and open the checkout directly (landing picks). */
+  onQuickAdd?: () => void;
 }) {
   const { t, lang, categoryLabel } = useI18n();
   const { add } = useCart();
@@ -72,35 +75,24 @@ export function ProductCard({
   const handleAdd = () => {
     add(product, size);
     toast.success(t("addedToast"), {
-      description: `${name} · ${sizeLabelShort(size)}`,
+      description: `${name} · ${size}`,
     });
   };
 
   return (
-    <article className="group flex flex-col border-2 border-black bg-card nb-shadow transition-transform duration-150 hover:-translate-y-1">
-      <div className="relative aspect-[4/5] overflow-hidden border-b-2 border-black bg-[#e7e0d2]">
+    <article className="card-lift group flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+      <div className="relative aspect-[4/5] overflow-hidden bg-secondary">
         {product.image ? (
           <img
             src={product.image}
             alt={name}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center font-display text-5xl font-bold text-muted-foreground">
+          <div className="flex h-full items-center justify-center font-display text-5xl font-bold text-muted-foreground/50">
             {monogram(name)}
           </div>
-        )}
-
-        <span className="absolute left-0 top-0 border-b-2 border-r-2 border-black bg-background px-2 py-1 text-[10px] font-bold uppercase tracking-widest">
-          {categoryLabel(product.category)}
-        </span>
-
-        {rating !== undefined && (
-          <span className="absolute bottom-2 right-2 flex items-center gap-1 border-2 border-black bg-background px-1.5 py-1 text-[11px] font-bold tabular-nums">
-            <Star className="size-3 fill-[#e4552e] text-[#e4552e]" />
-            {rating.toFixed(1)}
-          </span>
         )}
 
         <button
@@ -108,83 +100,93 @@ export function ProductCard({
           onClick={toggleWishlist}
           aria-label={wished ? t("wishlistRemove") : t("wishlistAdd")}
           aria-pressed={wished}
-          className={cn(
-            "absolute right-2 top-2 flex size-8 items-center justify-center border-2 border-black transition-colors",
-            wished ? "bg-[#e4552e]" : "bg-background hover:bg-[#e4552e]",
-          )}
+          className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-white/90 shadow-soft transition-colors hover:bg-white"
         >
           <Heart
             className={cn(
-              "size-4",
-              wished ? "fill-white text-white" : "text-foreground",
+              "size-4 transition-colors",
+              wished ? "fill-accent text-accent" : "text-foreground",
             )}
           />
         </button>
 
         {!product.inStock && (
-          <div className="absolute inset-x-0 bottom-0 border-t-2 border-black bg-primary px-3 py-2 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-primary-foreground">
+          <div className="absolute inset-x-3 bottom-3 rounded-full bg-foreground/85 px-3 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-background">
             {t("soldOut")}
           </div>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-3 sm:p-4">
+      <div className="flex flex-1 flex-col gap-2.5 p-4 sm:p-5">
         <div>
-          <h3 className="line-clamp-2 font-display text-[15px] font-semibold leading-snug sm:text-base">
+          <h3 className="line-clamp-2 text-sm font-medium leading-snug sm:text-[15px]">
             {name}
           </h3>
-          <p className="mt-1 text-lg font-bold tabular-nums">
-            {formatVnd(product.price)}
-          </p>
+          {rating !== undefined && (
+            <div className="mt-1.5 flex items-center gap-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={cn(
+                    "size-3",
+                    i < Math.round(rating)
+                      ? "fill-accent text-accent"
+                      : "fill-border text-border",
+                  )}
+                />
+              ))}
+              <span className="ml-1 text-[11px] font-medium tabular-nums text-muted-foreground">
+                {rating.toFixed(1)}
+              </span>
+            </div>
+          )}
         </div>
 
-        {product.sizes.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {product.sizes.map((s) => (
+        <div className="mt-auto flex items-center justify-between gap-2">
+          <p className="text-base font-semibold tabular-nums">
+            {formatVnd(product.price)}
+          </p>
+
+          {product.inStock &&
+            (onQuickAdd ? (
               <button
-                key={s}
                 type="button"
-                onClick={() => setSelectedSize(s)}
-                aria-pressed={size === s}
-                title={`${t("sizeLabel")}: ${s}`}
-                className={cn(
-                  "border-2 border-black px-2 py-1 text-[11px] font-bold uppercase transition-colors",
-                  size === s
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background hover:bg-[#e7e0d2]",
-                )}
+                onClick={onQuickAdd}
+                className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-foreground"
               >
-                {s}
+                {t("addToCart")}
+              </button>
+            ) : product.sizes.length > 1 ? (
+              <div className="flex flex-wrap justify-end gap-1">
+                {product.sizes.slice(0, 4).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSelectedSize(s)}
+                    aria-pressed={size === s}
+                    title={`${t("sizeLabel")}: ${s}`}
+                    className={cn(
+                      "min-w-7 rounded-full border px-1.5 py-1 text-[11px] font-semibold transition-colors",
+                      size === s
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border text-muted-foreground hover:border-ring hover:text-foreground",
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAdd}
+                className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-foreground"
+              >
+                {t("addToCart")}
               </button>
             ))}
-          </div>
-        )}
-
-        <button
-          type="button"
-          disabled={!product.inStock}
-          onClick={handleAdd}
-          className={cn(
-            "mt-auto flex h-10 items-center justify-center gap-2 border-2 border-black text-xs font-bold uppercase tracking-wider sm:text-sm",
-            product.inStock
-              ? "bg-primary text-primary-foreground nb-shadow-sm nb-press"
-              : "cursor-not-allowed bg-muted text-muted-foreground",
-          )}
-        >
-          {product.inStock ? (
-            <>
-              <Plus className="size-4" />
-              {t("addToCart")}
-            </>
-          ) : (
-            t("soldOut")
-          )}
-        </button>
+        </div>
       </div>
     </article>
   );
-}
-
-function sizeLabelShort(size: string) {
-  return size;
 }
