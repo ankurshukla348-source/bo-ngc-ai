@@ -67,7 +67,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           <Link to="/" className="relative font-display text-2xl font-bold tracking-[0.08em]">
             MAMA <span className="text-brand-rose">&amp;</span> CO.
             <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.35em] text-muted-foreground">
-              Shop Bảo Ngọc
+              Shop Thời Trang Nữ Bảo Ngọc.
             </span>
           </Link>
           <div className="relative max-w-md">

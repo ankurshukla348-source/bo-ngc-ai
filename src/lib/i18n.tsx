@@ -18,7 +18,7 @@ const vi = {
   announce:
     "Miễn phí vận chuyển cho đơn từ 2.000.000₫ · Đổi trả trong 30 ngày",
   seller: "Khu bán hàng",
-  navShop: "Bộ sưu tập",
+  navShop: "Hàng Mới Về Mỗi Ngày.",
   navCategories: "Danh mục",
   navStory: "Câu chuyện",
   navContact: "Liên hệ",
@@ -27,7 +27,7 @@ const vi = {
   cartLabel: "Giỏ hàng",
 
   // ── Hero ─────────────────────────────────────────────────────
-  heroEyebrow: "BỘ SƯU TẬP MỚI",
+  heroEyebrow: "HÀNG MỚI VỀ MỖI NGÀY.",
   heroTitle: "Nâng tầm phong cách mỗi ngày",
   heroBody:
     "Những món đồ được tuyển chọn kỹ lưỡng cho tủ đồ hiện đại — được làm để mặc, được làm để yêu.",
@@ -93,7 +93,7 @@ const vi = {
 
   // ── CTA band ─────────────────────────────────────────────────
   ctaTitle: "Sẵn sàng làm mới tủ đồ?",
-  ctaBody: "Bộ sưu tập mới về mỗi tuần — giao toàn quốc.",
+  ctaBody: "Hàng Mới Về Mỗi Ngày.",
   ctaButton: "Mua chỉnh sửa mới",
 
   // ── Mockup sections (circles, cards, banners, newsletter) ────
