@@ -1,5 +1,6 @@
 import { Header } from "@/components/store/Header";
 import { ProductCard, type StoreProduct } from "@/components/store/ProductCard";
+import { useCart } from "@/lib/cart";
 import { StoreFooter } from "@/components/store/StoreFooter";
 import { api } from "@/convex/_generated/api";
 import { CATEGORIES, type Category } from "@/lib/catalog";
@@ -85,6 +86,12 @@ export default function Landing() {
     }
     return map;
   }, [products]);
+
+  const { add } = useCart();
+
+  const quickAdd = (product: StoreProduct, size: string) => {
+    add(product, size);
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -502,6 +509,7 @@ export default function Landing() {
                   key={product._id}
                   product={product as StoreProduct}
                   rating={ratingFor(product._id)}
+                  onQuickAdd={() => quickAdd(product, product.sizes[0] ?? "Free Size")}
                 />
               ))}
             </div>
