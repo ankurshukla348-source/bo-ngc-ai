@@ -49,30 +49,30 @@
   --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
 }
 
-/* CHANGE VALUES FOR THEME — Soft Minimal:
-   warm cream canvas #faf6ef, white cards, beige hairline borders,
-   warm ink #2b2620, caramel accent, rounded corners (radius 1rem)
+/* CHANGE VALUES FOR THEME — Soft Minimal Pink:
+   blush canvas #fdf5f8, white cards, rose hairline borders,
+   deep plum ink #2f1d26, rose accent, rounded corners (radius 1rem)
    and soft diffuse shadows instead of hard offsets. */
 :root {
   --radius: 1rem;
-  --background: #faf6ef;
-  --foreground: #2b2620;
+  --background: #fdf5f8;
+  --foreground: #2f1d26;
   --card: #ffffff;
-  --card-foreground: #2b2620;
+  --card-foreground: #2f1d26;
   --popover: #ffffff;
-  --popover-foreground: #2b2620;
-  --primary: #2b2620;
-  --primary-foreground: #faf6ef;
-  --secondary: #f1ebe0;
-  --secondary-foreground: #2b2620;
-  --muted: #f4efe6;
-  --muted-foreground: #8a8175;
-  --accent: #a9744f;
+  --popover-foreground: #2f1d26;
+  --primary: #2f1d26;
+  --primary-foreground: #fdf5f8;
+  --secondary: #f8e8ee;
+  --secondary-foreground: #2f1d26;
+  --muted: #fcf1f5;
+  --muted-foreground: #8d7480;
+  --accent: #c2406a;
   --accent-foreground: #ffffff;
-  --destructive: #b4452f;
-  --border: #e7dfd1;
-  --input: #e7dfd1;
-  --ring: #2b2620;
+  --destructive: #b23a48;
+  --border: #f0dde5;
+  --input: #eed9e2;
+  --ring: #2f1d26;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -139,23 +139,25 @@
     cursor: pointer;
   }
   ::selection {
-    background: #2b2620;
-    color: #faf6ef;
+    background: #2f1d26;
+    color: #fdf5f8;
   }
 }
 
 /* ── Soft Minimal helpers ──────────────────────────────────────
-   Diffuse, low-opacity shadows and gentle lift interactions. */
-.shadow-soft {
+   Declared as @utility so variants (hover:shadow-soft) compile. */
+@utility shadow-soft {
   box-shadow:
-    0 1px 2px rgb(43 38 32 / 0.04),
-    0 8px 24px rgb(43 38 32 / 0.06);
+    0 1px 2px rgb(47 29 38 / 0.04),
+    0 8px 24px rgb(47 29 38 / 0.07);
 }
-.shadow-soft-lg {
+@utility shadow-soft-lg {
   box-shadow:
-    0 2px 4px rgb(43 38 32 / 0.05),
-    0 16px 40px rgb(43 38 32 / 0.1);
+    0 2px 4px rgb(47 29 38 / 0.05),
+    0 16px 40px rgb(47 29 38 / 0.12);
 }
+/* `card-lift` is only ever used as a static class, so plain CSS is correct
+   here (@utility silently drops the nested hover). */
 .card-lift {
   transition:
     transform 200ms ease,
@@ -164,19 +166,19 @@
 .card-lift:hover {
   transform: translateY(-4px);
   box-shadow:
-    0 2px 4px rgb(43 38 32 / 0.05),
-    0 16px 40px rgb(43 38 32 / 0.1);
+    0 2px 4px rgb(47 29 38 / 0.05),
+    0 16px 40px rgb(47 29 38 / 0.12);
 }
 
 /* Legacy neobrutalist class names — softened so any straggler
-   still matches the Soft Minimal theme. */
+   still matches the Soft Minimal Pink theme. */
 .nb-shadow {
   box-shadow:
-    0 1px 2px rgb(43 38 32 / 0.04),
-    0 8px 24px rgb(43 38 32 / 0.06);
+    0 1px 2px rgb(47 29 38 / 0.04),
+    0 8px 24px rgb(47 29 38 / 0.07);
 }
 .nb-shadow-sm {
-  box-shadow: 0 1px 2px rgb(43 38 32 / 0.05);
+  box-shadow: 0 1px 2px rgb(47 29 38 / 0.05);
 }
 .nb-press {
   transition:
@@ -186,12 +188,12 @@
 .nb-press:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 2px 4px rgb(43 38 32 / 0.05),
-    0 12px 28px rgb(43 38 32 / 0.08);
+    0 2px 4px rgb(47 29 38 / 0.05),
+    0 12px 28px rgb(47 29 38 / 0.09);
 }
 .nb-press:active {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgb(43 38 32 / 0.05);
+  box-shadow: 0 1px 2px rgb(47 29 38 / 0.05);
 }
 .nb-card {
   background: var(--card);

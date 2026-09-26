@@ -2,6 +2,15 @@ import { v } from "convex/values";
 import { shippingFeeFor } from "../lib/catalog";
 import { mutation, query } from "./_generated/server";
 
+/** Order lines only keep real image URLs. Inline `data:` artwork (placeholder
+ *  SVGs) and anything oversized are dropped so an order document can never
+ *  fail on size — the storefront re-derives the image from the product. */
+function safeImageSrc(src: string | undefined): string | undefined {
+  if (!src) return undefined;
+  if (!/^https?:\/\//i.test(src)) return undefined;
+  return src.slice(0, 500);
+}
+
 /**
  * Create an order and mint a unique, human-facing order ID.
  *
@@ -71,6 +80,7 @@ export const create = mutation({
       const nameVi = product ? product.nameVi : item.nameVi;
       const nameEn = product ? product.nameEn : item.nameEn;
       subtotal += price * qty;
+      const imageSrc = safeImageSrc(item.imageSrc);
       items.push({
         productId: item.productId,
         nameVi,
@@ -78,7 +88,7 @@ export const create = mutation({
         price,
         size: item.size,
         qty,
-        ...(item.imageSrc ? { imageSrc: item.imageSrc } : {}),
+        ...(imageSrc ? { imageSrc } : {}),
       });
     }
 

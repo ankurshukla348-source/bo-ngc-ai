@@ -29,7 +29,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Component, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 
 type Shipping = {
@@ -223,6 +223,54 @@ function Totals({
 }
 
 /* ── confirmation screen ───────────────────────────────────── */
+
+/** Keeps the order ID on screen if anything inside the confirmation throws. */
+class SafeBoundary extends Component<
+  { fallback: ReactNode; children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+function OrderFallback({ code, total }: { code: string; total: number }) {
+  const { t } = useI18n();
+  return (
+    <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 px-4 py-16 text-center">
+      <span className="flex size-16 items-center justify-center rounded-full bg-accent text-accent-foreground">
+        <Check className="size-8" strokeWidth={3} />
+      </span>
+      <h1 className="font-display text-4xl font-bold tracking-tight">
+        {t("confirmTitle")}
+      </h1>
+      <p className="text-muted-foreground">{t("confirmBody")}</p>
+      <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-soft">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+          {t("orderCode")}
+        </p>
+        <p className="mt-2 font-mono text-2xl font-bold tracking-[0.15em] sm:text-3xl">
+          {code}
+        </p>
+        <p className="mt-3 text-sm font-medium tabular-nums">
+          {t("total")} · {formatVnd(total)}
+        </p>
+      </div>
+      <Link
+        to="/"
+        className="rounded-full bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
+      >
+        {t("continueShopping")}
+      </Link>
+    </div>
+  );
+}
 
 function Confirmation({ order }: { order: ConfirmedOrder }) {
   const { t, lang } = useI18n();
@@ -502,6 +550,35 @@ export default function Checkout() {
     setOpen(["review"]);
   };
 
+  const submitOrder = () =>
+    convex.mutation(api.orders.create, {
+      items: items.map((item) => ({
+        productId: item.productId,
+        nameVi: item.nameVi,
+        nameEn: item.nameEn,
+        price: item.price,
+        size: item.size,
+        qty: item.qty,
+        ...(item.image ? { imageSrc: item.image } : {}),
+      })),
+      customer: {
+        name: shipping.name,
+        phone: shipping.phone,
+        province: shipping.province,
+        district: shipping.district,
+        ward: shipping.ward,
+        street: shipping.street,
+        ...(shipping.note.trim() ? { note: shipping.note.trim() } : {}),
+      },
+      paymentMethod: method,
+    });
+
+  /** Only transport hiccups are retried: a rejected mutation means nothing
+   *  was written, but a dropped response might mean it already exists. */
+  const isTransportError = (err: unknown) =>
+    err instanceof Error &&
+    /failed to fetch|network|timeout|socket|load failed/i.test(err.message);
+
   const handlePlaceOrder = async () => {
     if (!shipDone) {
       setOpen(["ship"]);
@@ -516,27 +593,15 @@ export default function Checkout() {
     setError(null);
     try {
       const snapshot = items;
-      const result = await convex.mutation(api.orders.create, {
-        items: items.map((item) => ({
-          productId: item.productId,
-          nameVi: item.nameVi,
-          nameEn: item.nameEn,
-          price: item.price,
-          size: item.size,
-          qty: item.qty,
-          ...(item.image ? { imageSrc: item.image } : {}),
-        })),
-        customer: {
-          name: shipping.name,
-          phone: shipping.phone,
-          province: shipping.province,
-          district: shipping.district,
-          ward: shipping.ward,
-          street: shipping.street,
-          ...(shipping.note.trim() ? { note: shipping.note.trim() } : {}),
-        },
-        paymentMethod: method,
-      });
+      const result = await (async () => {
+        try {
+          return await submitOrder();
+        } catch (firstError) {
+          if (!isTransportError(firstError)) throw firstError;
+          await new Promise((resolve) => setTimeout(resolve, 700));
+          return await submitOrder();
+        }
+      })();
       setConfirmed({
         ...result,
         items: snapshot,
@@ -546,13 +611,16 @@ export default function Checkout() {
       clear();
       window.scrollTo({ top: 0 });
     } catch (orderError) {
-      console.error(orderError);
+      // Surface the real reason (network, validation, Convex) instead of a
+      // blanket message — this is the only clue when a payout fails.
+      console.error("[checkout] could not place order", orderError);
+      const detail =
+        orderError instanceof Error ? orderError.message.trim() : "";
       setError(
-        orderError instanceof Error && orderError.message
-          ? orderError.message
-          : lang === "vi"
+        detail ||
+          (lang === "vi"
             ? "Không tạo được đơn hàng. Thử lại."
-            : "Could not create the order. Please try again.",
+            : "Could not create the order. Please try again."),
       );
     } finally {
       setPlacing(false);
@@ -568,7 +636,14 @@ export default function Checkout() {
       <Header />
 
       {confirmed ? (
-        <Confirmation order={confirmed} />
+        /* The order ID is the one thing the customer must never lose, so a
+           failure inside the confirmation (e.g. the QR renderer) degrades to
+           a plain order summary instead of a blank/error screen. */
+        <SafeBoundary
+          fallback={<OrderFallback code={confirmed.orderCode} total={confirmed.total} />}
+        >
+          <Confirmation order={confirmed} />
+        </SafeBoundary>
       ) : items.length === 0 ? (
         <EmptyCart />
       ) : (

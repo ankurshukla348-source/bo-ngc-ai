@@ -18,12 +18,12 @@ import { useEffect, useMemo, useState } from "react";
 
 /** Warm tints used when a category/card has no product photo yet. */
 const TINTS = [
-  "#efe6d8",
-  "#e7ddd0",
-  "#ead9c9",
-  "#e3e0d5",
-  "#e9d6c6",
-  "#e6dfd2",
+  "#f9e4ec",
+  "#f4dbe6",
+  "#fbeaf1",
+  "#f2e7ee",
+  "#f7dfeb",
+  "#eedfe8",
 ];
 
 const HERO_TRUST = [
@@ -205,7 +205,7 @@ export default function Landing() {
               ))
             ) : (
               <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#efe6d8] via-[#e7ddd0] to-[#dccfbd]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#f9e4ec] via-[#f2d9e4] to-[#e5bfd1]" />
                 <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none font-display text-[10rem] font-bold text-white/50">
                   M&amp;C
                 </span>
@@ -421,7 +421,7 @@ export default function Landing() {
                       className="absolute inset-0 h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#e7ddd0] to-[#d8c9b6]" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#f4dbe6] to-[#e3bcd0]" />
                   )}
                 </div>
               </div>
@@ -582,7 +582,7 @@ export default function Landing() {
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#efe6d8] to-[#dccfbd]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#f9e4ec] to-[#e5bfd1]" />
               )}
             </div>
             <div className="flex flex-col justify-center gap-4 p-8 sm:p-12">

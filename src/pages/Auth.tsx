@@ -62,7 +62,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     <div className="flex min-h-screen bg-background">
       {/* ── Brand panel ── */}
       <aside className="relative hidden w-[46%] overflow-hidden lg:block">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#efe6d8] via-[#e7ddd0] to-[#d9c9b5]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#f9e4ec] via-[#f2d9e4] to-[#e3bcd0]" />
         <div className="absolute inset-0 flex flex-col justify-between p-12">
           <Link to="/" className="relative font-display text-2xl font-bold tracking-[0.08em]">
             MAMA <span className="text-accent">&amp;</span> CO.
