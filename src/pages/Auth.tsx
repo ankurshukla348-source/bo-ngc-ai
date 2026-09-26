@@ -154,7 +154,7 @@ function CustomerForm({
   authLoading,
   onDone,
 }: {
-  signIn: (provider: string, formData: FormData) => Promise<unknown>;
+  signIn: (provider: string, formData?: FormData) => Promise<unknown>;
   authLoading: boolean;
   onDone: () => void;
 }) {

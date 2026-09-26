@@ -45,10 +45,10 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
     <main className="flex min-h-screen items-center justify-center bg-background p-4">
       <form
         onSubmit={submit}
-        className="w-full max-w-sm border-2 border-black bg-card p-8 nb-shadow"
+        className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 shadow-soft-lg"
       >
         <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center border-2 border-black bg-primary font-display text-2xl font-bold text-primary-foreground">
+          <span className="flex size-11 items-center justify-center rounded-2xl bg-primary font-display text-2xl font-bold text-primary-foreground">
             M
           </span>
           <span>
@@ -61,7 +61,7 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
           </span>
         </div>
 
-        <label className="mt-8 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        <label className="mt-8 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {t("pinPlaceholder")}
           <input
             type="password"
@@ -75,25 +75,25 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
               setError(false);
             }}
             placeholder="••••"
-            className="mt-2 h-12 w-full border-2 border-black bg-background px-4 text-center font-mono text-2xl tracking-[0.5em] outline-none focus:bg-card"
+            className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 text-center font-mono text-2xl tracking-[0.5em] outline-none focus:border-ring focus:bg-card"
           />
         </label>
 
         {error && (
-          <p className="mt-3 border-2 border-black bg-[#e4552e] px-3 py-2 text-center text-xs font-bold text-white">
+          <p className="mt-3 rounded-full bg-accent px-3 py-2 text-center text-xs font-semibold text-accent-foreground">
             {t("pinError")}
           </p>
         )}
 
         <button
           type="submit"
-          className="mt-5 flex h-12 w-full items-center justify-center gap-2 border-2 border-black bg-primary text-sm font-bold uppercase tracking-widest text-primary-foreground nb-shadow nb-press"
+          className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
         >
           <Lock className="size-4" />
           {t("unlock")}
         </button>
 
-        <p className="mt-5 border-t-2 border-black pt-4 text-center text-[11px] text-muted-foreground">
+        <p className="mt-5 border-t border-border pt-4 text-center text-[11px] text-muted-foreground">
           {t("pinHint")}
         </p>
         <Link
@@ -125,14 +125,14 @@ function StockToggle({
       aria-checked={checked}
       onClick={() => onToggle(!checked)}
       className={cn(
-        "relative h-7 w-14 shrink-0 border-2 border-black transition-colors",
-        checked ? "bg-[#e4552e]" : "bg-muted",
+        "relative h-7 w-14 shrink-0 rounded-full border border-border transition-colors",
+        checked ? "bg-accent" : "bg-muted",
       )}
     >
       <span
         className={cn(
-          "absolute top-[2px] size-5 border-2 border-black bg-background transition-all duration-150",
-          checked ? "left-[30px]" : "left-[2px]",
+          "absolute top-1 size-5 rounded-full bg-card shadow-soft transition-all duration-150",
+          checked ? "left-8" : "left-1",
         )}
       />
     </button>
@@ -249,14 +249,14 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
   };
 
   const fieldClass =
-    "h-10 w-full border-2 border-black bg-background px-3 text-sm outline-none focus:bg-card";
+    "h-10 w-full rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-ring focus:bg-card";
 
   return (
     <form
       onSubmit={handlePublish}
-      className="border-2 border-black bg-card nb-shadow"
+      className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft"
     >
-      <div className="border-b-2 border-black bg-primary px-5 py-3.5">
+      <div className="border-b border-border bg-primary px-5 py-3.5">
         <h2 className="font-display text-lg font-bold text-primary-foreground">
           {t("newProduct")}
         </h2>
@@ -276,8 +276,8 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
             acceptFile(e.dataTransfer.files);
           }}
           className={cn(
-            "relative flex min-h-[170px] flex-col items-center justify-center gap-3 border-2 border-dashed border-black p-4 text-center transition-colors",
-            dragging ? "bg-[#e4552e]/15" : "bg-background",
+            "relative flex min-h-[170px] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border p-4 text-center transition-colors",
+            dragging ? "bg-accent/10" : "bg-background",
           )}
         >
           {preview ? (
@@ -285,7 +285,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
               <img
                 src={preview}
                 alt=""
-                className="max-h-44 border-2 border-black object-contain"
+                className="max-h-44 rounded-xl border border-border object-contain"
               />
               <button
                 type="button"
@@ -293,14 +293,14 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
                   setFile(null);
                   setPreview(null);
                 }}
-                className="text-xs font-bold uppercase underline-offset-4 hover:underline"
+                className="text-xs font-semibold uppercase underline-offset-4 hover:underline"
               >
                 {t("cancel")}
               </button>
             </>
           ) : (
             <>
-              <span className="flex size-11 items-center justify-center border-2 border-black bg-card">
+              <span className="flex size-11 items-center justify-center rounded-2xl bg-card">
                 <ImagePlus className="size-5" />
               </span>
               <p className="text-sm font-bold uppercase tracking-wide">
@@ -313,14 +313,14 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="border-2 border-black bg-card px-3 py-2 text-xs font-bold uppercase nb-shadow-sm nb-press"
+                  className="rounded-full bg-secondary px-4 py-2 text-xs font-semibold uppercase transition-colors"
                 >
                   {t("chooseFile")}
                 </button>
                 <button
                   type="button"
                   onClick={() => cameraRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 border-2 border-black bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground nb-shadow-sm nb-press"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors"
                 >
                   <Camera className="size-3.5" />
                   {t("takePhoto")}
@@ -353,7 +353,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
 
         {/* Names */}
         <div className="grid gap-3">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             {t("nameVi")}
             <input
               value={nameVi}
@@ -362,7 +362,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
               className={cn("mt-1.5", fieldClass)}
             />
           </label>
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             {t("nameEn")}
             <input
               value={nameEn}
@@ -375,7 +375,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
 
         {/* Category + price */}
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             {t("category")}
             <select
               value={category}
@@ -389,7 +389,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
               ))}
             </select>
           </label>
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             {t("priceLabel")}
             <input
               value={price}
@@ -406,7 +406,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
 
         {/* Sizes */}
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             {t("sizesLabel")}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -425,10 +425,10 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
                   }
                   aria-pressed={on}
                   className={cn(
-                    "border-2 border-black px-3 py-1.5 text-xs font-bold uppercase transition-colors",
+                    "rounded-full border px-3.5 py-1.5 text-xs font-semibold uppercase transition-colors",
                     on
                       ? "bg-primary text-primary-foreground"
-                      : "bg-background hover:bg-[#e7e0d2]",
+                      : "bg-background hover:bg-secondary",
                   )}
                 >
                   {s}
@@ -439,14 +439,14 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
         </div>
 
         {/* Stock */}
-        <div className="flex items-center justify-between border-2 border-black bg-background px-3 py-2.5">
-          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        <div className="flex items-center justify-between rounded-2xl border border-border bg-background px-4 py-2.5">
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             {t("stockLabel")}
           </span>
           <div className="flex items-center gap-3">
             <span
               className={cn(
-                "text-xs font-bold uppercase",
+                "text-xs font-semibold uppercase",
                 inStock ? "text-foreground" : "text-muted-foreground",
               )}
             >
@@ -459,7 +459,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
         <button
           type="submit"
           disabled={publishing}
-          className="flex h-11 items-center justify-center gap-2 border-2 border-black bg-primary text-sm font-bold uppercase tracking-widest text-primary-foreground nb-shadow nb-press disabled:pointer-events-none disabled:opacity-60"
+          className="flex h-11 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-60"
         >
           {publishing ? (
             <>
@@ -539,13 +539,13 @@ function ProductRow({ product }: { product: StoreProduct }) {
   };
 
   const inputClass =
-    "h-9 w-full border-2 border-black bg-background px-2 text-sm outline-none focus:bg-card";
+    "h-9 w-full rounded-full border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:bg-card";
   const name = lang === "vi" ? product.nameVi : product.nameEn;
 
   return (
-    <li className="flex flex-col gap-3 border-2 border-black bg-background p-3 sm:flex-row sm:items-start">
+    <li className="flex flex-col gap-3 rounded-2xl border border-border bg-background p-3 sm:flex-row sm:items-start">
       {/* Thumb */}
-      <div className="h-24 w-20 shrink-0 overflow-hidden border-2 border-black bg-[#e7e0d2]">
+      <div className="h-24 w-20 shrink-0 overflow-hidden rounded-xl border border-border bg-secondary">
         {product.image ? (
           <img
             src={product.image}
@@ -625,7 +625,7 @@ function ProductRow({ product }: { product: StoreProduct }) {
                     }
                     aria-pressed={on}
                     className={cn(
-                      "border-2 border-black px-2 py-1 text-[10px] font-bold uppercase",
+                      "rounded-full border border-border px-2.5 py-1 text-[10px] font-semibold uppercase",
                       on
                         ? "bg-primary text-primary-foreground"
                         : "bg-card",
@@ -651,13 +651,13 @@ function ProductRow({ product }: { product: StoreProduct }) {
               {formatVnd(product.price)}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="border-2 border-black bg-card px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
                 {categoryLabel(product.category)}
               </span>
               {product.sizes.map((s) => (
                 <span
                   key={s}
-                  className="border border-black/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground"
+                  className="border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground"
                 >
                   {s}
                 </span>
@@ -668,8 +668,8 @@ function ProductRow({ product }: { product: StoreProduct }) {
       </div>
 
       {/* Controls */}
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-t-2 border-black pt-3 sm:border-t-0 sm:pt-0">
-        <div className="flex items-center gap-2 border-2 border-black bg-card px-2 py-1.5">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-border pt-3 sm:border-t-0 sm:pt-0">
+        <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5">
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             {product.inStock ? t("inStock") : t("soldOut")}
           </span>
@@ -690,7 +690,7 @@ function ProductRow({ product }: { product: StoreProduct }) {
               type="button"
               onClick={save}
               disabled={busy}
-              className="border-2 border-black bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground nb-shadow-sm nb-press disabled:opacity-60"
+              className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors disabled:opacity-60"
             >
               {t("save")}
             </button>
@@ -706,7 +706,7 @@ function ProductRow({ product }: { product: StoreProduct }) {
                   sizes: product.sizes,
                 });
               }}
-              className="border-2 border-black bg-card px-3 py-2 text-xs font-bold uppercase nb-shadow-sm nb-press"
+              className="rounded-full bg-secondary px-4 py-2 text-xs font-semibold uppercase transition-colors"
             >
               {t("cancel")}
             </button>
@@ -715,7 +715,7 @@ function ProductRow({ product }: { product: StoreProduct }) {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-1.5 border-2 border-black bg-card px-3 py-2 text-xs font-bold uppercase nb-shadow-sm nb-press"
+            className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-xs font-semibold uppercase transition-colors"
           >
             <Pencil className="size-3.5" />
             {t("edit")}
@@ -727,10 +727,10 @@ function ProductRow({ product }: { product: StoreProduct }) {
           onClick={handleDelete}
           disabled={busy}
           className={cn(
-            "inline-flex items-center gap-1.5 border-2 border-black px-3 py-2 text-xs font-bold uppercase transition-colors disabled:opacity-60",
+            "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase transition-colors disabled:opacity-60",
             confirmDelete
-              ? "bg-[#e4552e] text-white"
-              : "bg-card hover:bg-[#e4552e] hover:text-white",
+              ? "bg-accent text-white"
+              : "bg-card hover:bg-accent hover:text-white",
           )}
         >
           <Trash2 className="size-3.5" />
@@ -775,11 +775,11 @@ function BankSettings() {
   };
 
   const inputClass =
-    "h-9 w-full border-2 border-black bg-background px-2 text-sm outline-none focus:bg-card";
+    "h-9 w-full rounded-full border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:bg-card";
 
   return (
-    <div className="border-2 border-black bg-card nb-shadow">
-      <div className="border-b-2 border-black px-5 py-3.5">
+    <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+      <div className="border-b border-border px-5 py-3.5">
         <h2 className="font-display text-lg font-bold">{t("bankSettings")}</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
           {t("bankSettingsSub")}
@@ -796,7 +796,7 @@ function BankSettings() {
         ).map(([labelKey, field]) => (
           <label
             key={field}
-            className="text-xs font-bold uppercase tracking-widest text-muted-foreground"
+            className="text-xs font-semibold uppercase tracking-widest text-muted-foreground"
           >
             {t(labelKey)}
             <input
@@ -814,7 +814,7 @@ function BankSettings() {
             type="button"
             onClick={save}
             disabled={saving || payment === undefined}
-            className="h-10 w-full border-2 border-black bg-primary text-xs font-bold uppercase tracking-widest text-primary-foreground nb-shadow-sm nb-press disabled:pointer-events-none disabled:opacity-60"
+            className="h-10 w-full rounded-full bg-primary text-xs font-semibold uppercase tracking-widest text-primary-foreground transition-all hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-60"
           >
             {t("saveSettings")}
           </button>
@@ -846,9 +846,9 @@ function AdminPanel({ onLock }: { onLock: () => void }) {
   return (
     <main className="min-h-screen bg-background">
       {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b-2 border-black bg-background">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
-          <span className="flex size-10 items-center justify-center border-2 border-black bg-primary font-display text-xl font-bold text-primary-foreground">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-primary font-display text-xl font-bold text-primary-foreground">
             M
           </span>
           <span className="leading-none">
@@ -862,7 +862,7 @@ function AdminPanel({ onLock }: { onLock: () => void }) {
           <div className="ml-auto flex items-center gap-2">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 border-2 border-black bg-card px-3 py-2 text-xs font-bold uppercase nb-shadow-sm nb-press"
+              className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-xs font-semibold uppercase transition-colors"
             >
               <Store className="size-3.5" />
               {t("backToStore")}
@@ -870,7 +870,7 @@ function AdminPanel({ onLock }: { onLock: () => void }) {
             <button
               type="button"
               onClick={onLock}
-              className="inline-flex items-center gap-1.5 border-2 border-black bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground nb-shadow-sm nb-press"
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors"
             >
               <Lock className="size-3.5" />
               {t("lock")}
@@ -887,12 +887,12 @@ function AdminPanel({ onLock }: { onLock: () => void }) {
         </div>
 
         {/* Right: product list */}
-        <section className="border-2 border-black bg-card nb-shadow">
-          <div className="flex items-center justify-between border-b-2 border-black bg-primary px-5 py-3.5">
+        <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+          <div className="flex items-center justify-between border-b border-border bg-primary px-5 py-3.5">
             <h2 className="font-display text-lg font-bold text-primary-foreground">
               {t("productsLabel")}
             </h2>
-            <span className="border-2 border-primary-foreground px-2 py-0.5 text-xs font-bold tabular-nums text-primary-foreground">
+            <span className="rounded-full border border-primary-foreground/40 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-primary-foreground">
               {products?.length ?? "…"}
             </span>
           </div>

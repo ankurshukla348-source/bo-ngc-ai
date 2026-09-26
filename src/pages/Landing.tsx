@@ -117,6 +117,8 @@ export default function Landing() {
     (products ?? []).find((p) => p.category === category && p.image)?.image ??
     null;
 
+  const newsImage = firstImageIn("bestsellers");
+
   const subscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -566,9 +568,9 @@ export default function Landing() {
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-8 sm:py-16">
           <div className="grid overflow-hidden rounded-3xl border border-border bg-card shadow-soft lg:grid-cols-[1fr_1.4fr]">
             <div className="relative min-h-[220px]">
-              {firstImageIn("bestsellers") ? (
+              {newsImage ? (
                 <img
-                  src={firstImageIn("bestsellers")}
+                  src={newsImage}
                   alt=""
                   loading="lazy"
                   className="absolute inset-0 h-full w-full object-cover"
