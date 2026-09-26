@@ -167,7 +167,7 @@ export function Header({
               MAMA <span className="text-brand-rose">&amp;</span> CO.
             </span>
             <span className="mt-0.5 hidden text-[9px] font-medium uppercase tracking-[0.35em] text-muted-foreground sm:block">
-              Shop Bảo Ngọc
+              Shop Thời Trang Nữ Bảo Ngọc.
             </span>
           </Link>
 
