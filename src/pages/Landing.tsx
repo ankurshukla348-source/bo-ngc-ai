@@ -74,27 +74,14 @@ export default function Landing() {
 
   const products = useQuery(api.products.list);
   const seedIfEmpty = useMutation(api.products.seedIfEmpty);
-  const migrateLegacyImages = useMutation(api.products.migrateLegacyImages);
 
-  // First-run: populate the empty catalogue with starter products.
+  // One-time store initialization. The backend `seeded` marker guarantees
+  // this runs at most once per deployment — deleted products stay deleted
+  // and admin edits persist across reloads.
   useEffect(() => {
-    if (products && products.length === 0) {
-      void seedIfEmpty();
-    }
+    if (products === undefined) return;
+    void seedIfEmpty();
   }, [products, seedIfEmpty]);
-
-  // One-time: replace legacy geometric SVG placeholders with real photos.
-  useEffect(() => {
-    if (
-      products &&
-      products.some(
-        (p) =>
-          !p.image || p.image.startsWith("data:image/svg+xml"),
-      )
-    ) {
-      void migrateLegacyImages();
-    }
-  }, [products, migrateLegacyImages]);
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -123,13 +110,19 @@ export default function Landing() {
     });
   }, [products, active, search]);
 
-  // Hero slides: up to three product photos, else fallback panels.
+  // Hero slides: up to three product photos. Keys use the stable product id
+  // (NOT the image URL — Convex storage URLs rotate on every query re-run,
+  // which would remount the images and can destabilize the DOM commit).
   const heroImages = useMemo(
     () =>
       (products ?? [])
         .filter((p) => p.image)
         .slice(0, 3)
-        .map((p) => ({ src: p.image as string, alt: lang === "vi" ? p.nameVi : p.nameEn })),
+        .map((p) => ({
+          id: p._id,
+          src: p.image as string,
+          alt: lang === "vi" ? p.nameVi : p.nameEn,
+        })),
     [products, lang],
   );
   const activeSlide = Math.min(slide, Math.max(heroImages.length, 1) - 1);
@@ -156,12 +149,25 @@ export default function Landing() {
     setSubscribed(true);
   };
 
+  // While a search is active the page shows ONLY matching products —
+  // hero, categories, banners, story, trust and newsletter are hidden.
+  const searching = search.trim().length > 0;
+
   return (
     <div className="min-h-screen bg-background">
       <Header query={search} onQueryChange={setSearch} showNav />
 
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative">
+      {searching ? (
+        <SearchResults
+          products={products}
+          filtered={filtered}
+          query={search}
+          onClear={() => setSearch("")}
+        />
+      ) : (
+        <>
+          {/* ── Hero ─────────────────────────────────────────── */}
+          <section className="relative">
         <div className="mx-auto grid max-w-7xl md:grid-cols-2">
           {/* Copy */}
           <div className="flex flex-col justify-center gap-6 px-4 py-12 sm:px-8 lg:py-20">
@@ -214,31 +220,27 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Visual */}
+          {/* Visual — the fallback layer stays mounted so the commit when
+              products load is append-only (fixes insertBefore crashes). */}
           <div className="relative min-h-[420px] overflow-hidden bg-secondary sm:min-h-[520px] md:min-h-full">
-            {heroImages.length > 0 ? (
-              heroImages.map((img, i) => (
-                <img
-                  key={img.src}
-                  src={img.src}
-                  alt={img.alt}
-                  className={cn(
-                    "absolute inset-0 h-full w-full object-cover transition-opacity duration-700",
-                    i === activeSlide ? "opacity-100" : "opacity-0",
-                  )}
-                />
-              ))
-            ) : (
-              <div className="absolute inset-0">
-                {/* Real product photo fallback so the hero is never blank */}
-                <img
-                  src="https://images.pexels.com/photos/4314754/pexels-photo-4314754.jpeg?auto=compress&cs=tinysrgb&w=1400"
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
-              </div>
-            )}
+            {/* Real product photo fallback so the hero is never blank */}
+            <img
+              src="https://images.pexels.com/photos/4314754/pexels-photo-4314754.jpeg?auto=compress&cs=tinysrgb&w=1400"
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
+            {heroImages.map((img, i) => (
+              <img
+                key={img.id}
+                src={img.src}
+                alt={img.alt}
+                className={cn(
+                  "absolute inset-0 h-full w-full object-cover transition-opacity duration-700",
+                  i === activeSlide ? "opacity-100" : "opacity-0",
+                )}
+              />
+            ))}
 
             {/* Slide pager */}
             {heroImages.length > 1 && (
@@ -655,10 +657,90 @@ export default function Landing() {
         </div>
       </section>
 
+        </>
+      )}
+
       <StoreFooter
         onCategorySelect={(category) => applyCategory(category)}
       />
       <ZaloContact />
     </div>
+  );
+}
+
+/** Clean search-results view: ONLY matching products — no hero, banners,
+ *  categories, story or newsletter until the search is cleared. */
+function SearchResults({
+  products,
+  filtered,
+  query,
+  onClear,
+}: {
+  products: ReturnType<typeof useQuery<typeof api.products.list>>;
+  filtered: NonNullable<ReturnType<typeof useQuery<typeof api.products.list>>>;
+  query: string;
+  onClear: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <section className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+            {t("searchResultsTitle")}
+          </p>
+          <h2 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+            “{query.trim()}”
+          </h2>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-muted-foreground">
+            {filtered.length} {t("productsUnit")}
+          </span>
+          <button
+            type="button"
+            onClick={onClear}
+            className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold transition-colors hover:bg-secondary"
+          >
+            {t("clearSearch")}
+          </button>
+        </div>
+      </div>
+
+      {products === undefined ? (
+        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-[3/4] animate-pulse rounded-3xl bg-secondary"
+            />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="mt-8 rounded-3xl border border-border bg-card p-12 text-center shadow-soft">
+          <p className="font-display text-2xl font-bold">{t("emptyTitle")}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t("emptyBody")}
+          </p>
+          <button
+            type="button"
+            onClick={onClear}
+            className="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 hover:shadow-soft"
+          >
+            {t("clearSearch")}
+          </button>
+        </div>
+      ) : (
+        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+          {filtered.map((product) => (
+            <ProductCard
+              key={product._id}
+              product={product as StoreProduct}
+              rating={ratingFor(product._id)}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

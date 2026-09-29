@@ -7,14 +7,11 @@
 
 export const ADMIN_PIN = import.meta.env.VITE_SELLER_PIN?.trim() || "246810";
 
-/** Store-owner credentials for the unified login portal: entering these on
- *  /auth signs the owner straight into the dashboard (no PIN prompt).
- *  Override via VITE_ADMIN_EMAIL / VITE_ADMIN_PASSWORD env vars. */
+/** Store-owner Google account — signs straight into the seller dashboard.
+ *  Override via VITE_ADMIN_EMAIL if the owner address ever changes. */
 export const ADMIN_EMAIL =
   import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase() ||
   "minhphuoc.01052016@gmail.com";
-export const ADMIN_PASSWORD =
-  import.meta.env.VITE_ADMIN_PASSWORD?.trim() || "1708200815032025";
 
 const SESSION_KEY = "mama-admin-unlocked";
 

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { CATEGORIES, type Category } from "./catalog";
+import { CATEGORY_LABELS_VI, TEXT } from "@/constants/text";
 
 /** Bilingual (VI/EN) labels for the whole app. */
 
@@ -15,8 +16,11 @@ export type Lang = "vi" | "en";
 
 const vi = {
   // ── Header / nav ─────────────────────────────────────────────
-  announce:
-    "MIỄN PHÍ GIAO HÀNG CHO ĐƠN TỪ 400.000 VND. · Đổi trả trong 30 ngày.",
+  // Locked store copy — sourced from src/constants/text.ts so it can never
+  // reset or drift between renders/deployments.
+  announce: TEXT.announce,
+  brandFull: TEXT.brandFull,
+  brandMobile: TEXT.brandMobile,
   seller: "Khu bán hàng",
   navShop: "Bộ sưu tập",
   navCategories: "Danh mục",
@@ -118,8 +122,7 @@ const vi = {
   newsThanks: "Cảm ơn! Bạn đã vào danh sách rồi nhé.",
 
   // ── Footer ───────────────────────────────────────────────────
-  footerTagline:
-    "Shop Thời Trang Nữ uy tín hàng đầu tại Diên Khánh. Thanh lịch, tự nhiên, dành cho bạn.",
+  footerTagline: TEXT.locationTagline,
   footerShop: "DANH MỤC",
   footerSupport: "HỖ TRỢ",
   footerCompany: "CÔNG TY",
@@ -288,7 +291,7 @@ const vi = {
   trustShip: "Miễn phí giao hàng",
   trustShipSub: "Cho đơn từ 400.000 VND",
   trustReturns: "Đổi size dễ dàng",
-  trustReturnsSub: "Hỗ trợ đổi trả Size trong vòng 7 ngày.",
+  trustReturnsSub: TEXT.policy7Day,
   trustPay: "Thanh toán VietQR & COD.",
   trustPaySub: "An toàn & bảo mật",
   trustSupport: "Hỗ trợ 24/7",
@@ -330,6 +333,21 @@ const vi = {
   sellerShortcutBody:
     "Mở khu bán hàng bằng mã truy cập để quản lý sản phẩm và đơn hàng.",
   sellerShortcutCta: "Đăng nhập người bán",
+
+  // ── Google Sign-In ──────────────────────────────────────────
+  googleSignInCta: "Đăng nhập với Google",
+  googleSignInHint: "Dùng tài khoản Google để mua sắm nhanh hơn — không cần mật khẩu.",
+
+  // ── Search results view ─────────────────────────────────────
+  searchResultsTitle: "KẾT QUẢ TÌM KIẾM",
+  clearSearch: "Xóa tìm kiếm",
+
+  // ── Quick view modal ────────────────────────────────────────
+  quickView: "Xem nhanh",
+  quickViewClose: "Đóng",
+  inCartBadge: "ở trong giỏ",
+  categoryLabel: "Danh mục",
+  categoryFallback: "Khác",
 };
 
 export type TKey = keyof typeof vi;
@@ -649,17 +667,25 @@ const en: Record<TKey, string> = {
   sellerShortcutBody:
     "Open the seller area with your access code to manage products and orders.",
   sellerShortcutCta: "Seller sign in",
+
+  // ── Google Sign-In ──────────────────────────────────────────
+  googleSignInCta: "Sign in with Google",
+  googleSignInHint: "Use your Google account for faster checkout — no password needed.",
+
+  // ── Search results view ─────────────────────────────────────
+  searchResultsTitle: "SEARCH RESULTS",
+  clearSearch: "Clear search",
+
+  // ── Quick view modal ────────────────────────────────────────
+  quickView: "Quick view",
+  quickViewClose: "Close",
+  inCartBadge: "in cart",
+  categoryLabel: "Category",
+  categoryFallback: "Other",
 };
 
 const CATEGORY_LABELS: Record<Lang, Record<Category, string>> = {
-  vi: {
-    tops: "Áo Lót & Bra",
-    dresses: "Quần Trong",
-    cardigans: "Set Bộ Đồ Lót",
-    trousers: "Mỹ Phẩm Làm Đẹp & Chăm Sóc Da",
-    accessories: "Chăm Sóc Da & Làm Đẹp",
-    bestsellers: "Những mặt hàng bán chạy nhất",
-  },
+  vi: { ...CATEGORY_LABELS_VI },
   en: {
     tops: "Bras & Lingerie",
     dresses: "Underwear",

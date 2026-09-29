@@ -1,0 +1,30 @@
+/**
+ * LOCKED STORE COPY — single source of truth for static Vietnamese text.
+ *
+ * Everything in this file is hardcoded on purpose: these strings must never
+ * be generated, translated, or reset by re-renders. UI components and the
+ * i18n dictionaries import from here so the copy always stays identical.
+ */
+
+export const TEXT = {
+  /** Desktop header title. */
+  brandFull: "Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.",
+  /** Compact mobile header title. */
+  brandMobile: "Shop Bảo Ngọc",
+  /** Top announcement bar. */
+  announce: "Miễn phí giao hàng cho đơn từ 400.000 VND.",
+  /** 7-day size-exchange policy line. */
+  policy7Day: "Hỗ trợ đổi trả Size trong vòng 7 ngày.",
+  /** Location subtitle (footer / story). */
+  locationTagline: "Shop Thời Trang Nữ uy tín hàng đầu tại Diên Khánh.",
+} as const;
+
+/** Vietnamese category labels — locked. */
+export const CATEGORY_LABELS_VI = {
+  tops: "Áo Lót & Bra",
+  dresses: "Quần Trong",
+  cardigans: "Set Bộ Đồ Lót",
+  trousers: "Mỹ Phẩm Làm Đẹp & Chăm Sóc Da",
+  accessories: "Chăm Sóc Da & Làm Đẹp",
+  bestsellers: "Những mặt hàng bán chạy nhất",
+} as const;

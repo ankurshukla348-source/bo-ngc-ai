@@ -2,7 +2,14 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { placeholderArt } from "@/lib/art";
 import { CATEGORIES, SIZE_OPTIONS, type Category } from "@/lib/catalog";
-import { ADMIN_PIN, isAdminUnlocked, lockAdmin, tryUnlockAdmin } from "@/lib/admin";
+import {
+  ADMIN_EMAIL,
+  ADMIN_PIN,
+  isAdminUnlocked,
+  lockAdmin,
+  tryUnlockAdmin,
+} from "@/lib/admin";
+import { useAuth } from "@/hooks/use-auth";
 import { formatVnd, sanitizePriceInput } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import type { StoreProduct } from "@/components/store/ProductCard";
@@ -830,13 +837,36 @@ function BankSettings() {
 
 export default function Admin() {
   const { t } = useI18n();
+  const { isLoading, isAuthenticated, user } = useAuth();
   const [unlocked, setUnlocked] = useState(() => isAdminUnlocked());
 
-  if (!unlocked) {
+  // The store owner's Google session unlocks the dashboard directly —
+  // no PIN. The PIN gate stays as a fallback for non-Google access.
+  const isOwnerGoogle =
+    isAuthenticated &&
+    !!user?.email &&
+    user.email.trim().toLowerCase() === ADMIN_EMAIL;
+
+  if (isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </main>
+    );
+  }
+
+  if (!unlocked && !isOwnerGoogle) {
     return <PinGate onUnlock={() => setUnlocked(true)} />;
   }
 
-  return <AdminPanel onLock={() => { lockAdmin(); setUnlocked(false); }} />;
+  return (
+    <AdminPanel
+      onLock={() => {
+        if (!isOwnerGoogle) lockAdmin();
+        setUnlocked(false);
+      }}
+    />
+  );
 }
 
 function AdminPanel({ onLock }: { onLock: () => void }) {

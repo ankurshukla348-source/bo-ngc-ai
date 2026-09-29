@@ -96,25 +96,14 @@ const schema = defineSchema(
       accountHolder: v.string(),
     }).index("by_key", ["key"]),
 
-    // ── Storefront customer accounts (email + password) ────────
-    customers: defineTable({
-      email: v.string(), // lowercased
-      name: v.optional(v.string()),
-      passwordHash: v.string(), // scrypt hex, hashed in the node action
-      salt: v.string(), // per-customer hex salt
-      createdAt: v.number(),
-    }).index("by_email", ["email"]),
-
-    // ── OTP codes (login/register + password reset) ───────────
-    otpCodes: defineTable({
-      email: v.string(), // lowercased
-      purpose: v.string(), // "register" | "reset"
-      codeHash: v.string(),
-      attempts: v.number(),
-      expiresAt: v.number(),
-      consumed: v.boolean(),
-      createdAt: v.number(),
-    }).index("by_email_purpose", ["email", "purpose"]),
+    // ── One-time seed marker ───────────────────────────────────
+    // A single row here means starter products were either inserted or the
+    // catalogue already had data when this shipped. Seeding NEVER runs while
+    // this row exists — admin deletions are final.
+    seeded: defineTable({
+      id: v.string(), // always "seed"
+      at: v.number(),
+    }),
   },
   {
     schemaValidation: false,
