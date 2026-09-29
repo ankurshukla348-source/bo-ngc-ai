@@ -65,7 +65,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
         <div className="absolute inset-0 bg-gradient-to-br from-[#fdf2f6] via-[#fbeaf1] to-[#f7dfe9]" />
         <div className="absolute inset-0 flex flex-col justify-between p-12">
           <Link to="/" className="relative font-display text-2xl font-bold tracking-[0.08em]">
-
+            Bảo Ngọc.
             <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.35em] text-muted-foreground">
               Shop Thời Trang Nữ Bảo Ngọc.
             </span>
@@ -90,7 +90,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
             to="/"
             className="mb-8 block text-center font-display text-2xl font-bold tracking-[0.08em] lg:hidden"
           >
-
+            Bảo Ngọc.
           </Link>
 
           {/* Tabs */}

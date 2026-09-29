@@ -18,7 +18,7 @@ const vi = {
   announce:
     "MIỄN PHÍ VẬN CHUYỂN TOÀN QUỐC CHO ĐƠN TỪ 400.000 VND TRỞ LÊN. · Đổi trả trong 30 ngày.",
   seller: "Khu bán hàng",
-  navShop: "Hàng Mới Về Mỗi Ngày.",
+  navShop: "Bộ sưu tập",
   navCategories: "Danh mục",
   navStory: "Câu chuyện",
   navContact: "Liên hệ",
@@ -93,7 +93,7 @@ const vi = {
 
   // ── CTA band ─────────────────────────────────────────────────
   ctaTitle: "Sẵn sàng làm mới tủ đồ?",
-  ctaBody: "Hàng Mới Về Mỗi Ngày.",
+  ctaBody: "Bộ sưu tập mới về mỗi tuần — giao toàn quốc.",
   ctaButton: "Mua chỉnh sửa mới",
 
   // ── Mockup sections (circles, cards, banners, newsletter) ────
@@ -426,7 +426,7 @@ const en: Record<TKey, string> = {
   supportHotline: "Hotline: 0909 123 456",
   companyStory: "Our story",
   companyReviews: "Customer reviews",
-  rights: "© 2026 MAMA & CO. · Shop Bảo Ngọc. All rights reserved.",
+  rights: "© 2026 Shop Thời Trang Nữ Bảo Ngọc. All rights reserved.",
 
   // Cart / checkout
   checkoutTitle: "Checkout",

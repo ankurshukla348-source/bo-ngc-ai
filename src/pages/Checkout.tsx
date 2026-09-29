@@ -711,8 +711,12 @@ export default function Checkout() {
         customer: shipping,
         paymentMethod: method,
       });
-      clear();
       window.scrollTo({ top: 0 });
+      // Emptying the cart unmounts the header badge; doing that in the same
+      // commit that mounts the confirmation is part of the giant DOM swap
+      // that crashed React's DOM placement. Defer it so it lands in its own
+      // small, separate commit.
+      setTimeout(() => clear(), 0);
     } catch (orderError) {
       // Surface the real reason (network, validation, Convex) instead of a
       // blanket message — this is the only clue when a payout fails.
@@ -731,18 +735,30 @@ export default function Checkout() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {confirmed ? (
-        /* The order ID is the one thing the customer must never lose, so a
-           failure inside the confirmation (e.g. the QR renderer) degrades to
-           a plain order summary instead of a blank/error screen. */
-        <SafeBoundary
-          fallback={<OrderFallback code={confirmed.orderCode} total={confirmed.total} />}
-        >
-          <Confirmation order={confirmed} />
-        </SafeBoundary>
-      ) : items.length === 0 ? (
-        <EmptyCart />
-      ) : (
+      {/* Confirmation and checkout live in two always-mounted slots: placing
+          an order only toggles the `hidden` attribute and appends the
+          confirmation into an existing parent — instead of unmounting the
+          whole checkout grid and mounting the confirmation as swapping
+          siblings in one giant commit (which crashed React's insertBefore
+          placement). The wrappers carry no display class so the `hidden`
+          attribute always wins. */}
+      <div hidden={!confirmed}>
+        {confirmed && (
+          /* The order ID is the one thing the customer must never lose, so a
+             failure inside the confirmation (e.g. the QR renderer) degrades to
+             a plain order summary instead of a blank/error screen. */
+          <SafeBoundary
+            fallback={<OrderFallback code={confirmed.orderCode} total={confirmed.total} />}
+          >
+            <Confirmation order={confirmed} />
+          </SafeBoundary>
+        )}
+      </div>
+
+      <div hidden={!!confirmed}>
+        {items.length === 0 ? (
+          <EmptyCart />
+        ) : (
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
           {/* Page head */}
           <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
@@ -1125,7 +1141,8 @@ export default function Checkout() {
             </aside>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

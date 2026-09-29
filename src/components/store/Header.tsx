@@ -164,7 +164,7 @@ export function Header({
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3.5 sm:gap-6">
           <Link to="/" className="flex shrink-0 items-center gap-3">
             <span className="font-display text-xl font-bold tracking-[0.08em] sm:text-2xl">
-
+              Bảo Ngọc.
             </span>
             <span className="mt-0.5 hidden text-[9px] font-medium uppercase tracking-[0.35em] text-muted-foreground sm:block">
               Shop Thời Trang Nữ Bảo Ngọc.
