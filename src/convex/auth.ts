@@ -5,46 +5,50 @@ import { convexAuth } from "@convex-dev/auth/server";
 
 // ── Google Sign-In ────────────────────────────────────────────────────────
 //
-// Credentials come from the AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET Convex env
-// vars.
+// Credentials: AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET (Convex env).
 //
 // The OAuth *redirect_uri* registered in Google Cloud Console is:
 //
 //   https://fabulous-yak-430.convex.site/api/auth/callback/google
 //
-// That URL is an INBOUND endpoint: Google sends the browser there, and
-// Convex Auth's `/api/auth/callback/` route (registered by addHttpRoutes below)
-// completes the handshake. It is NOT a place to send the user afterwards.
+// That is an INBOUND endpoint — Google sends the browser there and Convex
+// Auth's `/api/auth/callback/` route (registered via addHttpRoutes) completes
+// the handshake. It is NOT a destination we send users to.
 //
-// `SITE_URL` (https://fabulous-yak-430.convex.site) is the Convex HTTP host.
-// It serves ONLY these auth endpoints — a request to its root answers
-// "No matching routes found". So after the handshake the browser must be sent
-// to the storefront's own origin, never back to SITE_URL.
+// IMPORTANT: `SITE_URL` (https://fabulous-yak-430.convex.site) is the Convex
+// HTTP host and serves ONLY /api/auth/* and /.well-known/*. Every other path
+// there answers "No matching routes found" — verified for "/", "/seller" and
+// "/auth". So the storefront is NEVER hosted on that domain, and we must never
+// redirect a signed-in user onto it. The browser is returned to the origin the
+// visitor actually came from (sent by the client as `redirectTo`).
 //
 // The Anonymous provider is deliberately NOT enabled: it would hand every
 // visitor a session, making `isAuthenticated` permanently true and turning
 // the Google gate (and RequireAuth) into a no-op.
 
 /**
- * Optional strict allow-list of storefront origins, from the `APP_SITE_URL`
- * Convex env var (comma-separated, e.g. "https://shop.vly.sh,https://shop.com").
+ * Optional strict allow-list of storefront origins from the `APP_SITE_URL`
+ * Convex env var (comma-separated), e.g. "https://shop.example.com".
+ * When set, ONLY these origins are accepted. Leave unset to trust the origin
+ * the request was actually initiated from.
  *
- * When set, ONLY these origins are accepted. Leave it unset to fall back to
- * the platform defaults below (the Freebuff preview host + local dev).
+ * Every entry is validated: a malformed value (e.g. a pasted markdown link
+ * such as "[https://x](https://x)") is discarded with a warning rather than
+ * being used as a redirect target.
  */
 const PINNED_ORIGINS = (process.env.APP_SITE_URL ?? "")
   .split(",")
   .map((value) => value.trim().replace(/\/+$/, ""))
-  .filter(Boolean);
-
-/** Local dev servers, only ever reached from a developer's own machine. */
-const DEV_ORIGINS = new Set([
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-]);
-
-/** Freebuff/Vly preview + published storefront hosts. */
-const APP_HOST_SUFFIXES = [".vly.sh", ".freebuff.com"];
+  .filter((value) => {
+    if (!value) return false;
+    try {
+      const { protocol } = new URL(value);
+      return protocol === "https:" || protocol === "http:";
+    } catch {
+      logWarn(`Ignoring malformed APP_SITE_URL entry: ${value}`);
+      return false;
+    }
+  });
 
 function logWarn(message: string): void {
   console.warn(`[auth] ${message}`);
@@ -59,31 +63,32 @@ function isConvexHost(hostname: string): boolean {
   );
 }
 
-/** Last-resort base when we have nothing better — still never a Convex host. */
+/**
+ * Last-resort base, used only when the request carried no usable origin.
+ * Deliberately NOT hardcoded to localhost — a production visitor must never be
+ * bounced to a dev machine ("localhost refused to connect").
+ */
 function fallbackOrigin(): string {
   if (PINNED_ORIGINS.length > 0) return PINNED_ORIGINS[0]!;
-  const site = process.env.SITE_URL;
-  if (site && !isConvexHost(new URL(site).hostname)) {
-    return site.replace(/\/+$/, "");
-  }
-  return "http://localhost:5173";
-}
-
-/**
- * True when the configured allow-list points at a Convex host, which would
- * send every visitor to the "No matching routes" dead-end.
- */
-function allowListIsMisconfigured(): boolean {
-  return PINNED_ORIGINS.some((origin) => {
-    try {
-      return isConvexHost(new URL(origin).hostname);
-    } catch {
-      return false;
+  // Nothing pinned — this only runs if the request carried no usable origin.
+  // SITE_URL is validated too, so a malformed value can never be emitted as a
+  // Location header. We never fall back to localhost: a production visitor
+  // must not be bounced to a developer's machine.
+  const site = (process.env.SITE_URL ?? "").trim();
+  try {
+    if (site) {
+      const parsed = new URL(site);
+      if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+        return `${parsed.origin}/`;
+      }
     }
-  });
+  } catch {
+    logWarn(`Ignoring malformed SITE_URL: ${site}`);
+  }
+  return "https://fabulous-yak-430.convex.site/";
 }
 
-/** Decide whether the browser may be returned to `origin`. */
+/** May the browser be returned to this absolute origin? */
 function isAllowedOrigin(origin: string): boolean {
   let parsed: URL;
   try {
@@ -92,29 +97,22 @@ function isAllowedOrigin(origin: string): boolean {
     return false;
   }
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
-  // Never bounce back to a bare Convex host — that host answers
-  // "No matching routes found" for every path but /api/auth/*. This check runs
-  // BEFORE the allow-list so a misconfigured APP_SITE_URL can never re-open
-  // the dead-end it was meant to close.
+  // The Convex HTTP host has no frontend: it is the "No matching routes" 404.
+  // This runs before the allow-list so a misconfigured APP_SITE_URL can never
+  // re-open the dead-end.
   if (isConvexHost(parsed.hostname)) return false;
   if (PINNED_ORIGINS.length > 0) return PINNED_ORIGINS.includes(origin);
-  if (DEV_ORIGINS.has(origin)) return true;
-  return (
-    parsed.protocol === "https:" &&
-    APP_HOST_SUFFIXES.some((suffix) => parsed.hostname.endsWith(suffix))
-  );
+  return true;
 }
 
 /**
  * Resolve where the browser goes once the OAuth handshake is done.
  *
- * The client always sends an absolute `{origin}/auth`, so this normally just
- * echoes it back — that is what makes the redirect follow whichever deployment
- * the visitor is actually using (local dev, preview, or production) instead of
- * a hardcoded host.
+ * The client always sends `${window.location.origin}/auth`, so this echoes the
+ * origin back — that is what makes the redirect follow whichever deployment the
+ * visitor is on (local dev, preview, or production) with no hardcoded host.
  */
 function resolveDestination(redirectTo: string): string {
-  // Relative destinations are resolved against an approved origin.
   if (redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
     return `${fallbackOrigin()}${redirectTo}`;
   }
@@ -127,26 +125,22 @@ function resolveDestination(redirectTo: string): string {
   }
 
   const origin = parsed.origin.replace(/\/+$/, "");
-  return isAllowedOrigin(origin)
-    ? `${origin}${parsed.pathname}${parsed.search}`
-    : fallbackOrigin();
+  if (!isAllowedOrigin(origin)) {
+    logWarn(`Rejected post-login redirect to ${origin}`);
+    return fallbackOrigin();
+  }
+  return `${origin}${parsed.pathname}${parsed.search}`;
 }
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [Google],
   callbacks: {
     /**
-     * Runs after `/api/auth/callback/<provider>` completes. Sends the browser
-     * back to the storefront it came from, carrying the `code` param that
+     * Runs after `/api/auth/callback/<provider>` completes. Returns the browser
+     * to the storefront it came from, carrying the `code` param that
      * `ConvexAuthProvider` (src/main.tsx) exchanges for a session.
      */
     async redirect({ redirectTo }) {
-      if (allowListIsMisconfigured()) {
-        logWarn(
-          "APP_SITE_URL points at a Convex host; falling back to origin-based " +
-            "resolution. Set APP_SITE_URL to the storefront's public URL.",
-        );
-      }
       return resolveDestination(redirectTo);
     },
   },

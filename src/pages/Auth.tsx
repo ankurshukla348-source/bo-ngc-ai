@@ -51,7 +51,9 @@ function AuthInner({
   // the button holds a calm spinner instead of flashing a signed-out UI.
   //
   // Once the session resolves, route the store owner straight to /seller and
-  // everyone else onward to wherever they were headed.
+  // everyone else onward to wherever they were headed. Both paths are resolved
+  // against the CURRENT origin — they must never be pinned to the Convex HTTP
+  // host, which serves no frontend.
   useEffect(() => {
     if (isLoading || !isAuthenticated || !user) return;
     const email = (user.email ?? "").toLowerCase();
@@ -66,9 +68,11 @@ function AuthInner({
     setBusy(true);
     setError(null);
     try {
-      // Send the callback back to THIS app's origin. Without it Convex Auth
-      // falls back to SITE_URL (a bare .convex.site host with no frontend),
-      // which is what produced "No matching routes" after signing in.
+      // The Convex callback hands the browser back to exactly this origin, so
+      // the redirect follows whichever deployment the visitor is on (local dev,
+      // preview, or production). Without it Convex Auth falls back to SITE_URL
+      // — a Convex host that serves no frontend and answers
+      // "No matching routes".
       await signIn("google", {
         redirectTo: `${window.location.origin}/auth`,
       });
