@@ -1,19 +1,65 @@
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useQuery } from "convex/react";
+import { useCallback, useMemo } from "react";
+import {
+  readSession,
+  writeSession,
+  clearSession,
+  type CustomerSession,
+} from "@/lib/customer-session";
 
+/**
+ * Storefront auth — now backed by the project's own customer accounts
+ * (email + password via Convex `customers`, OTP delivery through Resend)
+ * instead of the platform's email-OTP provider.
+ *
+ * Keeps the same shape the rest of the app already consumes
+ * (isLoading / isAuthenticated / user / signIn / signOut) so RequireAuth,
+ * Dashboard and the Header keep working unchanged.
+ */
 export function useAuth() {
-  const { isLoading: isAuthLoading, isAuthenticated } = useConvexAuth();
-  const user = useQuery(api.users.currentUser);
-  const { signIn, signOut } = useAuthActions();
+  const session = readSession();
+  // Reactive profile (name updates) for the logged-in customer.
+  const profile = useQuery(
+    api.customers.profileByEmail,
+    session ? { email: session.email } : "skip",
+  );
 
-  // Derive isLoading directly from the dependencies instead of managing separate state
-  const isLoading = isAuthLoading || user === undefined;
+  const isAuthenticated = session !== null;
+
+  const user = useMemo(() => {
+    if (!session) return null;
+    return {
+      email: session.email,
+      name: profile?.name ?? session.name ?? undefined,
+    };
+  }, [session, profile]);
+
+  /** Kept for compatibility with existing callers. The only remaining use is
+   *  guest (anonymous) sign-in; email flows use the authService actions. */
+  const signIn = useCallback(
+    async (_provider: string, _formData?: FormData) => {
+      throw new Error("Use the authService actions for email sign-in.");
+    },
+    [],
+  );
+
+  const signOut = useCallback(async () => {
+    clearSession();
+  }, []);
+
+  const startSession = useCallback((next: CustomerSession) => {
+    writeSession(next);
+    // Re-render consumers by touching nothing else — callers navigate right
+    // after this, and the next mount re-reads the session.
+  }, []);
 
   return {
-    isLoading,
+    isLoading: false,
     isAuthenticated,
     user,
+    session,
+    startSession,
     signIn,
     signOut,
   };

@@ -119,7 +119,7 @@ const vi = {
 
   // ── Footer ───────────────────────────────────────────────────
   footerTagline:
-    "Boutique thời trang được tuyển chọn tại Hà Nội. Thanh lịch, tự nhiên, dành cho bạn.",
+    "Shop Thời Trang Nữ uy tín hàng đầu tại Diên Khánh. Thanh lịch, tự nhiên, dành cho bạn.",
   footerShop: "DANH MỤC",
   footerSupport: "HỖ TRỢ",
   footerCompany: "CÔNG TY",
@@ -240,7 +240,24 @@ const vi = {
   orderCodeLabel: "Đơn hàng",
 
   // ── Auth (customer / seller login) ─────────────────────────
-  authEyebrow: "Đăng nhập Shop Thời Trang & Mỹ Phẩm Bảo Ngọc.",
+  welcomeBackTitle: "Chào mừng trở lại",
+  passwordLabel: "Mật khẩu",
+  confirmPasswordLabel: "Nhập lại mật khẩu",
+  signInCta: "Đăng nhập",
+  continueCta: "Tiếp tục",
+  saving: "Đang lưu...",
+  otpTitle: "Nhập mã xác thực",
+  otpSentToast: "Mã xác thực đã được gửi tới email của bạn.",
+  forgotPassword: "Quên mật khẩu?",
+  createPasswordTitle: "Tạo mật khẩu",
+  createAccountCta: "Hoàn tất đăng ký",
+  newPasswordTitle: "Đặt mật khẩu mới",
+  savePasswordCta: "Lưu mật khẩu mới",
+  passwordMismatch: "Hai mật khẩu không giống nhau.",
+  accountCreatedToast: "Tạo tài khoản thành công — chào mừng bạn!",
+  passwordResetToast: "Đã đổi mật khẩu. Đăng nhập lại nhé.",
+  guestCheckoutNote: "Mua sắm không cần tài khoản — kiểm tra giỏ hàng và đặt hàng luôn.",
+  authEyebrow: "Đăng nhập Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.",
   authWelcome: "Chào mừng trở lại",
   authSub: "Đăng nhập để mua sắm nhanh hơn và theo dõi đơn hàng của bạn.",
   tabCustomer: "Khách hàng",
@@ -271,7 +288,7 @@ const vi = {
   trustShip: "Miễn phí giao hàng",
   trustShipSub: "Cho đơn từ 400.000 VND",
   trustReturns: "Đổi size dễ dàng",
-  trustReturnsSub: "Hỗ trợ đổi size trong vòng 7 ngày (áp dụng cho sản phẩm còn nguyên tem mác, trừ quần lót vì lý do vệ sinh).",
+  trustReturnsSub: "Hỗ trợ đổi trả Size trong vòng 7 ngày.",
   trustPay: "Thanh toán VietQR & COD.",
   trustPaySub: "An toàn & bảo mật",
   trustSupport: "Hỗ trợ 24/7",
@@ -422,7 +439,7 @@ const en: Record<TKey, string> = {
 
   // Footer
   footerTagline:
-    "A curated fashion boutique from Hà Nội. Elegant, natural, made for you.",
+    "Trusted women's fashion shop of Diên Khánh. Elegant, natural, made for you.",
   footerShop: "SHOP",
   footerSupport: "SUPPORT",
   footerCompany: "COMPANY",
@@ -542,7 +559,24 @@ const en: Record<TKey, string> = {
   orderCodeLabel: "Order",
 
   // Auth (customer / seller login)
-  authEyebrow: "Shop Thời Trang Nữ Bảo Ngọc. sign in",
+  welcomeBackTitle: "Welcome back",
+  passwordLabel: "Password",
+  confirmPasswordLabel: "Confirm password",
+  signInCta: "Sign in",
+  continueCta: "Continue",
+  saving: "Saving...",
+  otpTitle: "Enter your verification code",
+  otpSentToast: "A verification code was sent to your email.",
+  forgotPassword: "Forgot password?",
+  createPasswordTitle: "Create a password",
+  createAccountCta: "Finish registration",
+  newPasswordTitle: "Set a new password",
+  savePasswordCta: "Save new password",
+  passwordMismatch: "The two passwords don't match.",
+  accountCreatedToast: "Account created — welcome!",
+  passwordResetToast: "Password updated. Please sign in again.",
+  guestCheckoutNote: "Shop without an account — go to your cart and order straight away.",
+  authEyebrow: "Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc. sign in",
   authWelcome: "Welcome back",
   authSub: "Sign in for faster checkout and to track your orders.",
   tabCustomer: "Customer",
@@ -573,7 +607,7 @@ const en: Record<TKey, string> = {
   trustShip: "Free shipping",
   trustShipSub: "On orders over 400.000 VND",
   trustReturns: "Easy size exchange",
-  trustReturnsSub: "Size exchange within 7 days (items with original tags; excluding panties for hygiene reasons).",
+  trustReturnsSub: "Size exchange within 7 days.",
   trustPay: "VietQR & COD payment.",
   trustPaySub: "Safe & secure",
   trustSupport: "24/7 support",
@@ -619,9 +653,9 @@ const en: Record<TKey, string> = {
 
 const CATEGORY_LABELS: Record<Lang, Record<Category, string>> = {
   vi: {
-    tops: "Áo lót & Bra",
+    tops: "Áo Lót & Bra",
     dresses: "Quần Trong",
-    cardigans: "Set bộ đồ lót",
+    cardigans: "Set Bộ Đồ Lót",
     trousers: "Mỹ Phẩm Làm Đẹp & Chăm Sóc Da",
     accessories: "Chăm Sóc Da & Làm Đẹp",
     bestsellers: "Những mặt hàng bán chạy nhất",

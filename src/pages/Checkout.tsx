@@ -743,6 +743,12 @@ export default function Checkout() {
     <div className="min-h-screen bg-background">
       <Header />
 
+      {/* Zero-friction reminder: an account is optional — checkout stays open
+          to everyone (guest checkout, no email verification required). */}
+      <p className="mx-auto max-w-6xl px-4 pt-4 text-xs text-muted-foreground sm:px-6">
+        {t("guestCheckoutNote")}
+      </p>
+
       {/* Confirmation and checkout live in two always-mounted slots: placing
           an order only toggles the `hidden` attribute and appends the
           confirmation into an existing parent — instead of unmounting the

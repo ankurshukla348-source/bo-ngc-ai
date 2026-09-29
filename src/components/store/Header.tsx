@@ -128,13 +128,6 @@ export function Header({
                 <LogIn className="size-4 text-muted-foreground" />
                 {t("signIn")}
               </button>
-              <Link
-                to="/auth?tab=seller"
-                onClick={() => setAccountOpen(false)}
-                className="flex items-center gap-2.5 border-t border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-secondary"
-              >
-                {t("seller")}
-              </Link>
             </>
           )}
         </div>
@@ -150,12 +143,6 @@ export function Header({
           <p className="truncate text-[10px] font-medium uppercase tracking-[0.16em] sm:text-[11px]">
             {t("announce")}
           </p>
-          <Link
-            to="/auth?tab=seller"
-            className="hidden shrink-0 items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-primary-foreground/70 transition-colors hover:text-primary-foreground sm:flex"
-          >
-            {t("seller")}
-          </Link>
         </div>
       </div>
 
@@ -163,7 +150,11 @@ export function Header({
       <div className="border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3.5 sm:gap-6">
           <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-            <span className="font-display text-base font-bold leading-tight tracking-[0.04em] sm:text-xl lg:text-2xl lg:tracking-[0.08em]">
+            {/* Mobile: short brand so the bar stays on one line; Desktop: full */}
+            <span className="font-display text-lg font-bold leading-tight tracking-[0.04em] md:hidden">
+              Shop Bảo Ngọc
+            </span>
+            <span className="hidden font-display text-xl font-bold leading-tight tracking-[0.08em] md:block lg:text-2xl">
               Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.
             </span>
           </Link>

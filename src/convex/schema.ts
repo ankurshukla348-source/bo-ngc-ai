@@ -94,7 +94,27 @@ const schema = defineSchema(
       bankName: v.string(),
       accountNo: v.string(),
       accountHolder: v.string(),
-    }).index("by_key", ["key"])
+    }).index("by_key", ["key"]),
+
+    // ── Storefront customer accounts (email + password) ────────
+    customers: defineTable({
+      email: v.string(), // lowercased
+      name: v.optional(v.string()),
+      passwordHash: v.string(), // scrypt hex, hashed in the node action
+      salt: v.string(), // per-customer hex salt
+      createdAt: v.number(),
+    }).index("by_email", ["email"]),
+
+    // ── OTP codes (login/register + password reset) ───────────
+    otpCodes: defineTable({
+      email: v.string(), // lowercased
+      purpose: v.string(), // "register" | "reset"
+      codeHash: v.string(),
+      attempts: v.number(),
+      expiresAt: v.number(),
+      consumed: v.boolean(),
+      createdAt: v.number(),
+    }).index("by_email_purpose", ["email", "purpose"]),
   },
   {
     schemaValidation: false,

@@ -134,6 +134,12 @@
   html {
     scroll-behavior: smooth;
   }
+  html,
+  body {
+    /* Kill every horizontal scrollbar across all breakpoints — wide fixed
+       elements (banners, overlays) clip instead of stretching the page. */
+    overflow-x: hidden;
+  }
   * {
     @apply border-border outline-ring/50;
   }

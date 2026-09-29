@@ -127,12 +127,6 @@ export function StoreFooter({
                 </button>
               </form>
             )}
-            <Link
-              to="/auth?tab=seller"
-              className="mt-5 inline-block text-xs text-white/50 underline-offset-4 transition-colors hover:text-white hover:underline"
-            >
-              {t("seller")}
-            </Link>
           </div>
         </div>
       </div>
