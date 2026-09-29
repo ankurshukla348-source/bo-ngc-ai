@@ -1,6 +1,11 @@
-/** Simple seller PIN gate for /admin — the v1 decision is a hardcoded PIN
- *  instead of a full auth provider. Change ADMIN_PIN here. */
-export const ADMIN_PIN = "8888";
+/** Seller dashboard access gate — shared by /seller and /admin.
+ *
+ *  The access code comes from the VITE_SELLER_PIN environment variable
+ *  (set it in the project's env/keys settings; it is baked in at build time
+ *  by Vite). A built-in fallback keeps local/dev runs working out of the box.
+ */
+
+export const ADMIN_PIN = import.meta.env.VITE_SELLER_PIN?.trim() || "246810";
 
 const SESSION_KEY = "mama-admin-unlocked";
 

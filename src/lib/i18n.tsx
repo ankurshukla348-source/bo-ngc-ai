@@ -199,7 +199,7 @@ const vi = {
   pinPlaceholder: "Nhập PIN",
   unlock: "Mở khóa",
   pinError: "PIN không đúng. Thử lại.",
-  pinHint: "PIN demo: 8888 — đổi trong src/lib/admin.ts",
+  pinHint: "Đăng nhập dành cho Chủ shop — chỉ chủ cửa hàng mới có mã truy cập.",
   backToStore: "Về cửa hàng",
   lock: "Khóa",
   newProduct: "Thêm sản phẩm",
@@ -258,13 +258,13 @@ const vi = {
   resendCode: "Gửi lại mã",
   authTerms:
     "Bằng việc tiếp tục, bạn đồng ý với điều khoản & chính sách của Shop Thời Trang Nữ Bảo Ngọc.",
-  sellerTitle: "Đăng nhập người bán",
+  sellerTitle: "Đăng nhập dành cho Chủ shop",
   sellerSub:
     "Khu vực dành riêng cho chủ shop — quản lý sản phẩm và đơn hàng.",
   accessCodeLabel: "Mã truy cập",
   sellerEnter: "Vào bảng điều khiển",
   sellerError: "Mã truy cập không đúng.",
-  sellerHint: "Mã demo: 8888",
+  sellerHint: "Đăng nhập dành cho Chủ shop — liên hệ chủ cửa hàng để nhận mã truy cập.",
   chooseAccount: "Chọn loại tài khoản",
 
   // ── Trust strip / mockup copy ──────────────────────────────
@@ -501,7 +501,7 @@ const en: Record<TKey, string> = {
   pinPlaceholder: "Enter PIN",
   unlock: "Unlock",
   pinError: "Incorrect PIN. Try again.",
-  pinHint: "Demo PIN: 8888 — change in src/lib/admin.ts",
+  pinHint: "Shop Manager Access — only the store owner has the access code.",
   backToStore: "Back to store",
   lock: "Lock",
   newProduct: "New product",
@@ -560,13 +560,13 @@ const en: Record<TKey, string> = {
   resendCode: "Resend code",
   authTerms:
     "By continuing you agree to Shop Thời Trang Nữ Bảo Ngọc.'s terms & privacy policy.",
-  sellerTitle: "Seller sign in",
+  sellerTitle: "Shop Manager Access",
   sellerSub:
     "Restricted area for the shop owner — manage products and orders.",
   accessCodeLabel: "Access code",
   sellerEnter: "Open dashboard",
   sellerError: "Incorrect access code.",
-  sellerHint: "Demo code: 8888",
+  sellerHint: "Shop Manager Access — contact the store owner for your access code.",
   chooseAccount: "Choose account type",
 
   // Trust strip / mockup copy
