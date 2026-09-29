@@ -13,26 +13,6 @@ export const categoryValidator = v.union(
 );
 
 /** All products, newest first, each with a resolved image URL. */
-/** One-time migration: remove legacy geometric-SVG placeholder rows (the old
- *  fashion seed data) so the new lingerie/beauty seed mix repopulates.
- *  Products with a real uploaded photo (imageStorageId) are never touched. */
-export const migrateLegacyImages = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const products = await ctx.db.query("products").collect();
-    let removed = 0;
-    for (const product of products) {
-      if (product.imageStorageId) continue;
-      const src = product.imageSrc ?? "";
-      if (src.startsWith("data:image/svg+xml")) {
-        await ctx.db.delete(product._id);
-        removed++;
-      }
-    }
-    return { removed };
-  },
-});
-
 export const list = query({
   args: {},
   handler: async (ctx) => {
@@ -130,12 +110,31 @@ export const remove = mutation({
   },
 });
 
-/** First-run catalogue. Safe to call repeatedly — only seeds an empty store. */
+/** First-run catalogue — runs at most once, ever.
+ *
+ *  The `seeded` marker row is written BEFORE any product insert, so two
+ *  concurrent callers (or a retry after a partial failure) can never insert the
+ *  catalogue twice. Once the marker exists this mutation is a no-op, which is
+ *  what keeps the admin catalogue stable: if the owner deletes every product the
+ *  store stays empty instead of silently repopulating. */
 export const seedIfEmpty = mutation({
   args: {},
   handler: async (ctx) => {
+    const marker = await ctx.db
+      .query("seeded")
+      .filter((q) => q.eq(q.field("id"), "seed"))
+      .unique();
+    if (marker) return { seeded: false };
+
     const existing = await ctx.db.query("products").take(1);
-    if (existing.length > 0) return;
+    if (existing.length > 0) {
+      // Products already present (never seeded by us) — just latch the marker.
+      await ctx.db.insert("seeded", { id: "seed", at: Date.now() });
+      return { seeded: false };
+    }
+
+    // Latch first: this makes the whole operation idempotent.
+    await ctx.db.insert("seeded", { id: "seed", at: Date.now() });
 
     const clothing = ["S", "M", "L", "XL"];
     const seeds: Array<{
@@ -171,6 +170,7 @@ export const seedIfEmpty = mutation({
         createdAt: Date.now() - i * 1000,
       });
     }
+    return { seeded: true };
   },
 });
 

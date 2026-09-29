@@ -1,5 +1,6 @@
 import { CATEGORIES, type Category } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n";
+import { TEXT } from "@/constants/text";
 import { useState } from "react";
 import { Link } from "react-router";
 import { ArrowRight, Facebook, Instagram, Music2, Twitter } from "lucide-react";
@@ -32,7 +33,7 @@ export function StoreFooter({
           {/* Brand */}
           <div className="flex flex-col gap-4">
             <span className="font-display text-xl font-bold leading-snug tracking-[0.08em] sm:text-2xl">
-              Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.
+              {TEXT.brandFull}
             </span>
             <p className="max-w-xs text-sm leading-relaxed text-white/60">
               {t("footerTagline")}

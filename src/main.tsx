@@ -13,7 +13,9 @@ import "./index.css";
 
 // Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
-const AuthPage = lazy(() => import("./pages/Auth.tsx"));
+const AuthPage = lazy(() =>
+  import("./pages/Auth.tsx").then((m) => ({ default: m.AuthPage })),
+);
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const Admin = lazy(() => import("./pages/Admin.tsx"));
 const Checkout = lazy(() => import("./pages/Checkout.tsx"));

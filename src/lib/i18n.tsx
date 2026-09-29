@@ -19,8 +19,6 @@ const vi = {
   // Locked store copy — sourced from src/constants/text.ts so it can never
   // reset or drift between renders/deployments.
   announce: TEXT.announce,
-  brandFull: TEXT.brandFull,
-  brandMobile: TEXT.brandMobile,
   seller: "Khu bán hàng",
   navShop: "Bộ sưu tập",
   navCategories: "Danh mục",
@@ -275,7 +273,6 @@ const vi = {
   guestCta: "Tiếp tục với tư cách khách",
   guestHint: "Mua sắm không cần tài khoản",
   backToEmail: "Dùng email khác",
-  resendCode: "Gửi lại mã",
   authTerms:
     "Bằng việc tiếp tục, bạn đồng ý với điều khoản & chính sách của Shop Thời Trang Nữ Bảo Ngọc.",
   sellerTitle: "Đăng nhập dành cho Chủ shop",
@@ -609,7 +606,6 @@ const en: Record<TKey, string> = {
   guestCta: "Continue as guest",
   guestHint: "Shop without an account",
   backToEmail: "Use a different email",
-  resendCode: "Resend code",
   authTerms:
     "By continuing you agree to Shop Thời Trang Nữ Bảo Ngọc.'s terms & privacy policy.",
   sellerTitle: "Shop Manager Access",

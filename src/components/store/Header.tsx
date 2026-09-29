@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
+import { TEXT } from "@/constants/text";
 import {
   ChevronDown,
   Heart,
@@ -152,10 +153,10 @@ export function Header({
           <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
             {/* Mobile: short brand so the bar stays on one line; Desktop: full */}
             <span className="font-display text-lg font-bold leading-tight tracking-[0.04em] md:hidden">
-              Shop Bảo Ngọc
+              {TEXT.brandMobile}
             </span>
             <span className="hidden font-display text-xl font-bold leading-tight tracking-[0.08em] md:block lg:text-2xl">
-              Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.
+              {TEXT.brandFull}
             </span>
           </Link>
 

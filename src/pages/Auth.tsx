@@ -1,187 +1,180 @@
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { ADMIN_EMAIL } from "@/lib/admin";
 import { useI18n } from "@/lib/i18n";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
-import { Suspense, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { Loader2, ShieldCheck, Sparkles } from "lucide-react";
+import { Suspense, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
-interface AuthProps {
-  redirectAfterAuth?: string;
-}
-
-function resolveRedirectAfterAuth(
-  returnTo: string | null,
-  fallback = "/dashboard",
-) {
-  if (returnTo?.startsWith("/") && !returnTo.startsWith("//")) {
-    return returnTo;
-  }
-  return fallback;
-}
-
-/** Google "G" mark, inline so no external asset is needed. */
+/** Inline Google "G" mark so the button reads as real Google Sign-In. */
 function GoogleMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden className={className}>
+    <svg viewBox="0 0 48 48" aria-hidden className={cn("size-5", className)}>
       <path
         fill="#4285F4"
-        d="M23.5 12.3c0-.9-.1-1.5-.3-2.2H12v4.2h6.5c-.1 1.1-.8 2.7-2.4 3.8l3.7 2.9c2.2-2.1 3.7-5.1 3.7-8.7z"
+        d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"
       />
       <path
         fill="#34A853"
-        d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.7-2.9c-1 .7-2.4 1.2-4.2 1.2-3.2 0-5.9-2.1-6.8-5H1.4v3C3.4 21.3 7.4 24 12 24z"
+        d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"
       />
       <path
         fill="#FBBC05"
-        d="M5.2 14.4c-.2-.7-.4-1.5-.4-2.4s.1-1.7.4-2.4v-3H1.4C.5 8.2 0 10 0 12s.5 3.8 1.4 5.4l3.8-3z"
+        d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34A21.99 21.99 0 0 0 2 24c0 3.55.85 6.91 2.34 9.88l7.35-5.7z"
       />
       <path
         fill="#EA4335"
-        d="M12 4.7c1.8 0 3 .8 3.7 1.4l3.3-3.2C16.9 1.1 14.2 0 12 0 7.4 0 3.4 2.7 1.4 6.6l3.8 3c.9-2.9 3.6-4.9 6.8-4.9z"
+        d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"
       />
     </svg>
   );
 }
 
-function Auth({ redirectAfterAuth }: AuthProps = {}) {
+function AuthInner({
+  redirectAfterAuth = "/dashboard",
+}: {
+  redirectAfterAuth?: string;
+}) {
   const { t } = useI18n();
-  return (
-    <div className="flex min-h-screen bg-background">
-      {/* ── Brand panel ── */}
-      <aside className="relative hidden w-[46%] overflow-hidden lg:block">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#fdf2f6] via-[#fbeaf1] to-[#f7dfe9]" />
-        <div className="absolute inset-0 flex flex-col justify-between p-12">
-          <Link
-            to="/"
-            className="relative block max-w-xs font-display text-xl font-bold leading-snug tracking-[0.06em] xl:text-2xl"
-          >
-            Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.
-          </Link>
-          <div className="relative max-w-md">
-            <p className="font-display text-4xl font-bold leading-tight">
-              {t("authWelcome")}
-            </p>
-            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              {t("authSub")}
-            </p>
-          </div>
-          <p className="relative text-xs text-muted-foreground">{t("rights")}</p>
-        </div>
-      </aside>
-
-      {/* ── Form panel ── */}
-      <main className="flex flex-1 items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md">
-          {/* Mobile brand */}
-          <Link
-            to="/"
-            className="mb-8 block px-4 text-center font-display text-xl font-bold leading-snug tracking-[0.06em] sm:text-2xl lg:hidden"
-          >
-            Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.
-          </Link>
-
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-soft sm:p-8">
-            <GoogleSignIn redirectAfterAuth={redirectAfterAuth} />
-          </div>
-
-          <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
-            {t("authTerms")}
-          </p>
-          <Link
-            to="/"
-            className="mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          >
-            <ArrowLeft className="size-3.5" />
-            {t("backToStore")}
-          </Link>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-/** One-tap Google sign-in card. The store owner's Google account is routed
- *  straight to /seller; every other Google account signs in as a customer. */
-function GoogleSignIn({ redirectAfterAuth }: AuthProps = {}) {
-  const { t } = useI18n();
+  const { isLoading, isAuthenticated, user, signIn } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirect = resolveRedirectAfterAuth(
-    searchParams.get("returnTo"),
-    redirectAfterAuth,
-  );
-
-  const { isLoading, isAuthenticated, user } = useAuth();
-  const { signIn } = useAuthActions();
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Already signed in → route by role. The owner account goes straight to
-  // the seller dashboard; everyone else continues as a customer.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const email = user?.email?.trim().toLowerCase();
-    if (email && email === ADMIN_EMAIL) {
-      navigate("/seller", { replace: true });
-    } else if (user) {
-      navigate(redirect, { replace: true });
-    }
-    // `user` gate: wait until the profile query has resolved so the owner
-    // check never fires on a half-loaded session.
-  }, [isAuthenticated, user, navigate, redirect]);
+  // Where to land after a customer signs in (RequireAuth preserves this).
+  const returnTo = searchParams.get("returnTo") || redirectAfterAuth;
 
-  const handleGoogleSignIn = () => {
+  // Once the session resolves, route the store owner straight to /seller and
+  // everyone else onward to wherever they were headed.
+  useEffect(() => {
+    if (isLoading || !isAuthenticated || !user) return;
+    const email = (user.email ?? "").toLowerCase();
+    if (email === ADMIN_EMAIL.toLowerCase()) {
+      navigate("/seller", { replace: true });
+    } else {
+      navigate(returnTo, { replace: true });
+    }
+  }, [isLoading, isAuthenticated, user, navigate, returnTo]);
+
+  const handleGoogle = async () => {
+    setBusy(true);
     setError(null);
     try {
-      // Redirects the browser to Google; Convex Auth completes the flow and
-      // returns here, after which the effect above routes by role.
-      void signIn("google");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("checkoutError"));
+      await signIn("google");
+    } catch {
+      setError(
+        "Không thể kết nối với Google. Vui lòng kiểm tra lại kết nối rồi thử lại.",
+      );
+      setBusy(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="text-center">
-        <h1 className="font-display text-3xl font-bold">{t("authWelcome")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t("authSub")}</p>
-      </div>
-
-      {error && (
-        <p className="rounded-full bg-destructive/10 px-4 py-2.5 text-center text-sm font-medium text-destructive">
-          {error}
+    <main className="grid min-h-screen lg:grid-cols-2">
+      {/* Brand panel */}
+      <section className="relative hidden overflow-hidden bg-[#3a2030] px-10 py-14 text-[#fdf2f6] lg:flex lg:flex-col lg:justify-between">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 size-[28rem] rounded-full bg-[#e695b9]/20 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-32 -left-16 size-[26rem] rounded-full bg-[#7c4a68]/40 blur-3xl"
+        />
+        <div className="relative">
+          <span className="font-display text-2xl font-bold leading-tight tracking-[0.06em]">
+            Shop Thời Trang &amp; Phụ Kiện Nữ Bảo Ngọc.
+          </span>
+        </div>
+        <div className="relative max-w-md">
+          <h1 className="font-display text-4xl font-bold leading-tight">
+            Chào mừng trở lại
+          </h1>
+          <p className="mt-4 text-sm leading-relaxed text-white/70">
+            Đăng nhập bằng Google để theo dõi đơn hàng, lưu sản phẩm yêu thích và
+            nhận ưu đãi dành riêng cho khách hàng của Shop Bảo Ngọc.
+          </p>
+          <ul className="mt-8 space-y-3 text-sm text-white/80">
+            <li className="flex items-center gap-3">
+              <Sparkles className="size-4 shrink-0 text-[#e695b9]" />
+              Miễn phí giao hàng cho đơn từ 400.000 VND.
+            </li>
+            <li className="flex items-center gap-3">
+              <ShieldCheck className="size-4 shrink-0 text-[#e695b9]" />
+              Hỗ trợ đổi trả Size trong vòng 7 ngày.
+            </li>
+          </ul>
+        </div>
+        <p className="relative text-xs text-white/50">
+          Shop Thời Trang Nữ uy tín hàng đầu tại Diên Khánh.
         </p>
-      )}
+      </section>
 
-      <Button
-        type="button"
-        variant="outline"
-        onClick={handleGoogleSignIn}
-        disabled={isLoading}
-        className="h-12 rounded-full border-border bg-card"
-      >
-        {isLoading ? (
-          <Loader2 className="mr-2 size-4 animate-spin" />
-        ) : (
-          <GoogleMark className="mr-3 size-5" />
-        )}
-        {t("googleSignInCta")}
-        <ArrowRight className="ml-2 size-4" />
-      </Button>
+      {/* Sign-in panel */}
+      <section className="flex items-center justify-center bg-background px-5 py-12 sm:px-8">
+        <div className="w-full max-w-sm">
+          <span className="font-display text-xl font-bold tracking-[0.06em] lg:hidden">
+            Shop Bảo Ngọc
+          </span>
+          <h2 className="mt-6 font-display text-3xl font-bold lg:mt-0">
+            Đăng nhập
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Sử dụng tài khoản Google của bạn để tiếp tục.
+          </p>
 
-      <p className="-mt-1 text-center text-xs text-muted-foreground">
-        {t("googleSignInHint")}
-      </p>
-    </div>
+          <button
+            type="button"
+            onClick={handleGoogle}
+            disabled={busy || isLoading}
+            className="mt-8 flex h-12 w-full items-center justify-center gap-3 rounded-full bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {busy ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <GoogleMark />
+            )}
+            Đăng nhập với Google
+          </button>
+
+          {error && (
+            <p
+              role="alert"
+              className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
+
+          <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
+            {t("googleSignInHint")}
+          </p>
+
+          <Link
+            to="/"
+            className="mt-8 block text-center text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          >
+            Quay lại trang chủ
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }
 
-export default function AuthPage(props: AuthProps) {
+export function AuthPage(props: { redirectAfterAuth?: string }) {
   return (
-    <Suspense>
-      <Auth {...props} />
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-background">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        </main>
+      }
+    >
+      <AuthInner {...props} />
     </Suspense>
   );
 }
+
+export default AuthPage;
