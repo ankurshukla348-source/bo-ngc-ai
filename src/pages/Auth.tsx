@@ -31,7 +31,7 @@ function GoogleMark({ className }: { className?: string }) {
 }
 
 function AuthInner({
-  redirectAfterAuth = "/dashboard",
+  redirectAfterAuth = "/",
 }: {
   redirectAfterAuth?: string;
 }) {
@@ -42,9 +42,14 @@ function AuthInner({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Where to land after a customer signs in (RequireAuth preserves this).
+  // Where a customer lands after signing in. `returnTo` wins so RequireAuth
+  // can send them back to the page they asked for; otherwise we go Home.
   const returnTo = searchParams.get("returnTo") || redirectAfterAuth;
 
+  // The OAuth round-trip appends ?code=... and ConvexAuthProvider exchanges it
+  // for a session. `isLoading` stays true until the profile query resolves, so
+  // the button holds a calm spinner instead of flashing a signed-out UI.
+  //
   // Once the session resolves, route the store owner straight to /seller and
   // everyone else onward to wherever they were headed.
   useEffect(() => {
@@ -61,7 +66,12 @@ function AuthInner({
     setBusy(true);
     setError(null);
     try {
-      await signIn("google");
+      // Send the callback back to THIS app's origin. Without it Convex Auth
+      // falls back to SITE_URL (a bare .convex.site host with no frontend),
+      // which is what produced "No matching routes" after signing in.
+      await signIn("google", {
+        redirectTo: `${window.location.origin}/auth`,
+      });
     } catch {
       setError(
         "Không thể kết nối với Google. Vui lòng kiểm tra lại kết nối rồi thử lại.",
@@ -130,15 +140,15 @@ function AuthInner({
             disabled={busy || isLoading}
             className="mt-8 flex h-12 w-full items-center justify-center gap-3 rounded-full bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {busy ? (
+            {busy || isLoading ? (
               <Loader2 className="size-5 animate-spin" />
             ) : (
               <GoogleMark />
             )}
-            Đăng nhập với Google
+            {isLoading ? "Đang hoàn tất đăng nhập…" : "Đăng nhập với Google"}
           </button>
 
-          {error && (
+          {error && !isLoading && (
             <p
               role="alert"
               className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"

@@ -21,13 +21,19 @@ const schema = defineSchema(
     // default auth tables using convex auth.
     ...authTables, // do not remove or modify
 
-    // the users table is the default users table that is brought in by the authTables
+    // the users table is the default users table that is brought in by the authTables.
+    // It MUST keep every field `authTables` defines (notably `phone` and
+    // `phoneVerificationTime`): Convex Auth writes the whole profile on upsert,
+    // and dropping a field makes the insert fail with "Insert before error"
+    // the first time a Google account signs in.
     users: defineTable({
       name: v.optional(v.string()), // name of the user. do not remove
       image: v.optional(v.string()), // image of the user. do not remove
       email: v.optional(v.string()), // email of the user. do not remove
       emailVerificationTime: v.optional(v.number()), // email verification time. do not remove
       isAnonymous: v.optional(v.boolean()), // is the user anonymous. do not remove
+      phone: v.optional(v.string()), // phone of the user. do not remove
+      phoneVerificationTime: v.optional(v.number()), // do not remove
 
       role: v.optional(roleValidator), // role of the user. do not remove
     }).index("email", ["email"]), // index for the email. do not remove or modify

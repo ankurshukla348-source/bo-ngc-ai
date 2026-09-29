@@ -13,13 +13,13 @@ import "./index.css";
 
 // Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
-const AuthPage = lazy(() =>
-  import("./pages/Auth.tsx").then((m) => ({ default: m.AuthPage })),
-);
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const Admin = lazy(() => import("./pages/Admin.tsx"));
 const Checkout = lazy(() => import("./pages/Checkout.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const AuthPage = lazy(() =>
+  import("./pages/Auth.tsx").then((m) => ({ default: m.AuthPage })),
+);
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -122,7 +122,13 @@ createRoot(document.getElementById("root")!).render(
       <ToolbarErrorBoundary>
         <VlyToolbar />
       </ToolbarErrorBoundary>
-      <ConvexAuthProvider client={convex}>
+      <ConvexAuthProvider
+        client={convex}
+        // The OAuth callback returns with ?code=… . Swap it out of the address
+        // bar once the provider has exchanged it, so a refresh doesn't re-run
+        // the handshake and the sign-in page isn't stuck in "finishing".
+        replaceURL={(url) => window.history.replaceState(null, "", url)}
+      >
         <I18nProvider>
           <CartProvider>
             <BrowserRouter>
@@ -133,10 +139,10 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/seller" element={<Admin />} />
-                  <Route
-                    path="/auth"
-                    element={<AuthPage redirectAfterAuth="/dashboard" />}
-                  />
+                  {/* OAuth can land back on the app at /auth (optionally with
+                      a sub-path or the ?code= param) — all of them resolve to
+                      the sign-in screen, never to an unhandled route. */}
+                  <Route path="/auth/*" element={<AuthPage redirectAfterAuth="/" />} />
                   <Route
                     path="/dashboard"
                     element={
