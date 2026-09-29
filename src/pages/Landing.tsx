@@ -2,6 +2,7 @@ import { Header } from "@/components/store/Header";
 import { ProductCard, type StoreProduct } from "@/components/store/ProductCard";
 import { useCart } from "@/lib/cart";
 import { StoreFooter } from "@/components/store/StoreFooter";
+import { ZaloContact } from "@/components/store/ZaloContact";
 import { api } from "@/convex/_generated/api";
 import { CATEGORIES, type Category } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n";
@@ -70,6 +71,7 @@ export default function Landing() {
 
   const products = useQuery(api.products.list);
   const seedIfEmpty = useMutation(api.products.seedIfEmpty);
+  const migrateLegacyImages = useMutation(api.products.migrateLegacyImages);
 
   // First-run: populate the empty catalogue with starter products.
   useEffect(() => {
@@ -77,6 +79,19 @@ export default function Landing() {
       void seedIfEmpty();
     }
   }, [products, seedIfEmpty]);
+
+  // One-time: replace legacy geometric SVG placeholders with real photos.
+  useEffect(() => {
+    if (
+      products &&
+      products.some(
+        (p) =>
+          !p.image || p.image.startsWith("data:image/svg+xml"),
+      )
+    ) {
+      void migrateLegacyImages();
+    }
+  }, [products, migrateLegacyImages]);
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -212,10 +227,13 @@ export default function Landing() {
               ))
             ) : (
               <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#fdf2f6] via-[#fbeaf1] to-[#f7dfe9]" />
-                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none font-display text-[10rem] font-bold text-white/50">
-                  M&amp;C
-                </span>
+                {/* Real product photo fallback so the hero is never blank */}
+                <img
+                  src="https://images.pexels.com/photos/4314754/pexels-photo-4314754.jpeg?auto=compress&cs=tinysrgb&w=1400"
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
               </div>
             )}
 
@@ -530,13 +548,13 @@ export default function Landing() {
             {t("storyP1")}
           </p>
           <p className="mt-4 font-display text-lg font-semibold italic">
-            — Bảo Ngọc
+            — Bảo Ngọc · {t("storyBrand")}
           </p>
           <div className="mx-auto mt-8 grid max-w-lg grid-cols-3 gap-4">
             {[
-              { value: "2.000+", labelKey: "statCustomers" as const },
+              { value: "5000+", labelKey: "statCustomers" as const },
               { value: "4,9/5", labelKey: "statRating" as const },
-              { value: "24h", labelKey: "statDispatch" as const },
+              { value: "1h", labelKey: "statDispatch" as const },
             ].map((stat) => (
               <div
                 key={stat.labelKey}
@@ -637,6 +655,7 @@ export default function Landing() {
       <StoreFooter
         onCategorySelect={(category) => applyCategory(category)}
       />
+      <ZaloContact />
     </div>
   );
 }

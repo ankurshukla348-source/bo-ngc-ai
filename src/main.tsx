@@ -130,6 +130,7 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="/" element={<Landing />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/admin" element={<Admin />} />
+                  <Route path="/seller" element={<Admin />} />
                   <Route
                     path="/auth"
                     element={<AuthPage redirectAfterAuth="/dashboard" />}

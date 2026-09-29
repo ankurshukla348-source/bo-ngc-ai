@@ -66,14 +66,15 @@ const vi = {
 
   // ── Story ────────────────────────────────────────────────────
   storyEyebrow: "CÂU CHUYỆN CỦA CHÚNG TÔI",
-  storyTitle: "Bảo Ngọc chọn đồ như chọn bạn",
+  storyTitle: "Chọn đồ nội y như chọn sự thấu hiểu.",
+  storyBrand: "Shop Thời Trang & Mỹ Phẩm Bảo Ngọc.",
   storyP1:
-"",
+    "Tại Shop Thời Trang & Mỹ Phẩm Bảo Ngọc, mỗi sản phẩm đều được chọn kỹ từ chất vải đến đường may — đồ lót mềm mại, mỹ phẩm chính hãng, tất cả để bạn thoải mái và tự tin mỗi ngày.",
   storyP2:
     "Chúng tôi tin rằng thời trang đẹp không cần ồn ào — chỉ cần vải tốt, phom dáng chuẩn và một người thật sự hiểu bạn.",
-  statCustomers: "Khách hàng",
-  statRating: "Điểm đánh giá",
-  statDispatch: "Xử lý đơn",
+  statCustomers: "khách hàng tin dùng.",
+  statRating: "điểm đánh giá",
+  statDispatch: "xử lý đơn.",
 
   // ── Social proof ─────────────────────────────────────────────
   loveEyebrow: "KHÁCH HÀNG NÓI GÌ",
@@ -125,10 +126,14 @@ const vi = {
   supportShipping: "Miễn phí giao hàng từ 2.000.000₫",
   supportReturns: "Đổi trả trong 30 ngày",
   supportPayment: "Thanh toán VietQR & COD",
-  supportHotline: "Hotline: 0909 123 456",
+  supportHotline: "Hotline: 0793578058",
   companyStory: "Câu chuyện",
   companyReviews: "Đánh giá khách hàng",
-  rights: "© 2026 Shop Thời Trang Nữ Bảo Ngọc. Mọi quyền được bảo lưu.",
+  zaloLabel: "Chat Zalo với shop",
+  zaloScanTitle: "Quét mã Zalo để chat với shop",
+  zaloScanSub: "Mở app Zalo → quét mã bên dưới → chat ngay với Bảo Ngọc.",
+  zaloClose: "Đóng",
+  rights: "© 2026 Shop Thời Trang & Mỹ Phẩm Bảo Ngọc. Mọi quyền được bảo lưu.",
 
   // ── Cart / checkout ──────────────────────────────────────────
   checkoutTitle: "Thanh toán",
@@ -190,7 +195,7 @@ const vi = {
 
   // ── Admin ────────────────────────────────────────────────────
   adminTitle: "Khu bán hàng",
-  adminSub: "Shop Thời Trang Nữ Bảo Ngọc. · Seller Dashboard",
+  adminSub: "Shop Thời Trang & Mỹ Phẩm Bảo Ngọc. · Seller Dashboard",
   pinPlaceholder: "Nhập PIN",
   unlock: "Mở khóa",
   pinError: "PIN không đúng. Thử lại.",
@@ -235,7 +240,7 @@ const vi = {
   orderCodeLabel: "Đơn hàng",
 
   // ── Auth (customer / seller login) ─────────────────────────
-  authEyebrow: "Đăng nhập Shop Thời Trang Nữ Bảo Ngọc.",
+  authEyebrow: "Đăng nhập Shop Thời Trang & Mỹ Phẩm Bảo Ngọc.",
   authWelcome: "Chào mừng trở lại",
   authSub: "Đăng nhập để mua sắm nhanh hơn và theo dõi đơn hàng của bạn.",
   tabCustomer: "Khách hàng",
@@ -265,10 +270,10 @@ const vi = {
   // ── Trust strip / mockup copy ──────────────────────────────
   trustShip: "Miễn phí giao hàng",
   trustShipSub: "Cho đơn từ 2.000.000₫",
-  trustReturns: "Đổi trả dễ dàng",
-  trustReturnsSub: "Trong vòng 30 ngày",
-  trustPay: "Thanh toán an toàn",
-  trustPaySub: "VietQR & COD bảo mật",
+  trustReturns: "Đổi size dễ dàng",
+  trustReturnsSub: "Hỗ trợ đổi size trong vòng 7 ngày (áp dụng cho sản phẩm còn nguyên tem mác, trừ quần lót vì lý do vệ sinh).",
+  trustPay: "Thanh toán VietQR & COD.",
+  trustPaySub: "An toàn & bảo mật",
   trustSupport: "Hỗ trợ 24/7",
   trustSupportSub: "Luôn sẵn lòng giúp bạn",
   heroTagline:
@@ -364,14 +369,15 @@ const en: Record<TKey, string> = {
 
   // Story
   storyEyebrow: "OUR STORY",
-  storyTitle: "Bảo Ngọc picks pieces like friends",
+  storyTitle: "Choosing lingerie is choosing to be understood.",
+  storyBrand: "Shop Thời Trang & Mỹ Phẩm Bảo Ngọc.",
   storyP1:
-    "Shop Bảo Ngọc is a small boutique in Hà Nội: every dress, every cardigan is touched, studied stitch by stitch before it reaches the rack.",
+    "At Shop Thời Trang & Mỹ Phẩm Bảo Ngọc, every piece is hand-picked from fabric to stitching — soft lingerie and genuine skincare, all to keep you comfortable and confident every day.",
   storyP2:
     "We believe great style doesn't need noise — just good fabric, an honest cut, and someone who truly understands you.",
-  statCustomers: "Customers",
-  statRating: "Average rating",
-  statDispatch: "Order dispatch",
+  statCustomers: "happy customers",
+  statRating: "average rating",
+  statDispatch: "order processing.",
 
   // Social proof
   loveEyebrow: "KIND WORDS",
@@ -423,10 +429,14 @@ const en: Record<TKey, string> = {
   supportShipping: "Free shipping over 2.000.000₫",
   supportReturns: "30-day returns",
   supportPayment: "VietQR & cash on delivery",
-  supportHotline: "Hotline: 0909 123 456",
+  supportHotline: "Hotline: 0793578058",
   companyStory: "Our story",
   companyReviews: "Customer reviews",
-  rights: "© 2026 Shop Thời Trang Nữ Bảo Ngọc. All rights reserved.",
+  zaloLabel: "Chat on Zalo",
+  zaloScanTitle: "Scan the Zalo QR to chat with us",
+  zaloScanSub: "Open Zalo → scan the code below → chat with Bảo Ngọc instantly.",
+  zaloClose: "Close",
+  rights: "© 2026 Shop Thời Trang & Mỹ Phẩm Bảo Ngọc. All rights reserved.",
 
   // Cart / checkout
   checkoutTitle: "Checkout",
@@ -562,10 +572,10 @@ const en: Record<TKey, string> = {
   // Trust strip / mockup copy
   trustShip: "Free shipping",
   trustShipSub: "On orders over 2.000.000₫",
-  trustReturns: "Easy returns",
-  trustReturnsSub: "Within 30 days",
-  trustPay: "Secure payment",
-  trustPaySub: "Protected VietQR & COD",
+  trustReturns: "Easy size exchange",
+  trustReturnsSub: "Size exchange within 7 days (items with original tags; excluding panties for hygiene reasons).",
+  trustPay: "VietQR & COD payment.",
+  trustPaySub: "Safe & secure",
   trustSupport: "24/7 support",
   trustSupportSub: "We're here to help",
   heroTagline:
@@ -609,19 +619,19 @@ const en: Record<TKey, string> = {
 
 const CATEGORY_LABELS: Record<Lang, Record<Category, string>> = {
   vi: {
-    tops: "Áo",
-    dresses: "Đầm",
-    cardigans: "Áo khoác len",
-    trousers: "Quần",
-    accessories: "Phụ kiện",
-    bestsellers: "Bán chạy",
+    tops: "Áo lót & Bra",
+    dresses: "Quần Trong",
+    cardigans: "Set bộ đồ lót",
+    trousers: "Mỹ Phẩm Làm Đẹp & Chăm Sóc Da",
+    accessories: "Mỹ Phẩm Làm Đẹp & Chăm Sóc Da",
+    bestsellers: "Những mặt hàng bán chạy nhất",
   },
   en: {
-    tops: "Tops",
-    dresses: "Dresses",
-    cardigans: "Cardigans",
-    trousers: "Trousers",
-    accessories: "Accessories",
+    tops: "Bras & Lingerie",
+    dresses: "Underwear",
+    cardigans: "Lingerie Sets",
+    trousers: "Beauty & Skincare",
+    accessories: "Beauty & Skincare",
     bestsellers: "Bestsellers",
   },
 };

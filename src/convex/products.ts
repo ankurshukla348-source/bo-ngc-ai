@@ -13,6 +13,26 @@ export const categoryValidator = v.union(
 );
 
 /** All products, newest first, each with a resolved image URL. */
+/** One-time migration: remove legacy geometric-SVG placeholder rows (the old
+ *  fashion seed data) so the new lingerie/beauty seed mix repopulates.
+ *  Products with a real uploaded photo (imageStorageId) are never touched. */
+export const migrateLegacyImages = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const products = await ctx.db.query("products").collect();
+    let removed = 0;
+    for (const product of products) {
+      if (product.imageStorageId) continue;
+      const src = product.imageSrc ?? "";
+      if (src.startsWith("data:image/svg+xml")) {
+        await ctx.db.delete(product._id);
+        removed++;
+      }
+    }
+    return { removed };
+  },
+});
+
 export const list = query({
   args: {},
   handler: async (ctx) => {
@@ -132,15 +152,15 @@ export const seedIfEmpty = mutation({
       sizes: string[];
       inStock: boolean;
     }> = [
-      { nameVi: "Đầm xòe hoa nhí", nameEn: "Floral Midi Dress", category: "dresses", price: 685000, sizes: clothing, inStock: true },
-      { nameVi: "Áo khoác len cardigan", nameEn: "Chunky Knit Cardigan", category: "cardigans", price: 550000, sizes: clothing, inStock: true },
-      { nameVi: "Áo sơ mi linen", nameEn: "Linen Blend Shirt", category: "tops", price: 420000, sizes: clothing, inStock: true },
-      { nameVi: "Quần ống rộng", nameEn: "Wide-Leg Trousers", category: "trousers", price: 490000, sizes: clothing, inStock: true },
-      { nameVi: "Túi đeo chéo da mềm", nameEn: "Soft Leather Crossbody", category: "accessories", price: 380000, sizes: ["Free Size"], inStock: true },
-      { nameVi: "Set chân váy & áo cộc", nameEn: "Skirt & Tee Set", category: "bestsellers", price: 720000, sizes: clothing, inStock: true },
-      { nameVi: "Đầm suông cổ vuông", nameEn: "Square-Neck Slip Dress", category: "dresses", price: 620000, sizes: clothing, inStock: true },
-      { nameVi: "Áo thun cotton cơ bản", nameEn: "Everyday Cotton Tee", category: "tops", price: 190000, sizes: clothing, inStock: true },
-      { nameVi: "Mũ cói đan tay", nameEn: "Handwoven Straw Hat", category: "accessories", price: 250000, sizes: ["Free Size"], inStock: false },
+      { nameVi: "Áo bra nâng dáng mềm mại", nameEn: "Soft Push-Up Bra", category: "tops", price: 285000, sizes: clothing, inStock: true },
+      { nameVi: "Quần lót cotton thoáng khí", nameEn: "Breathable Cotton Panty", category: "dresses", price: 95000, sizes: clothing, inStock: true },
+      { nameVi: "Set bộ đồ lót ren cao cấp", nameEn: "Premium Lace Lingerie Set", category: "cardigans", price: 455000, sizes: clothing, inStock: true },
+      { nameVi: "Váy ngủ lụa thép", nameEn: "Silk Slip Nightgown", category: "trousers", price: 390000, sizes: clothing, inStock: true },
+      { nameVi: "Serum dưỡng trắng da", nameEn: "Brightening Face Serum", category: "accessories", price: 260000, sizes: ["Free Size"], inStock: true },
+      { nameVi: "Kem chống nắng định hình", nameEn: "Tone-Up Sunscreen", category: "bestsellers", price: 185000, sizes: ["Free Size"], inStock: true },
+      { nameVi: "Bra lót vô hình không đường may", nameEn: "Seamless Invisible Bra", category: "tops", price: 225000, sizes: clothing, inStock: true },
+      { nameVi: "Set đồ ngủ cotton hai món", nameEn: "Two-Piece Cotton Pajama Set", category: "trousers", price: 340000, sizes: clothing, inStock: true },
+      { nameVi: "Nước tẩy trang dịu nhẹ", nameEn: "Gentle Micellar Water", category: "accessories", price: 145000, sizes: ["Free Size"], inStock: false },
     ];
 
     for (let i = 0; i < seeds.length; i++) {

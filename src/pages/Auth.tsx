@@ -127,7 +127,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                 onDone={() => navigate(redirect)}
               />
             ) : (
-              <SellerForm onUnlocked={() => navigate("/admin")} />
+              <SellerForm onUnlocked={() => navigate("/seller")} />
             )}
           </div>
 

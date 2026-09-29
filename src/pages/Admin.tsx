@@ -49,7 +49,7 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
       >
         <div className="flex items-center gap-3">
           <span className="flex size-11 items-center justify-center rounded-2xl bg-primary font-display text-2xl font-bold text-primary-foreground">
-            M
+            B
           </span>
           <span>
             <span className="block font-display text-xl font-bold tracking-tight">
@@ -849,7 +849,7 @@ function AdminPanel({ onLock }: { onLock: () => void }) {
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
           <span className="flex size-10 items-center justify-center rounded-xl bg-primary font-display text-xl font-bold text-primary-foreground">
-            M
+            B
           </span>
           <span className="leading-none">
             <span className="block font-display text-lg font-bold tracking-tight">
