@@ -51,6 +51,65 @@ type Step =
 
 function Auth({ redirectAfterAuth }: AuthProps = {}) {
   const { t } = useI18n();
+  return (
+    <div className="flex min-h-screen bg-background">
+      {/* ── Brand panel ── */}
+      <aside className="relative hidden w-[46%] overflow-hidden lg:block">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#fdf2f6] via-[#fbeaf1] to-[#f7dfe9]" />
+        <div className="absolute inset-0 flex flex-col justify-between p-12">
+          <Link
+            to="/"
+            className="relative block max-w-xs font-display text-xl font-bold leading-snug tracking-[0.06em] xl:text-2xl"
+          >
+            Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.
+          </Link>
+          <div className="relative max-w-md">
+            <p className="font-display text-4xl font-bold leading-tight">
+              {t("authWelcome")}
+            </p>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              {t("authSub")}
+            </p>
+          </div>
+          <p className="relative text-xs text-muted-foreground">{t("rights")}</p>
+        </div>
+      </aside>
+
+      {/* ── Form panel ── */}
+      <main className="flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+          {/* Mobile brand */}
+          <Link
+            to="/"
+            className="mb-8 block px-4 text-center font-display text-xl font-bold leading-snug tracking-[0.06em] sm:text-2xl lg:hidden"
+          >
+            Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.
+          </Link>
+
+          <div className="rounded-3xl border border-border bg-card p-6 shadow-soft sm:p-8">
+            <AuthShell redirectAfterAuth={redirectAfterAuth} />
+          </div>
+
+          <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
+            {t("authTerms")}
+          </p>
+          <Link
+            to="/"
+            className="mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            <ArrowLeft className="size-3.5" />
+            {t("backToStore")}
+          </Link>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/** The unified login flow's step machine — renders whichever step form is
+ *  current (email → password / OTP / owner password → new password). */
+function AuthShell({ redirectAfterAuth }: AuthProps = {}) {
+  const { t } = useI18n();
   const { startSession } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
