@@ -612,8 +612,16 @@ export default function Checkout() {
 
   const paymentSettings = useQuery(api.settings.getPayment);
 
-  const fee = shippingFeeFor(subtotal);
-  const total = subtotal + fee;
+  /* Once the order is confirmed the grid is driven by the frozen snapshot
+     instead of the live cart, so the deferred clear() below cannot touch the
+     grid DOM at all (only the header badge unmounts). Every mutation inside
+     the confirm sequence becomes append-only — deletions of grid rows were
+     the other half of the insertBefore/removeChild crashes. */
+  const gridItems = confirmed ? confirmed.items : items;
+  const gridSubtotal = confirmed ? confirmed.subtotal : subtotal;
+
+  const fee = shippingFeeFor(gridSubtotal);
+  const total = gridSubtotal + fee;
 
   const qrPayload = useMemo(
     () =>
@@ -756,7 +764,13 @@ export default function Checkout() {
       </div>
 
       <div hidden={!!confirmed}>
-        {items.length === 0 ? (
+        {/* The grid deliberately stays mounted (hidden) once the order is
+            placed, even after the deferred clear() empties the cart: swapping
+            it for <EmptyCart/> would delete hundreds of DOM nodes inside the
+            confirm commit, and one failed deletion poisons every later
+            placement (the insertBefore/removeChild crashes). A hidden, emptied
+            grid is harmless — EmptyCart only shows pre-confirm. */}
+        {gridItems.length === 0 && !confirmed ? (
           <EmptyCart />
         ) : (
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
@@ -775,7 +789,7 @@ export default function Checkout() {
               </h1>
             </div>
             <p className="text-sm font-semibold text-muted-foreground">
-              {items.length} · {formatVnd(total)}
+              {gridItems.length} · {formatVnd(total)}
             </p>
           </div>
 
@@ -1019,7 +1033,7 @@ export default function Checkout() {
                       {t("orderSummary")}
                     </p>
                     <ul className="divide-y divide-border">
-                      {items.map((item) => (
+                      {gridItems.map((item) => (
                         <li
                           key={item.key}
                           className="flex items-center gap-3 px-4 py-3 text-sm"
@@ -1039,7 +1053,7 @@ export default function Checkout() {
                     </ul>
                     <div className="border-t border-border px-4 py-4">
                       <Totals
-                        subtotal={subtotal}
+                        subtotal={gridSubtotal}
                         fee={fee}
                         total={total}
                         t={t}
@@ -1135,7 +1149,7 @@ export default function Checkout() {
                   ))}
                 </ul>
                 <div className="border-t border-border p-5">
-                  <Totals subtotal={subtotal} fee={fee} total={total} t={t} />
+                  <Totals subtotal={gridSubtotal} fee={fee} total={total} t={t} />
                 </div>
               </div>
             </aside>
