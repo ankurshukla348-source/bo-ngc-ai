@@ -46,6 +46,10 @@ const DEV_ORIGINS = new Set([
 /** Freebuff/Vly preview + published storefront hosts. */
 const APP_HOST_SUFFIXES = [".vly.sh", ".freebuff.com"];
 
+function logWarn(message: string): void {
+  console.warn(`[auth] ${message}`);
+}
+
 function isConvexHost(hostname: string): boolean {
   return (
     hostname === "convex.site" ||
@@ -65,10 +69,22 @@ function fallbackOrigin(): string {
   return "http://localhost:5173";
 }
 
+/**
+ * True when the configured allow-list points at a Convex host, which would
+ * send every visitor to the "No matching routes" dead-end.
+ */
+function allowListIsMisconfigured(): boolean {
+  return PINNED_ORIGINS.some((origin) => {
+    try {
+      return isConvexHost(new URL(origin).hostname);
+    } catch {
+      return false;
+    }
+  });
+}
+
 /** Decide whether the browser may be returned to `origin`. */
 function isAllowedOrigin(origin: string): boolean {
-  if (PINNED_ORIGINS.length > 0) return PINNED_ORIGINS.includes(origin);
-
   let parsed: URL;
   try {
     parsed = new URL(origin);
@@ -76,8 +92,12 @@ function isAllowedOrigin(origin: string): boolean {
     return false;
   }
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
-  // Never bounce back to a bare Convex host — that is the dead-end.
+  // Never bounce back to a bare Convex host — that host answers
+  // "No matching routes found" for every path but /api/auth/*. This check runs
+  // BEFORE the allow-list so a misconfigured APP_SITE_URL can never re-open
+  // the dead-end it was meant to close.
   if (isConvexHost(parsed.hostname)) return false;
+  if (PINNED_ORIGINS.length > 0) return PINNED_ORIGINS.includes(origin);
   if (DEV_ORIGINS.has(origin)) return true;
   return (
     parsed.protocol === "https:" &&
@@ -107,7 +127,9 @@ function resolveDestination(redirectTo: string): string {
   }
 
   const origin = parsed.origin.replace(/\/+$/, "");
-  return isAllowedOrigin(origin) ? `${origin}${parsed.pathname}${parsed.search}` : fallbackOrigin();
+  return isAllowedOrigin(origin)
+    ? `${origin}${parsed.pathname}${parsed.search}`
+    : fallbackOrigin();
 }
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
@@ -119,6 +141,12 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
      * `ConvexAuthProvider` (src/main.tsx) exchanges for a session.
      */
     async redirect({ redirectTo }) {
+      if (allowListIsMisconfigured()) {
+        logWarn(
+          "APP_SITE_URL points at a Convex host; falling back to origin-based " +
+            "resolution. Set APP_SITE_URL to the storefront's public URL.",
+        );
+      }
       return resolveDestination(redirectTo);
     },
   },
