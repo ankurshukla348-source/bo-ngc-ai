@@ -31,8 +31,8 @@ export function StoreFooter({
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           {/* Brand */}
           <div className="flex flex-col gap-4">
-            <span className="font-display text-2xl font-bold tracking-[0.08em]">
-              Bảo Ngọc.
+            <span className="font-display text-xl font-bold leading-snug tracking-[0.08em] sm:text-2xl">
+              Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.
             </span>
             <p className="max-w-xs text-sm leading-relaxed text-white/60">
               {t("footerTagline")}

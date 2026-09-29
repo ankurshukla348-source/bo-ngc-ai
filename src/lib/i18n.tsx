@@ -16,7 +16,7 @@ export type Lang = "vi" | "en";
 const vi = {
   // ── Header / nav ─────────────────────────────────────────────
   announce:
-    "MIỄN PHÍ VẬN CHUYỂN TOÀN QUỐC CHO ĐƠN TỪ 400.000 VND TRỞ LÊN. · Đổi trả trong 30 ngày.",
+    "MIỄN PHÍ GIAO HÀNG CHO ĐƠN TỪ 400.000 VND. · Đổi trả trong 30 ngày.",
   seller: "Khu bán hàng",
   navShop: "Bộ sưu tập",
   navCategories: "Danh mục",
@@ -123,7 +123,7 @@ const vi = {
   footerShop: "DANH MỤC",
   footerSupport: "HỖ TRỢ",
   footerCompany: "CÔNG TY",
-  supportShipping: "Miễn phí giao hàng từ 2.000.000₫",
+  supportShipping: "Miễn phí giao hàng từ 400.000 VND",
   supportReturns: "Đổi trả trong 30 ngày",
   supportPayment: "Thanh toán VietQR & COD",
   supportHotline: "Hotline: 0793578058",
@@ -269,7 +269,7 @@ const vi = {
 
   // ── Trust strip / mockup copy ──────────────────────────────
   trustShip: "Miễn phí giao hàng",
-  trustShipSub: "Cho đơn từ 2.000.000₫",
+  trustShipSub: "Cho đơn từ 400.000 VND",
   trustReturns: "Đổi size dễ dàng",
   trustReturnsSub: "Hỗ trợ đổi size trong vòng 7 ngày (áp dụng cho sản phẩm còn nguyên tem mác, trừ quần lót vì lý do vệ sinh).",
   trustPay: "Thanh toán VietQR & COD.",
@@ -319,7 +319,7 @@ export type TKey = keyof typeof vi;
 
 const en: Record<TKey, string> = {
   // Header / nav
-  announce: "Free shipping over 2.000.000₫ · 30-day returns",
+  announce: "Free shipping over 400.000 VND · 30-day returns",
   seller: "Seller dashboard",
   navShop: "Collection",
   navCategories: "Categories",
@@ -426,7 +426,7 @@ const en: Record<TKey, string> = {
   footerShop: "SHOP",
   footerSupport: "SUPPORT",
   footerCompany: "COMPANY",
-  supportShipping: "Free shipping over 2.000.000₫",
+  supportShipping: "Free shipping over 400.000 VND",
   supportReturns: "30-day returns",
   supportPayment: "VietQR & cash on delivery",
   supportHotline: "Hotline: 0793578058",
@@ -571,7 +571,7 @@ const en: Record<TKey, string> = {
 
   // Trust strip / mockup copy
   trustShip: "Free shipping",
-  trustShipSub: "On orders over 2.000.000₫",
+  trustShipSub: "On orders over 400.000 VND",
   trustReturns: "Easy size exchange",
   trustReturnsSub: "Size exchange within 7 days (items with original tags; excluding panties for hygiene reasons).",
   trustPay: "VietQR & COD payment.",
@@ -623,7 +623,7 @@ const CATEGORY_LABELS: Record<Lang, Record<Category, string>> = {
     dresses: "Quần Trong",
     cardigans: "Set bộ đồ lót",
     trousers: "Mỹ Phẩm Làm Đẹp & Chăm Sóc Da",
-    accessories: "Mỹ Phẩm Làm Đẹp & Chăm Sóc Da",
+    accessories: "Chăm Sóc Da & Làm Đẹp",
     bestsellers: "Những mặt hàng bán chạy nhất",
   },
   en: {
@@ -631,7 +631,7 @@ const CATEGORY_LABELS: Record<Lang, Record<Category, string>> = {
     dresses: "Underwear",
     cardigans: "Lingerie Sets",
     trousers: "Beauty & Skincare",
-    accessories: "Beauty & Skincare",
+    accessories: "Skincare & Beauty",
     bestsellers: "Bestsellers",
   },
 };

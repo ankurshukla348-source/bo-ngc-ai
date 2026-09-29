@@ -6,16 +6,14 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { useAuth } from "@/hooks/use-auth";
-import { tryUnlockAdmin } from "@/lib/admin";
+import { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_PIN, tryUnlockAdmin } from "@/lib/admin";
 import { useI18n } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
   ArrowRight,
   Loader2,
   Lock,
   Mail,
-  Store,
   UserX,
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
@@ -40,23 +38,17 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   const { isLoading: authLoading, isAuthenticated, signIn } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const isSellerTab = searchParams.get("tab") === "seller";
   const redirect = resolveRedirectAfterAuth(
     searchParams.get("returnTo"),
     redirectAfterAuth,
   );
 
-  const [tab, setTab] = useState<"customer" | "seller">(
-    isSellerTab ? "seller" : "customer",
-  );
-
-  // Signed-in customers skip the form — but never kick someone out of the
-  // seller tab, they may be the owner checking the dashboard.
+  // Signed-in customers skip the form straight to their destination.
   useEffect(() => {
-    if (!authLoading && isAuthenticated && tab === "customer") {
+    if (!authLoading && isAuthenticated) {
       navigate(redirect);
     }
-  }, [authLoading, isAuthenticated, tab, navigate, redirect]);
+  }, [authLoading, isAuthenticated, navigate, redirect]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -64,11 +56,11 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       <aside className="relative hidden w-[46%] overflow-hidden lg:block">
         <div className="absolute inset-0 bg-gradient-to-br from-[#fdf2f6] via-[#fbeaf1] to-[#f7dfe9]" />
         <div className="absolute inset-0 flex flex-col justify-between p-12">
-          <Link to="/" className="relative font-display text-2xl font-bold tracking-[0.08em]">
-            Bảo Ngọc.
-            <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.35em] text-muted-foreground">
-              Shop Thời Trang Nữ Bảo Ngọc.
-            </span>
+          <Link
+            to="/"
+            className="relative block max-w-xs font-display text-xl font-bold leading-snug tracking-[0.06em] xl:text-2xl"
+          >
+            Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.
           </Link>
           <div className="relative max-w-md">
             <p className="font-display text-4xl font-bold leading-tight">
@@ -88,47 +80,20 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           {/* Mobile brand */}
           <Link
             to="/"
-            className="mb-8 block text-center font-display text-2xl font-bold tracking-[0.08em] lg:hidden"
+            className="mb-8 block px-4 text-center font-display text-xl font-bold leading-snug tracking-[0.06em] sm:text-2xl lg:hidden"
           >
-            Bảo Ngọc.
+            Shop Thời Trang & Phụ Kiện Nữ Bảo Ngọc.
           </Link>
 
-          {/* Tabs */}
-          <div className="mx-auto flex w-fit rounded-full border border-border bg-secondary p-1">
-            {(
-              [
-                { id: "customer", label: t("tabCustomer"), icon: UserX },
-                { id: "seller", label: t("tabSeller"), icon: Store },
-              ] as const
-            ).map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTab(id)}
-                aria-pressed={tab === id}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all",
-                  tab === id
-                    ? "bg-card text-foreground shadow-soft"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon className="size-4" />
-                {label}
-              </button>
-            ))}
-          </div>
-
+          {/* Single unified portal — customers use email/OTP, the store
+              owner's credentials sign straight into the dashboard. */}
           <div className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-soft sm:p-8">
-            {tab === "customer" ? (
-              <CustomerForm
-                signIn={signIn}
-                authLoading={authLoading}
-                onDone={() => navigate(redirect)}
-              />
-            ) : (
-              <SellerForm onUnlocked={() => navigate("/seller")} />
-            )}
+            <CustomerForm
+              signIn={signIn}
+              authLoading={authLoading}
+              onDone={() => navigate(redirect)}
+              onOwnerDone={() => navigate("/seller")}
+            />
           </div>
 
           <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
@@ -153,10 +118,13 @@ function CustomerForm({
   signIn,
   authLoading,
   onDone,
+  onOwnerDone,
 }: {
   signIn: (provider: string, formData?: FormData) => Promise<unknown>;
   authLoading: boolean;
   onDone: () => void;
+  /** Store-owner credentials verified → straight to the seller dashboard. */
+  onOwnerDone: () => void;
 }) {
   const { t } = useI18n();
   const [step, setStep] = useState<"email" | "code">("email");
@@ -164,6 +132,7 @@ function CustomerForm({
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ownerMode, setOwnerMode] = useState(false);
 
   const handleEmailSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -171,6 +140,18 @@ function CustomerForm({
     setError(null);
     try {
       const formData = new FormData(event.currentTarget);
+      const enteredEmail = String(formData.get("email") ?? "").trim().toLowerCase();
+
+      // Unified portal: the store owner signs in with email + password and
+      // lands straight in the seller dashboard — no OTP, no PIN gate.
+      if (enteredEmail === ADMIN_EMAIL) {
+        setOwnerMode(true);
+        setEmail(enteredEmail);
+        setIsLoading(false);
+        return;
+      }
+
+      setOwnerMode(false);
       await signIn("email-otp", formData);
       setEmail(formData.get("email") as string);
       setStep("code");
@@ -182,6 +163,18 @@ function CustomerForm({
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /** Owner password check — unlocks the dashboard session directly. */
+  const handleOwnerSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const password = String(new FormData(event.currentTarget).get("password") ?? "");
+    if (password === ADMIN_PASSWORD) {
+      tryUnlockAdmin(ADMIN_PIN); // reuse the shared dashboard session flag
+      onOwnerDone();
+    } else {
+      setError(t("sellerError"));
     }
   };
 
@@ -217,6 +210,59 @@ function CustomerForm({
       setIsLoading(false);
     }
   };
+
+  /* Owner password step — only reachable when the owner email was entered. */
+  if (ownerMode) {
+    return (
+      <form onSubmit={handleOwnerSubmit} className="flex flex-col gap-5">
+        <div className="text-center">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-secondary">
+            <Lock className="size-5 text-brand-rose" />
+          </div>
+          <h1 className="mt-4 font-display text-2xl font-bold">
+            {t("sellerTitle")}
+          </h1>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
+            {email}
+          </p>
+        </div>
+
+        <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("accessCodeLabel")}
+          <Input
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            autoFocus
+            required
+            className="mt-1.5 h-12 rounded-2xl text-center font-mono text-lg tracking-[0.3em]"
+          />
+        </label>
+
+        {error && (
+          <p className="rounded-full bg-destructive/10 px-4 py-2.5 text-center text-sm font-medium text-destructive">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" className="h-11 rounded-full">
+          {t("sellerEnter")}
+          <ArrowRight className="ml-2 size-4" />
+        </Button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setOwnerMode(false);
+            setError(null);
+          }}
+          className="text-center text-xs font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          {t("backToEmail")}
+        </button>
+      </form>
+    );
+  }
 
   if (step === "code") {
     return (
@@ -345,74 +391,6 @@ function CustomerForm({
         {t("guestHint")}
       </p>
     </div>
-  );
-}
-
-/* ── Seller: access code unlocks the dashboard ─────────────── */
-
-function SellerForm({ onUnlocked }: { onUnlocked: () => void }) {
-  const { t } = useI18n();
-  const [code, setCode] = useState("");
-  const [error, setError] = useState(false);
-
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (tryUnlockAdmin(code)) {
-      setError(false);
-      onUnlocked();
-    } else {
-      setError(true);
-      setCode("");
-    }
-  };
-
-  return (
-    <form onSubmit={submit} className="flex flex-col gap-5">
-      <div className="text-center">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-secondary">
-          <Lock className="size-5 text-brand-rose" />
-        </div>
-        <h1 className="mt-4 font-display text-2xl font-bold">
-          {t("sellerTitle")}
-        </h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {t("sellerSub")}
-        </p>
-      </div>
-
-      <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-        {t("accessCodeLabel")}
-        <Input
-          type="password"
-          inputMode="numeric"
-          autoComplete="off"
-          autoFocus
-          maxLength={8}
-          value={code}
-          onChange={(e) => {
-            setCode(e.target.value);
-            setError(false);
-          }}
-          placeholder="••••"
-          className="mt-1.5 h-12 rounded-2xl text-center font-mono text-xl tracking-[0.5em]"
-        />
-      </label>
-
-      {error && (
-        <p className="rounded-full bg-destructive/10 px-4 py-2.5 text-center text-sm font-medium text-destructive">
-          {t("sellerError")}
-        </p>
-      )}
-
-      <Button type="submit" className="h-11 rounded-full">
-        {t("sellerEnter")}
-        <ArrowRight className="ml-2 size-4" />
-      </Button>
-
-      <p className="border-t border-border pt-4 text-center text-xs text-muted-foreground">
-        {t("sellerHint")}
-      </p>
-    </form>
   );
 }
 
