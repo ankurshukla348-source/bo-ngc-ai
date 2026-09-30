@@ -89,7 +89,9 @@ export function StoreFooter({
               <li>{t("supportShipping")}</li>
               <li>{t("supportReturns")}</li>
               <li>{t("supportPayment")}</li>
-              <li>{t("supportHotline")}</li>
+              <li className="font-semibold text-white">
+                {t("supportLiveChat")}
+              </li>
             </ul>
           </div>
 

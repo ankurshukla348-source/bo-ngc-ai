@@ -36,6 +36,13 @@ const schema = defineSchema(
       phoneVerificationTime: v.optional(v.number()), // do not remove
 
       role: v.optional(roleValidator), // role of the user. do not remove
+
+      // ── Marketing opt-in (our own field, safe to add) ────────
+      // Optional so rows written by Convex Auth (which does not know about
+      // this field) still validate. Absent === opted in: the consent is
+      // pre-checked at every signup/checkout and only ever stored as an
+      // explicit `false` when the customer unchecks it.
+      marketingOptIn: v.optional(v.boolean()),
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
     // ── Storefront catalog ─────────────────────────────────────
@@ -101,6 +108,23 @@ const schema = defineSchema(
       accountNo: v.string(),
       accountHolder: v.string(),
     }).index("by_key", ["key"]),
+
+    // ── Storefront live chat ───────────────────────────────────
+    // One row per chat message. `conversationId` is an opaque, per-browser
+    // key from the storefront widget (or the signed-in user id) so the seller
+    // inbox can group threads without any customer account.
+    messages: defineTable({
+      conversationId: v.string(),
+      author: v.union(v.literal("customer"), v.literal("seller")),
+      body: v.string(),
+      // Denormalised so the seller can identify a visitor even if they
+      // never sign in.
+      name: v.optional(v.string()),
+      email: v.optional(v.string()),
+      userId: v.optional(v.id("users")),
+      readAt: v.optional(v.number()), // set when the seller opens the thread
+      createdAt: v.number(),
+    }).index("by_conversation", ["conversationId"]),
 
     // ── One-time seed marker ───────────────────────────────────
     // A single row here means starter products were either inserted or the

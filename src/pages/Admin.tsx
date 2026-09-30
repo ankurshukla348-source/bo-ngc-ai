@@ -14,13 +14,15 @@ import { formatVnd, sanitizePriceInput } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import type { StoreProduct } from "@/components/store/ProductCard";
 import { cn } from "@/lib/utils";
-import { useConvex, useQuery } from "convex/react";
+import { useConvex, useAction, useMutation, useQuery } from "convex/react";
 import {
   Camera,
   ImagePlus,
   Loader2,
   Lock,
+  MessageCircle,
   Pencil,
+  Send,
   Store,
   Trash2,
 } from "lucide-react";
@@ -832,6 +834,354 @@ function BankSettings() {
 }
 
 /* ────────────────────────────────────────────────────────────────
+   Live chat inbox — every storefront conversation, newest first
+   ──────────────────────────────────────────────────────────────── */
+
+function stamp(ts: number) {
+  try {
+    return new Date(ts).toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+}
+
+function ChatInbox() {
+  const { t } = useI18n();
+  const [selected, setSelected] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const threads = useQuery(api.messages.threads, {});
+  const markRead = useMutation(api.messages.markRead);
+  const send = useMutation(api.messages.send);
+
+  // Fall back to the newest thread so the panel is never empty on open.
+  const activeId = selected ?? threads?.[0]?.conversationId ?? null;
+  const active = threads?.find((thread) => thread.conversationId === activeId);
+  const conversation = useQuery(
+    api.messages.conversation,
+    activeId ? { conversationId: activeId } : "skip",
+  );
+
+  // Opening a thread clears its unread badge.
+  useEffect(() => {
+    if (!activeId) return;
+    void markRead({ conversationId: activeId }).catch(() => {
+      /* best effort — the badge clears on the next reload anyway */
+    });
+  }, [activeId, markRead]);
+
+  useEffect(() => {
+    const node = listRef.current;
+    if (node) node.scrollTop = node.scrollHeight;
+  }, [conversation, activeId]);
+
+  const reply = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const body = draft.trim();
+    if (!body || !activeId || sending) return;
+    setSending(true);
+    try {
+      await send({ conversationId: activeId, body, author: "seller" });
+      setDraft("");
+    } catch {
+      toast.error(t("chatSendFailed"));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+      {/* Threads */}
+      <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+        <div className="border-b border-border bg-primary px-5 py-3.5">
+          <h2 className="font-display text-lg font-bold text-primary-foreground">
+            {t("sellerTabChat")}
+          </h2>
+        </div>
+
+        {threads === undefined ? (
+          <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+          </div>
+        ) : threads.length === 0 ? (
+          <p className="p-8 text-center text-sm text-muted-foreground">
+            {t("chatInboxEmpty")}
+          </p>
+        ) : (
+          <ul className="max-h-[28rem] overflow-y-auto">
+            {threads.map((thread) => {
+              const on = thread.conversationId === activeId;
+              return (
+                <li key={thread.conversationId}>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(thread.conversationId)}
+                    className={cn(
+                      "flex w-full flex-col gap-1 border-b border-border px-4 py-3 text-left transition-colors",
+                      on ? "bg-secondary" : "hover:bg-secondary/60",
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-semibold">
+                        {thread.name || thread.email || t("chatInboxAnonymous")}
+                      </span>
+                      {thread.unread > 0 && (
+                        <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">
+                          {thread.unread} {t("chatUnreadOne")}
+                        </span>
+                      )}
+                      <span className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                        {stamp(thread.lastAt)}
+                      </span>
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {thread.lastFrom === "customer" ? "" : `${t("chatShop")}: `}
+                      {thread.lastBody}
+                    </p>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* Active thread */}
+      <section className="flex min-h-[24rem] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+        <div className="border-b border-border px-5 py-3.5">
+          <h3 className="font-display text-base font-bold">
+            {active?.name || active?.email || t("chatInboxAnonymous")}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {active ? `${active.messageCount} tin nhắn` : ""}
+          </p>
+        </div>
+
+        <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto p-5">
+          {!activeId ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              {t("chatThreadLoad")}
+            </p>
+          ) : (
+            conversation?.map((message) => {
+              const mine = message.author === "seller";
+              return (
+                <div
+                  key={message._id}
+                  className={mine ? "flex justify-end" : "flex justify-start"}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm",
+                      mine
+                        ? "rounded-br-md bg-primary text-primary-foreground"
+                        : "rounded-bl-md bg-secondary text-foreground",
+                    )}
+                  >
+                    {!mine && (
+                      <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {message.name || t("chatSenderBadge")}
+                      </p>
+                    )}
+                    <p className="whitespace-pre-wrap break-words">
+                      {message.body}
+                    </p>
+                    <p className="mt-1 text-[10px] tabular-nums opacity-70">
+                      {stamp(message.createdAt)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <form
+          onSubmit={reply}
+          className="flex items-center gap-2 border-t border-border bg-background/60 p-3"
+        >
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            maxLength={2000}
+            placeholder={t("chatReplyPlaceholder")}
+            aria-label={t("chatReplyPlaceholder")}
+            className="h-11 min-w-0 flex-1 rounded-full border border-input bg-card px-4 text-sm outline-none focus:border-ring"
+          />
+          <button
+            type="submit"
+            disabled={!activeId || sending || !draft.trim()}
+            className="flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-xs font-semibold uppercase tracking-wider text-primary-foreground transition-colors disabled:opacity-50"
+          >
+            {sending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Send className="size-4" />
+            )}
+            {t("chatReplySend")}
+          </button>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Promotional broadcast (Resend) — opt-in audience only
+   ──────────────────────────────────────────────────────────────── */
+
+type BroadcastResult = {
+  ok: boolean;
+  reason: "ok" | "partial" | "missing_key" | "no_recipients" | "empty_campaign";
+  sent: number;
+  failed: number;
+  total: number;
+};
+
+function BroadcastPanel() {
+  const { t } = useI18n();
+  const sendBroadcast = useAction(api.marketing.sendBroadcast);
+  const audience = useQuery(api.users.marketingAudience);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [from, setFrom] = useState("");
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<BroadcastResult | null>(null);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (sending) return;
+    if (!subject.trim() || !body.trim()) {
+      toast.error(t("broadcastEmptyCampaign"));
+      return;
+    }
+    setSending(true);
+    setResult(null);
+    try {
+      const res = await sendBroadcast({
+        subject: subject.trim(),
+        body: body.trim(),
+        ...(from.trim() ? { from: from.trim() } : {}),
+      });
+      setResult(res);
+      if (res.ok) {
+        toast.success(t("broadcastSent").replace("{n}", String(res.sent)));
+        setSubject("");
+        setBody("");
+      } else if (res.reason === "missing_key") {
+        toast.error(t("broadcastNoKey"));
+      } else if (res.reason === "no_recipients") {
+        toast.error(t("broadcastNoRecipients"));
+      } else {
+        toast.error(
+          t("broadcastPartial")
+            .replace("{n}", String(res.sent))
+            .replace("{f}", String(res.failed)),
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(t("broadcastNoKey"));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const inputClass =
+    "mt-1.5 w-full rounded-full border border-input bg-background px-4 text-sm outline-none focus:border-ring";
+
+  return (
+    <section className="mx-auto w-full max-w-3xl overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+      <div className="border-b border-border bg-primary px-5 py-3.5">
+        <h2 className="font-display text-lg font-bold text-primary-foreground">
+          {t("sellerTabBroadcast")}
+        </h2>
+        <p className="mt-0.5 text-xs text-primary-foreground/80">
+          {t("broadcastSub")}
+        </p>
+      </div>
+
+      <form onSubmit={submit} className="grid gap-4 p-5">
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-secondary px-4 py-3">
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            {t("broadcastAudience")}
+          </span>
+          <span className="font-display text-xl font-bold tabular-nums">
+            {audience === undefined ? "…" : audience.length}
+          </span>
+        </div>
+
+        <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("broadcastSubjectLabel")}
+          <input
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            maxLength={200}
+            placeholder={t("broadcastSubjectPlaceholder")}
+            className={inputClass}
+          />
+        </label>
+
+        <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("broadcastBodyLabel")}
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={8}
+            maxLength={8000}
+            placeholder={t("broadcastBodyPlaceholder")}
+            className="mt-1.5 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm leading-relaxed outline-none focus:border-ring"
+          />
+        </label>
+
+        <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("broadcastFromLabel")}
+          <input
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            placeholder={t("broadcastFromPlaceholder")}
+            className={inputClass}
+          />
+        </label>
+
+        {result && !result.ok && result.reason !== "missing_key" && (
+          <p className="rounded-2xl bg-secondary px-4 py-3 text-xs text-muted-foreground">
+            {result.reason === "no_recipients"
+              ? t("broadcastNoRecipients")
+              : t("broadcastPartial")
+                  .replace("{n}", String(result.sent))
+                  .replace("{f}", String(result.failed))}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={sending}
+          className="flex h-12 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-60"
+        >
+          {sending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              {t("broadcastSending")}
+            </>
+          ) : (
+            t("broadcastSendCta")
+          )}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
    Page
    ──────────────────────────────────────────────────────────────── */
 
@@ -871,7 +1221,15 @@ export default function Admin() {
 
 function AdminPanel({ onLock }: { onLock: () => void }) {
   const { t } = useI18n();
+  const [tab, setTab] = useState<"products" | "chat" | "broadcast">("products");
   const products = useQuery(api.products.list);
+  const unread = useQuery(api.messages.unreadTotal);
+
+  const TABS = [
+    { id: "products", label: t("sellerTabProducts"), icon: Store },
+    { id: "chat", label: t("sellerTabChat"), icon: MessageCircle },
+    { id: "broadcast", label: t("sellerTabBroadcast"), icon: Send },
+  ] as const;
 
   return (
     <main className="min-h-screen bg-background">
@@ -909,6 +1267,53 @@ function AdminPanel({ onLock }: { onLock: () => void }) {
         </div>
       </header>
 
+      {/* Tabs */}
+      <div className="border-b border-border bg-card/60">
+        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3">
+          {TABS.map(({ id, label, icon: Icon }) => {
+            const on = tab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                aria-pressed={on}
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors",
+                  on
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-foreground/70 hover:text-foreground",
+                )}
+              >
+                <Icon className="size-3.5" />
+                {label}
+                {id === "chat" && !!unread && unread > 0 && (
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+                      on
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "bg-accent text-accent-foreground",
+                    )}
+                  >
+                    {unread}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {tab === "chat" ? (
+        <div className="mx-auto max-w-7xl px-4 py-8">
+          <ChatInbox />
+        </div>
+      ) : tab === "broadcast" ? (
+        <div className="mx-auto max-w-7xl px-4 py-8">
+          <BroadcastPanel />
+        </div>
+      ) : (
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[400px_1fr]">
         {/* Left: new product + bank settings */}
         <div className="flex flex-col gap-6">
@@ -948,6 +1353,7 @@ function AdminPanel({ onLock }: { onLock: () => void }) {
           )}
         </section>
       </div>
+      )}
     </main>
   );
 }

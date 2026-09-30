@@ -1,4 +1,5 @@
 import { Header } from "@/components/store/Header";
+import { MarketingOptIn } from "@/components/store/MarketingOptIn";
 import { api } from "@/convex/_generated/api";
 import { useCart, type CartItem } from "@/lib/cart";
 import { shippingFeeFor } from "@/lib/catalog";
@@ -6,7 +7,7 @@ import { formatVnd } from "@/lib/format";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { buildVietqrPayload } from "@/lib/vietqr";
 import { cn } from "@/lib/utils";
-import { useConvex, useQuery } from "convex/react";
+import { useConvex, useMutation, useQuery } from "convex/react";
 import { QRCodeSVG } from "qrcode.react";
 import {
   ArrowLeft,
@@ -608,9 +609,11 @@ export default function Checkout() {
   const [payDone, setPayDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(true);
   const [confirmed, setConfirmed] = useState<ConfirmedOrder | null>(null);
 
   const paymentSettings = useQuery(api.settings.getPayment);
+  const saveMarketingOptIn = useMutation(api.users.setMarketingOptIn);
 
   /* Once the order is confirmed the grid is driven by the frozen snapshot
      instead of the live cart, so the deferred clear() below cannot touch the
@@ -718,6 +721,11 @@ export default function Checkout() {
         items: snapshot,
         customer: shipping,
         paymentMethod: method,
+      });
+      // Store the promo consent on the profile. No-ops for guest checkout, and
+      // never allowed to fail the order that was already placed.
+      void saveMarketingOptIn({ optedIn: marketingOptIn }).catch(() => {
+        /* best effort */
       });
       window.scrollTo({ top: 0 });
       // Emptying the cart unmounts the header badge; doing that in the same
@@ -862,6 +870,11 @@ export default function Checkout() {
                   </div>
 
                   <ErrorNote message={error} />
+
+                  <MarketingOptIn
+                    checked={marketingOptIn}
+                    onChange={setMarketingOptIn}
+                  />
 
                   <button
                     type="button"

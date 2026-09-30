@@ -2,7 +2,7 @@ import { Header } from "@/components/store/Header";
 import { ProductCard, type StoreProduct } from "@/components/store/ProductCard";
 import { useCart } from "@/lib/cart";
 import { StoreFooter } from "@/components/store/StoreFooter";
-import { ZaloContact } from "@/components/store/ZaloContact";
+import { LiveChatWidget } from "@/components/store/LiveChatWidget";
 import { api } from "@/convex/_generated/api";
 import { CATEGORIES, type Category } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n";
@@ -663,7 +663,7 @@ export default function Landing() {
       <StoreFooter
         onCategorySelect={(category) => applyCategory(category)}
       />
-      <ZaloContact />
+      <LiveChatWidget />
     </div>
   );
 }

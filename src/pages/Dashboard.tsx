@@ -1,8 +1,11 @@
 import { Header } from "@/components/store/Header";
+import { MarketingOptIn } from "@/components/store/MarketingOptIn";
+import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
+import { useMutation } from "convex/react";
 import { Heart, LogOut, Package, Store, UserRound } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 const WISHLIST_KEY = "mama-wishlist-v1";
@@ -22,6 +25,22 @@ export default function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [wishlistCount] = useState(readWishlistCount);
+
+  // Consent lives on the profile; absent means "subscribed" (opt-out model).
+  const [optIn, setOptIn] = useState(user?.marketingOptIn !== false);
+  const saveOptIn = useMutation(api.users.setMarketingOptIn);
+
+  useEffect(() => {
+    if (user) setOptIn(user.marketingOptIn !== false);
+  }, [user]);
+
+  const handleOptInChange = (next: boolean) => {
+    setOptIn(next);
+    void saveOptIn({ optedIn: next }).catch(() => {
+      /* revert on failure — the checkbox must not lie about what is stored */
+      setOptIn(!next);
+    });
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -103,6 +122,7 @@ export default function Dashboard() {
             <p className="mt-3 text-sm text-muted-foreground">
               {t("accountInfoHint")}
             </p>
+            <MarketingOptIn checked={optIn} onChange={handleOptInChange} />
           </section>
 
           {/* Seller shortcut */}

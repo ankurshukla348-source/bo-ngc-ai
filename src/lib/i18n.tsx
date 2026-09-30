@@ -126,14 +126,9 @@ const vi = {
   footerCompany: "CÔNG TY",
   supportShipping: "Miễn phí giao hàng từ 400.000 VND",
   supportReturns: "Đổi trả trong 30 ngày",
-  supportPayment: "Thanh toán VietQR & COD",
-  supportHotline: "Hotline: 0793578058",
+  supportPayment: "Thanh toán VietQR & COD",  supportLiveChat: "Hỗ trợ trực tuyến qua Live Chat",
   companyStory: "Câu chuyện",
   companyReviews: "Đánh giá khách hàng",
-  zaloLabel: "Chat Zalo với shop",
-  zaloScanTitle: "Quét mã Zalo để chat với shop",
-  zaloScanSub: "Mở app Zalo → quét mã bên dưới → chat ngay với Bảo Ngọc.",
-  zaloClose: "Đóng",
   rights: "© 2026 Shop Thời Trang & Mỹ Phẩm Bảo Ngọc. Mọi quyền được bảo lưu.",
 
   // ── Cart / checkout ──────────────────────────────────────────
@@ -345,6 +340,56 @@ const vi = {
   inCartBadge: "ở trong giỏ",
   categoryLabel: "Danh mục",
   categoryFallback: "Khác",
+
+  // ── Live chat (storefront widget) ───────────────────────────
+  chatWidgetLabel: "Hỗ trợ trực tuyến qua Live Chat",
+  chatTitle: "Live Chat — Shop Bảo Ngọc",
+  chatIntro:
+    "Chào bạn! Mình là Bảo Ngọc. Hỏi gì mình phản hồi ngay tại đây nhé 💬",
+  chatYourName: "Tên của bạn (không bắt buộc)",
+  chatPlaceholder: "Nhập tin nhắn của bạn...",
+  chatSend: "Gửi",
+  chatOpen: "Mở khung chat",
+  chatClose: "Đóng chat",
+  chatYou: "Bạn",
+  chatShop: "Shop Bảo Ngọc",
+  chatEmpty: "Chưa có tin nhắn nào. Hãy là người đầu tiên!",
+  chatSendFailed: "Chưa gửi được tin nhắn. Thử lại nhé.",
+
+  // ── Marketing opt-in ────────────────────────────────────────
+  marketingOptInLabel: "Nhận thông báo khuyến mãi & quà tặng qua Email",
+  marketingOptInSub: "Bạn có thể tắt bất kỳ lúc nào.",
+
+  // ── Seller: live chat inbox ──────────────────────────────────
+  sellerTabChat: "Tin nhắn khách hàng",
+  sellerTabProducts: "Sản phẩm & cài đặt",
+  sellerTabBroadcast: "Gửi Email Quảng Cáo",
+  chatInboxEmpty: "Chưa có tin nhắn nào từ khách hàng.",
+  chatInboxAnonymous: "Khách vãng lai",
+  chatThreadLoad: "Chọn một cuộc trò chuyện để xem tin nhắn.",
+  chatReplyPlaceholder: "Nhập câu trả lời...",
+  chatReplySend: "Gửi trả lời",
+  chatUnreadOne: "tin nhắn mới",
+  chatMarkedRead: "Đã đánh dấu đã đọc",
+  chatSenderBadge: "KH",
+
+  // ── Seller: promo broadcast ──────────────────────────────────
+  broadcastSubjectLabel: "Tiêu đề email",
+  broadcastSubjectPlaceholder: "Ưu đãi mùa hè — giảm 30% toàn bộ phụ kiện",
+  broadcastBodyLabel: "Nội dung email",
+  broadcastBodyPlaceholder: "Chào bạn! Bộ sưu tập mới đã về cửa hàng...",
+  broadcastFromLabel: "Địa chỉ gửi (tùy chọn)",
+  broadcastFromPlaceholder: "Shop Bảo Ngọc <shop@yourdomain.com>",
+  broadcastSendCta: "Gửi email quảng cáo",
+  broadcastSending: "Đang gửi...",
+  broadcastAudience: "Số khách đã đồng ý nhận email",
+  broadcastSub: "Gửi tới toàn bộ khách hàng đã bật “Nhận thông báo khuyến mãi”.",
+  broadcastSent: "Đã gửi tới {n} khách hàng.",
+  broadcastPartial: "Đã gửi {n}, thất bại {f}.",
+  broadcastNoKey:
+    "Chưa cấu hình RESEND_API_KEY. Thêm khoá API trong tab Keys/API keys rồi gửi lại.",
+  broadcastNoRecipients: "Chưa có khách hàng nào bật nhận email quảng cáo.",
+  broadcastEmptyCampaign: "Vui lòng nhập tiêu đề và nội dung email.",
 };
 
 export type TKey = keyof typeof vi;
@@ -461,13 +506,9 @@ const en: Record<TKey, string> = {
   supportShipping: "Free shipping over 400.000 VND",
   supportReturns: "30-day returns",
   supportPayment: "VietQR & cash on delivery",
-  supportHotline: "Hotline: 0793578058",
+  supportLiveChat: "Live chat support",
   companyStory: "Our story",
   companyReviews: "Customer reviews",
-  zaloLabel: "Chat on Zalo",
-  zaloScanTitle: "Scan the Zalo QR to chat with us",
-  zaloScanSub: "Open Zalo → scan the code below → chat with Bảo Ngọc instantly.",
-  zaloClose: "Close",
   rights: "© 2026 Shop Thời Trang & Mỹ Phẩm Bảo Ngọc. All rights reserved.",
 
   // Cart / checkout
@@ -678,6 +719,54 @@ const en: Record<TKey, string> = {
   inCartBadge: "in cart",
   categoryLabel: "Category",
   categoryFallback: "Other",
+
+  // Live chat
+  chatWidgetLabel: "Live chat support",
+  chatTitle: "Live Chat — Shop Bảo Ngọc",
+  chatIntro: "Hi there! Ask anything about a product, size or order 💬",
+  chatYourName: "Your name (optional)",
+  chatPlaceholder: "Type your message...",
+  chatSend: "Send",
+  chatOpen: "Open chat",
+  chatClose: "Close chat",
+  chatYou: "You",
+  chatShop: "Shop Bảo Ngọc",
+  chatEmpty: "No messages yet — be the first!",
+  chatSendFailed: "Could not send the message. Please try again.",
+
+  // Marketing opt-in
+  marketingOptInLabel: "Send me offers & gift news by email",
+  marketingOptInSub: "You can turn this off at any time.",
+
+  // Seller: live chat inbox
+  sellerTabChat: "Customer messages",
+  sellerTabProducts: "Products & settings",
+  sellerTabBroadcast: "Send promo email",
+  chatInboxEmpty: "No customer messages yet.",
+  chatInboxAnonymous: "Guest customer",
+  chatThreadLoad: "Pick a conversation to read it.",
+  chatReplyPlaceholder: "Type your reply...",
+  chatReplySend: "Send reply",
+  chatUnreadOne: "new",
+  chatMarkedRead: "Marked as read",
+  chatSenderBadge: "KH",
+
+  // Seller: promo broadcast
+  broadcastSubjectLabel: "Email subject",
+  broadcastSubjectPlaceholder: "Summer sale — 30% off all accessories",
+  broadcastBodyLabel: "Email content",
+  broadcastBodyPlaceholder: "Hi there! Our new collection has arrived...",
+  broadcastFromLabel: "From address (optional)",
+  broadcastFromPlaceholder: "Shop Bảo Ngọc <shop@yourdomain.com>",
+  broadcastSendCta: "Send promo email",
+  broadcastSending: "Sending...",
+  broadcastAudience: "Customers who opted in",
+  broadcastSub: "Sent to everyone who enabled “Send me offers & gift news”.",
+  broadcastSent: "Sent to {n} customers.",
+  broadcastPartial: "{n} sent, {f} failed.",
+  broadcastNoKey: "RESEND_API_KEY is not configured yet — add it in the Keys/API keys tab.",
+  broadcastNoRecipients: "No customer has opted in to promo emails yet.",
+  broadcastEmptyCampaign: "Please enter a subject and email content.",
 };
 
 const CATEGORY_LABELS: Record<Lang, Record<Category, string>> = {

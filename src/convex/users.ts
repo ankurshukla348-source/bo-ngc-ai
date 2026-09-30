@@ -45,13 +45,20 @@ export const ensureProfile = mutation({
     const existing = await ctx.db.get(userId);
     if (existing) {
       // Only fill blanks; never clobber a value the user already has.
-      const patch: Record<string, string> = {};
+      const patch: Record<string, string | boolean> = {};
       if (!existing.name && args.name) patch.name = args.name;
       if (!existing.image && args.image) patch.image = args.image;
       if (!existing.email && args.email) patch.email = args.email;
+      // Marketing consent defaults to ON: write it once so the record is
+      // explicit, but never flip a customer who already opted out.
+      if (existing.marketingOptIn === undefined) patch.marketingOptIn = true;
       if (Object.keys(patch).length > 0) {
-        await ctx.db.patch(userId, patch);
-        return { created: false, patched: true };
+        try {
+          await ctx.db.patch(userId, patch);
+          return { created: false, patched: true };
+        } catch {
+          return { created: false, patched: false };
+        }
       }
       return { created: false, patched: false };
     }
@@ -64,10 +71,57 @@ export const ensureProfile = mutation({
         name: args.name,
         email: args.email,
         image: args.image,
+        marketingOptIn: true,
       });
       return { created: true, patched: false };
     } catch {
       return { created: false, patched: false };
     }
+  },
+});
+
+/**
+ * Store the promotional-email choice made at signup / checkout.
+ *
+ * `optedIn` is written verbatim, so an explicit opt-out is as durable as an
+ * opt-in. The whole patch is defensive: a row that vanished mid-session must
+ * not take the checkout down with it.
+ */
+export const setMarketingOptIn = mutation({
+  args: { optedIn: v.boolean() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return { saved: false };
+    try {
+      const existing = await ctx.db.get(userId);
+      if (!existing) {
+        await ctx.db.insert("users", { marketingOptIn: args.optedIn });
+        return { saved: true };
+      }
+      await ctx.db.patch(userId, { marketingOptIn: args.optedIn });
+      return { saved: true };
+    } catch {
+      return { saved: false };
+    }
+  },
+});
+
+/**
+ * Recipients for a promotional broadcast.
+ *
+ * Consent is opt-OUT: `marketingOptIn === false` is the only value that
+ * excludes a customer, so anyone who registered before this field existed
+ * (or never explicitly ticked the box) still receives the newsletter.
+ */
+export const marketingAudience = query({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    return users
+      .filter((user) => user.marketingOptIn !== false && !!user.email)
+      .map((user) => ({
+        email: user.email as string,
+        name: user.name ?? null,
+      }));
   },
 });
