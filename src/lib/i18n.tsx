@@ -42,8 +42,8 @@ const vi = {
   vp1Sub: "Từng món đều được chọn bằng tay",
   vp2Title: "Đổi trả dễ dàng",
   vp2Sub: "Đổi trả trong 7 ngày",
-  vp3Title: "Thanh toán an toàn",
-  vp3Sub: "VietCOD · VietQR bảo mật",
+  vp3Title: "Trả tiền khi nhận hàng",
+  vp3Sub: "Trả tiền khi nhận hàng, không cần chuyển khoản trước",
 
   // ── Shop section ─────────────────────────────────────────────
   shopEyebrow: "MUA SẮM THEO DANH MỤC",
@@ -126,7 +126,7 @@ const vi = {
   footerCompany: "CÔNG TY",
   supportShipping: "Miễn phí giao hàng từ 400.000 VND",
   supportReturns: "Hỗ trợ đổi trả hàng trong vòng 7 ngày.",
-  supportPayment: "Thanh toán VietQR & COD",
+  supportPayment: "Thanh toán khi nhận hàng",
   supportLiveChat: "Hỗ trợ trực tuyến qua Live Chat",
   policyLabel: "Chính sách mua hàng",
   policyUpdatedNote:
@@ -291,10 +291,10 @@ const vi = {
   trustShipSub: "Cho đơn từ 400.000 VND",
   trustReturns: "Đổi size dễ dàng",
   trustReturnsSub: TEXT.policy7Day,
-  trustPay: "Thanh toán VietQR & COD.",
-  trustPaySub: "An toàn & bảo mật",
-  trustSupport: "Hỗ trợ 24/7",
-  trustSupportSub: "Luôn sẵn lòng giúp bạn",
+  trustPay: "Thanh toán khi nhận hàng.",
+  trustPaySub: "Kiểm tra hàng rồi mới thanh toán",
+  trustSupport: "Phản hồi nhanh",
+  trustSupportSub: "Nhắn qua Live Chat trên web",
   heroTagline:
     "Khám phá các dòng đồ lót mềm mại, áo bra nâng dáng và váy ngủ lụa cao cấp — mang lại cảm giác dễ chịu tuyệt đối và nữ tính dành cho bạn.",
   slideLabel: "Slide",
@@ -488,8 +488,8 @@ const en: Record<TKey, string> = {
   vp1Sub: "Every piece chosen by hand",
   vp2Title: "Easy returns",
   vp2Sub: "7-day returns",
-  vp3Title: "Secure transfer",
-  vp3Sub: "Protected VietQR & COD",
+  vp3Title: "Pay on delivery",
+  vp3Sub: "Pay when it arrives — no upfront transfer",
 
   // Shop
   shopEyebrow: "SHOP BY CATEGORY",
@@ -573,7 +573,7 @@ const en: Record<TKey, string> = {
   footerCompany: "COMPANY",
   supportShipping: "Free shipping over 400.000 VND",
   supportReturns: "Exchange support within 7 days.",
-  supportPayment: "VietQR & cash on delivery",
+  supportPayment: "Cash on delivery",
   supportLiveChat: "Live chat support",
   policyLabel: "Store policy",
   policyUpdatedNote:
@@ -737,10 +737,10 @@ const en: Record<TKey, string> = {
   trustShipSub: "On orders over 400.000 VND",
   trustReturns: "Easy size exchange",
   trustReturnsSub: "Size exchange within 7 days.",
-  trustPay: "VietQR & COD payment.",
-  trustPaySub: "Safe & secure",
-  trustSupport: "24/7 support",
-  trustSupportSub: "We're here to help",
+  trustPay: "Pay on delivery.",
+  trustPaySub: "Check it before you pay",
+  trustSupport: "Quick replies",
+  trustSupportSub: "Message us on live chat",
   heroTagline:
     "Discover timeless pieces crafted for comfort and designed for elegance — made just for you.",
   slideLabel: "Slide",

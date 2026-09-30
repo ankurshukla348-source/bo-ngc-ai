@@ -155,7 +155,7 @@ export function StoreFooter({
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <p>{t("rights")}</p>
           <div className="flex gap-2">
-            {["VietQR", "COD", "VNĐ"].map((chip) => (
+            {["COD", "VNĐ"].map((chip) => (
               <span
                 key={chip}
                 className="rounded-full border border-white/15 px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest"
