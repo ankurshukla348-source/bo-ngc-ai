@@ -2,13 +2,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { placeholderArt } from "@/lib/art";
 import { CATEGORIES, SIZE_OPTIONS, type Category } from "@/lib/catalog";
-import {
-  ADMIN_EMAIL,
-  ADMIN_PIN,
-  isAdminUnlocked,
-  lockAdmin,
-  tryUnlockAdmin,
-} from "@/lib/admin";
+import { ADMIN_EMAIL } from "@/lib/admin";
 import { useAuth } from "@/hooks/use-auth";
 import { formatVnd, sanitizePriceInput } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -19,102 +13,16 @@ import {
   Camera,
   ImagePlus,
   Loader2,
-  Lock,
   MessageCircle,
   Pencil,
   Send,
+  LogOut,
   Store,
   Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-
-/* ────────────────────────────────────────────────────────────────
-   PIN gate — v1 uses a hardcoded PIN (see src/lib/admin.ts)
-   ──────────────────────────────────────────────────────────────── */
-
-function PinGate({ onUnlock }: { onUnlock: () => void }) {
-  const { t } = useI18n();
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState(false);
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (tryUnlockAdmin(pin)) {
-      setError(false);
-      onUnlock();
-    } else {
-      setError(true);
-      setPin("");
-    }
-  };
-
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-4">
-      <form
-        onSubmit={submit}
-        className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 shadow-soft-lg"
-      >
-        <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-2xl bg-primary font-display text-2xl font-bold text-primary-foreground">
-            B
-          </span>
-          <span>
-            <span className="block font-display text-xl font-bold tracking-tight">
-              {t("adminTitle")}
-            </span>
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-              {t("adminSub")}
-            </span>
-          </span>
-        </div>
-
-        <label className="mt-8 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {t("pinPlaceholder")}
-          <input
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            autoFocus
-            maxLength={8}
-            value={pin}
-            onChange={(e) => {
-              setPin(e.target.value);
-              setError(false);
-            }}
-            placeholder="••••"
-            className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 text-center font-mono text-2xl tracking-[0.5em] outline-none focus:border-ring focus:bg-card"
-          />
-        </label>
-
-        {error && (
-          <p className="mt-3 rounded-full bg-accent px-3 py-2 text-center text-xs font-semibold text-accent-foreground">
-            {t("pinError")}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
-        >
-          <Lock className="size-4" />
-          {t("unlock")}
-        </button>
-
-        <p className="mt-5 border-t border-border pt-4 text-center text-[11px] text-muted-foreground">
-          {t("pinHint")}
-        </p>
-        <Link
-          to="/"
-          className="mt-3 block text-center text-xs font-semibold uppercase tracking-wide underline-offset-4 hover:underline"
-        >
-          ← {t("backToStore")}
-        </Link>
-      </form>
-    </main>
-  );
-}
 
 /* ────────────────────────────────────────────────────────────────
    Square stock toggle (neobrutalist replacement for the round switch)
@@ -1232,18 +1140,22 @@ function BroadcastPanel() {
    ──────────────────────────────────────────────────────────────── */
 
 export default function Admin() {
-  const { t } = useI18n();
-  const { isLoading, isAuthenticated, user } = useAuth();
-  const [unlocked, setUnlocked] = useState(() => isAdminUnlocked());
+  const { isLoading, isAuthenticated, user, signOut } = useAuth();
+  const navigate = useNavigate();
 
-  // The store owner's Google session unlocks the dashboard directly —
-  // no PIN. The PIN gate stays as a fallback for non-Google access.
-  const isOwnerGoogle =
+  // Access is identity-only: the store owner's Google account, no PIN.
+  const isOwner =
     isAuthenticated &&
     !!user?.email &&
     user.email.trim().toLowerCase() === ADMIN_EMAIL;
 
-  if (isLoading) {
+  // Anyone else — signed out or a different account — is sent back to the
+  // storefront instead of being shown a prompt.
+  useEffect(() => {
+    if (!isLoading && !isOwner) navigate("/", { replace: true });
+  }, [isLoading, isOwner, navigate]);
+
+  if (isLoading || !isOwner) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -1251,21 +1163,17 @@ export default function Admin() {
     );
   }
 
-  if (!unlocked && !isOwnerGoogle) {
-    return <PinGate onUnlock={() => setUnlocked(true)} />;
-  }
-
   return (
     <AdminPanel
-      onLock={() => {
-        if (!isOwnerGoogle) lockAdmin();
-        setUnlocked(false);
+      onLock={async () => {
+        await signOut();
+        navigate("/", { replace: true });
       }}
     />
   );
 }
 
-function AdminPanel({ onLock }: { onLock: () => void }) {
+function AdminPanel({ onLock }: { onLock: () => Promise<void> }) {
   const { t } = useI18n();
   const [tab, setTab] = useState<"products" | "chat" | "broadcast">("products");
   const products = useQuery(api.products.list);
@@ -1303,11 +1211,11 @@ function AdminPanel({ onLock }: { onLock: () => void }) {
             </Link>
             <button
               type="button"
-              onClick={onLock}
+              onClick={() => void onLock()}
               className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors"
             >
-              <Lock className="size-3.5" />
-              {t("lock")}
+              <LogOut className="size-3.5" />
+              {t("signOutLabel")}
             </button>
           </div>
         </div>
