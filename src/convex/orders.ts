@@ -1,14 +1,37 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import {
+  isHoneypotTripped,
+  MAX_ORDER_ITEMS,
+  normalizePhone,
+  ORDER_LIMIT,
+  orderThrottleKey,
+} from "../lib/antiSpam";
 import { shippingFeeFor } from "../lib/catalog";
 import {
   isOrderStatus,
   isRedactableStatus,
+  normalizeStatus,
   ORDER_STATUSES,
   redactCustomer,
 } from "../lib/orders";
 import { requireOwner } from "../lib/owner";
+import { allowRequest } from "./throttle";
 import { mutation, query } from "./_generated/server";
+import { makeFunctionReference } from "convex/server";
+
+/**
+ * Order emails are sent by a scheduled action. The action lives on the Node
+ * runtime (Resend is a Node SDK), so the reference is built by name instead of
+ * importing the module — same reason src/convex/marketing.ts does it this way.
+ *
+ * The token is a server-only constant: it never reaches the browser bundle, and
+ * it stops anyone from calling the mail action directly through the public
+ * endpoint to spam a customer's inbox.
+ */
+const ORDER_MAIL_TOKEN = "b7n-order-mail-2f9c41";
+const orderMailRef = makeFunctionReference<"action">("notifications:sendOrderEmail");
+const mailPayloadRef = makeFunctionReference<"query">("orders:mailPayload");
 
 /** Order lines only keep real image URLs. Inline `data:` artwork (placeholder
  *  SVGs) and anything oversized are dropped so an order document can never
@@ -53,18 +76,31 @@ export const create = mutation({
       v.literal("cod"),
       v.literal("wallet"),
     ),
+    /** Honeypot — must stay empty. Bots fill every field they can find. */
+    website: v.optional(v.string()),
+    /** Optional email for the order confirmation (guest checkout). */
+    email: v.optional(v.string()),
+    /** Site language, so the order email matches what the customer read. */
+    lang: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     if (args.items.length === 0) throw new Error("Cart is empty");
+    if (args.items.length > MAX_ORDER_ITEMS) {
+      throw new Error("Too many items in one order");
+    }
+    // A filled honeypot means an automated form submission.
+    if (isHoneypotTripped(args.website)) throw new Error("Order rejected");
 
     const customer = {
-      name: args.customer.name.trim(),
-      phone: args.customer.phone.trim(),
-      province: args.customer.province.trim(),
-      district: args.customer.district.trim(),
-      ward: args.customer.ward.trim(),
-      street: args.customer.street.trim(),
-      ...(args.customer.note?.trim() ? { note: args.customer.note.trim() } : {}),
+      name: args.customer.name.trim().slice(0, 120),
+      phone: args.customer.phone.trim().slice(0, 30),
+      province: args.customer.province.trim().slice(0, 120),
+      district: args.customer.district.trim().slice(0, 120),
+      ward: args.customer.ward.trim().slice(0, 120),
+      street: args.customer.street.trim().slice(0, 300),
+      ...(args.customer.note?.trim()
+        ? { note: args.customer.note.trim().slice(0, 500) }
+        : {}),
     };
     if (
       !customer.name ||
@@ -126,7 +162,20 @@ export const create = mutation({
     }
     if (!orderCode) throw new Error("Could not allocate an order ID");
 
-    await ctx.db.insert("orders", {
+    // One phone number may only place a handful of orders an hour, so a bored
+    // script cannot bury the real ones under fake ones.
+    const allowed = await allowRequest(
+      ctx,
+      orderThrottleKey(customer.phone),
+      ORDER_LIMIT,
+    );
+    if (!allowed) throw new Error("Too many orders from this phone number");
+
+    const email = args.email?.trim().toLowerCase().slice(0, 200);
+    const guestEmail =
+      email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? email : undefined;
+
+    const orderId = await ctx.db.insert("orders", {
       orderCode,
       status: "processing",
       items,
@@ -136,7 +185,21 @@ export const create = mutation({
       shippingFee,
       total,
       createdAt,
+      ...(guestEmail ? { guestEmail } : {}),
+      ...(args.lang === "en" ? { lang: "en" } : {}),
     });
+
+    // Fire-and-forget receipt. The order is already stored, so a mail failure
+    // can never cost the customer their order.
+    try {
+      await ctx.scheduler.runAfter(0, orderMailRef, {
+        token: ORDER_MAIL_TOKEN,
+        orderId,
+        kind: "placed" as const,
+      });
+    } catch {
+      /* mail is best-effort — the confirmation screen already shows the order */
+    }
 
     return { orderCode, subtotal, shippingFee, total, createdAt };
   },
@@ -186,6 +249,111 @@ export const list = query({
   },
 });
 
+/**
+ * Minimal order snapshot for the mail action.
+ *
+ * An action has no `db`, so the mail job reads the order through this query.
+ * It is reachable only with the server-only mail token, so it is never an
+ * order-detail endpoint for the public API.
+ */
+export const mailPayload = query({
+  args: { token: v.string(), id: v.id("orders") },
+  handler: async (ctx, args) => {
+    if (args.token !== ORDER_MAIL_TOKEN) throw new Error("Not authorized");
+    const order = await ctx.db.get(args.id);
+    if (!order) return null;
+    return {
+      orderCode: order.orderCode,
+      status: order.status,
+      createdAt: order.createdAt,
+      lang: order.lang ?? "vi",
+      recipient: order.customerEmail ?? order.guestEmail ?? null,
+      customer: {
+        name: order.customer.name,
+        ward: order.customer.ward,
+        district: order.customer.district,
+        province: order.customer.province,
+      },
+      items: order.items.map((item) => ({
+        nameVi: item.nameVi,
+        nameEn: item.nameEn,
+        size: item.size,
+        qty: item.qty,
+        price: item.price,
+      })),
+      subtotal: order.subtotal,
+      shippingFee: order.shippingFee,
+      total: order.total,
+    };
+  },
+});
+
+/**
+ * Guest order lookup: order code + the phone number used at checkout.
+ *
+ * Most COD customers never sign in, so /account cannot be the only way to see
+ * an order. The phone number is the second factor — a guesser needs both — and
+ * the answer is deliberately narrower than `orders:list`: no street address, no
+ * phone, and the street is masked even for a correct match. A wrong code or
+ * phone returns the same `null` either way, so the endpoint cannot be used to
+ * confirm which order codes exist.
+ */
+export const track = query({
+  args: { orderCode: v.string(), phone: v.string() },
+  handler: async (ctx, args) => {
+    const code = args.orderCode.trim().toUpperCase();
+    const phone = normalizePhone(args.phone);
+    if (!code || phone.length < 8) return null;
+
+    const order = await ctx.db
+      .query("orders")
+      .withIndex("by_code", (q) => q.eq("orderCode", code))
+      .unique();
+    if (!order) return null;
+    if (normalizePhone(order.customer.phone) !== phone) return null;
+
+    const street = order.customer.street;
+    return {
+      orderCode: order.orderCode,
+      status: order.status,
+      createdAt: order.createdAt,
+      customerName: order.customer.name,
+      // Enough to recognise the address, not enough to deliver to it.
+      deliveryArea: [order.customer.ward, order.customer.district, order.customer.province]
+        .filter(Boolean)
+        .join(", "),
+      streetPreview: maskStreet(street),
+      addressRedacted: order.addressRedactedAt !== undefined,
+      note: order.customer.note ?? null,
+      items: order.items.map((item) => ({
+        nameVi: item.nameVi,
+        nameEn: item.nameEn,
+        size: item.size,
+        qty: item.qty,
+        price: item.price,
+      })),
+      subtotal: order.subtotal,
+      shippingFee: order.shippingFee,
+      total: order.total,
+      paymentMethod: order.paymentMethod,
+    };
+  },
+});
+
+/** "12 Trần Phú" → "12 T*** Phú" — recognisable, not reusable. */
+function maskStreet(street: string): string {
+  const trimmed = street.trim();
+  if (!trimmed) return "";
+  const words = trimmed.split(/\s+/);
+  return words
+    .map((word, index) =>
+      index === 0 || word.length <= 2
+        ? word
+        : `${word.slice(0, 2)}${"*".repeat(Math.min(3, word.length - 2))}`,
+    )
+    .join(" ");
+}
+
 /** The signed-in customer's own orders, newest first. */
 export const mine = query({
   args: {},
@@ -221,6 +389,19 @@ export const setStatus = mutation({
     if (!order) return { updated: false };
     try {
       await ctx.db.patch(args.id, { status });
+
+      // Tell the customer their parcel moved on.
+      if (status !== normalizeStatus(order.status)) {
+        try {
+          await ctx.scheduler.runAfter(0, orderMailRef, {
+            token: ORDER_MAIL_TOKEN,
+            orderId: args.id,
+            kind: "status" as const,
+          });
+        } catch {
+          /* best-effort: the status itself is already saved */
+        }
+      }
       return { updated: true };
     } catch {
       return { updated: false };
@@ -259,6 +440,69 @@ export const redactAddress = mutation({
     } catch {
       return { redacted: false as const, reason: "failed" as const };
     }
+  },
+});
+
+/**
+ * Every order as CSV, for the shop's own bookkeeping.
+ *
+ * Owner-only. UTF-8 BOM first so Excel opens Vietnamese diacritics correctly,
+ * and the newest orders come last so a fresh export appends cleanly to the
+ * previous one. Redacted addresses export as the placeholder, never as the
+ * original.
+ */
+export const exportCsv = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireOwner(ctx);
+    const orders = await ctx.db.query("orders").order("asc").collect();
+
+    const escapeCell = (value: string | number) => {
+      const text = String(value);
+      return /[",\n;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+
+    const header = [
+      "Order code",
+      "Created at",
+      "Status",
+      "Customer",
+      "Phone",
+      "Street",
+      "Ward",
+      "District",
+      "Province",
+      "Note",
+      "Items",
+      "Subtotal",
+      "Shipping",
+      "Total",
+    ];
+
+    const rows = orders.map((order) => [
+      order.orderCode,
+      new Date(order.createdAt).toISOString(),
+      normalizeStatus(order.status),
+      order.customer.name,
+      order.customer.phone,
+      order.customer.street,
+      order.customer.ward,
+      order.customer.district,
+      order.customer.province,
+      order.customer.note ?? "",
+      order.items
+        .map((item) => `${item.nameVi} (${item.size}) x${item.qty}`)
+        .join("; "),
+      order.subtotal,
+      order.shippingFee,
+      order.total,
+    ]);
+
+    const csv = [header, ...rows]
+      .map((row) => row.map(escapeCell).join(","))
+      .join("\r\n");
+
+    return { filename: `bao-ngoc-orders-${Date.now()}.csv`, csv: `\uFEFF${csv}` };
   },
 });
 

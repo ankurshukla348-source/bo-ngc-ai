@@ -97,6 +97,14 @@ export function StoreFooter({
               <li>{t("supportShipping")}</li>
               <li>{t("supportReturns")}</li>
               <li>{t("supportPayment")}</li>
+              <li>
+                <Link
+                  to="/track"
+                  className="inline-block text-white transition-colors hover:text-white/70"
+                >
+                  {t("trackOrderCta")}
+                </Link>
+              </li>
               <li className="font-semibold text-white">
                 {t("supportLiveChat")}
               </li>

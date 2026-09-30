@@ -65,8 +65,8 @@ export const POLICY: PolicyCopy = {
       heading: "Biểu phí vận chuyển (Tiền Ship)",
       lead: null,
       bullets: [
-        "Khu vực nội thành Diên Khánh (Gần Chợ Thành): Đồng giá 15.000đ / đơn hàng (Giao hàng hỏa tốc trong ngày).",
-        "Khu vực Thành phố Nha Trang và các huyện lân cận: Đồng giá 20.000đ / đơn hàng (1 - 2 ngày).",
+        "Toàn huyện Diên Khánh (gồm khu vực nội thành gần Chợ Thành): Đồng giá 15.000đ / đơn hàng (Giao hàng hỏa tốc trong ngày).",
+        "Khu vực Thành phố Nha Trang và các huyện lân cận (Cam Lâm, Diên Tháp, Ninh Hải): Đồng giá 20.000đ / đơn hàng (1 - 2 ngày).",
         "Các tỉnh thành khác trên toàn quốc: Đồng giá 30.000đ / đơn hàng (3 - 5 ngày).",
         "FREESHIP: Miễn phí 100% tiền ship toàn quốc cho đơn hàng từ 400.000đ trở lên.",
       ],
@@ -118,8 +118,8 @@ export const POLICY_EN: PolicyCopy = {
       heading: "Shipping Rates",
       lead: null,
       bullets: [
-        "Diên Khánh inner city (near Chợ Thành): Flat 15,000 VND per order (same-day express delivery).",
-        "Nha Trang city and neighbouring districts: Flat 20,000 VND per order (1 – 2 days).",
+        "Diên Khánh district (including the inner city near Chợ Thành): Flat 15,000 VND per order (same-day express delivery).",
+        "Nha Trang city and neighbouring districts (Cam Lâm, Diên Tháp, Ninh Hải): Flat 20,000 VND per order (1 – 2 days).",
         "All other provinces nationwide: Flat 30,000 VND per order (3 – 5 days).",
         "FREESHIP: 100% free shipping nationwide on orders from 400,000 VND or more.",
       ],

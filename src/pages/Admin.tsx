@@ -35,6 +35,7 @@ import {
 import { useConvex, useAction, useMutation, useQuery } from "convex/react";
 import {
   Camera,
+  Download,
   ImagePlus,
   Loader2,
   Lock,
@@ -933,11 +934,35 @@ function BankSettings() {
 
 function OrdersPanel() {
   const { t, lang } = useI18n();
+  const convex = useConvex();
   const orders = useQuery(api.orders.list, {});
   const setStatus = useMutation(api.orders.setStatus);
   const redactAddress = useMutation(api.orders.redactAddress);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [redactId, setRedactId] = useState<Id<"orders"> | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  // Accounting export: newest orders last, so a second export appends cleanly.
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const result = await convex.query(api.orders.exportCsv, {});
+      const url = URL.createObjectURL(
+        new Blob([result.csv], { type: "text/csv;charset=utf-8;" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = result.filename;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success(t("exportCsvDone"));
+    } catch (error) {
+      console.error(error);
+      toast.error(t("exportCsvFailed"));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const change = async (id: Id<"orders">, status: OrderStatus) => {
     setBusyId(id);
@@ -988,6 +1013,17 @@ function OrdersPanel() {
 
   return (
     <>
+      <div className="mb-4 flex justify-end">
+        <button
+          type="button"
+          onClick={() => void exportCsv()}
+          disabled={exporting}
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
+        >
+          <Download className="size-3.5" />
+          {exporting ? t("exportCsvBusy") : t("exportCsv")}
+        </button>
+      </div>
       <ul className="flex flex-col gap-4">
       {orders.map((order) => {
         const address = [

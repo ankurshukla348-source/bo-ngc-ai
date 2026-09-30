@@ -18,6 +18,7 @@
 import { Resend } from "resend";
 import { v } from "convex/values";
 import { makeFunctionReference } from "convex/server";
+import { escapeHtml } from "../lib/email";
 import { requireOwner } from "../lib/owner";
 import { action } from "./_generated/server";
 
@@ -29,14 +30,6 @@ const BATCH_SIZE = 100;
 const DEFAULT_FROM = "Shop Bảo Ngọc <onboarding@resend.dev>";
 
 /** Escape user-authored copy before it is wrapped in the email HTML. */
-function escapeHtml(raw: string): string {
-  return raw
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 function toHtml(body: string): string {
   const text = escapeHtml(body.trim()).replace(/\n/g, "<br />");
   return [

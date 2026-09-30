@@ -22,6 +22,7 @@ const AuthPage = lazy(() =>
   import("./pages/Auth.tsx").then((m) => ({ default: m.AuthPage })),
 );
 const Policy = lazy(() => import("./pages/Policy.tsx"));
+const TrackOrder = lazy(() => import("./pages/TrackOrder.tsx"));
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -147,6 +148,7 @@ createRoot(document.getElementById("root")!).render(
                   {/* Public store policy — reachable from the header, the
                       footer and the first-login consent modal. */}
                   <Route path="/policy" element={<Policy />} />
+                  <Route path="/track" element={<TrackOrder />} />
                   {/* OAuth can land back on the app at /auth (optionally with
                       a sub-path or the ?code= param) — all of them resolve to
                       the sign-in screen, never to an unhandled route. */}

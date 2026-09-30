@@ -1,5 +1,13 @@
 import { v } from "convex/values";
+import {
+  CHAT_CUSTOMER_LIMIT,
+  CHAT_THREAD_LIMIT,
+  chatSellerThrottleKey,
+  chatThrottleKey,
+  threadThrottleKey,
+} from "../lib/antiSpam";
 import { requireOwner } from "../lib/owner";
+import { allowRequest } from "./throttle";
 import { mutation, query } from "./_generated/server";
 
 /** Longest body we accept in one line of chat (keeps the inbox readable). */
@@ -43,6 +51,27 @@ export const send = mutation({
     if (!body) return null;
 
     const createdAt = Date.now();
+
+    // Rate limit before writing: the widget is public, and an unbounded write
+    // path is both a spam problem and a way to run up the database bill. The
+    // seller has their own bucket so replying to a customer is never blocked.
+    const allowed = await allowRequest(
+      ctx,
+      args.author === "seller"
+        ? chatSellerThrottleKey(conversationId)
+        : chatThrottleKey(conversationId),
+      CHAT_CUSTOMER_LIMIT,
+    );
+    if (!allowed) throw new Error("Too many messages — please slow down");
+    const threadAllowed = await allowRequest(
+      ctx,
+      threadThrottleKey(conversationId),
+      CHAT_THREAD_LIMIT,
+    );
+    if (!threadAllowed) {
+      throw new Error("This conversation is busy — please try again later");
+    }
+
     try {
       return await ctx.db.insert("messages", {
         conversationId,

@@ -1,6 +1,7 @@
 import { Header } from "@/components/store/Header";
 import { MarketingOptIn } from "@/components/store/MarketingOptIn";
 import { api } from "@/convex/_generated/api";
+import { HONEYPOT_FIELD } from "@/lib/antiSpam";
 import { useCart, type CartItem } from "@/lib/cart";
 import { shippingFeeFor, shippingZoneFor } from "@/lib/catalog";
 import { formatVnd } from "@/lib/format";
@@ -32,6 +33,7 @@ import { Link } from "react-router";
 type Shipping = {
   name: string;
   phone: string;
+  email: string;
   province: string;
   district: string;
   ward: string;
@@ -62,6 +64,7 @@ type ConfirmedOrder = {
 const BLANK_SHIPPING: Shipping = {
   name: "",
   phone: "",
+  email: "",
   province: "",
   district: "",
   ward: "",
@@ -427,6 +430,15 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
             lang === "vi" ? "vi-VN" : "en-GB",
           )}
         </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("trackHint")}{" "}
+          <Link
+            to="/track"
+            className="font-semibold underline underline-offset-4 hover:text-foreground"
+          >
+            {t("trackOrderCta")}
+          </Link>
+        </p>
       </div>
 
       {/* Payment instructions */}
@@ -604,8 +616,12 @@ export default function Checkout() {
 
   const [open, setOpen] = useState<string[]>(["ship"]);
   const [shipping, setShipping] = useState<Shipping>(BLANK_SHIPPING);
+  const [honeypot, setHoneypot] = useState("");
   const [shipDone, setShipDone] = useState(false);
-  const [method, setMethod] = useState<PaymentMethod>("vietqr");
+  // The shop takes payment on delivery only, so the method is fixed rather
+  // than chosen. "vietqr" stays in the type for orders placed before the
+  // switch, which still render their original payment instructions.
+  const method: PaymentMethod = "cod";
   const [payDone, setPayDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
@@ -689,6 +705,9 @@ export default function Checkout() {
         ...(shipping.note.trim() ? { note: shipping.note.trim() } : {}),
       },
       paymentMethod: method,
+      website: honeypot,
+      ...(shipping.email.trim() ? { email: shipping.email.trim() } : {}),
+      lang,
     });
 
   /** Only transport hiccups are retried: a rejected mutation means nothing
@@ -876,6 +895,26 @@ export default function Checkout() {
                       placeholder="Gọi trước khi giao…"
                       className="sm:col-span-2"
                     />
+                    <Field
+                      label={t("emailForReceipt")}
+                      type="email"
+                      value={shipping.email}
+                      onChange={(v) => setField("email", v)}
+                      placeholder="ban@example.com"
+                      className="sm:col-span-2"
+                    />
+                    {/* Honeypot: hidden from people, irresistible to bots. A
+                        filled field makes orders:create reject the order. */}
+                    <input
+                      type="text"
+                      name={HONEYPOT_FIELD}
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      className="sr-only"
+                    />
                   </div>
 
                   <ErrorNote message={error} />
@@ -906,84 +945,17 @@ export default function Checkout() {
               >
                   <div className="grid gap-3" role="radiogroup">
                     <PayOption
-                      selected={method === "vietqr"}
-                      onSelect={() => setMethod("vietqr")}
-                      icon={QrCode}
-                      title={t("payVietqr")}
-                      desc={t("payVietqrDesc")}
-                    />
-                    <PayOption
-                      selected={method === "cod"}
-                      onSelect={() => setMethod("cod")}
+                      selected
+                      onSelect={() => {}}
                       icon={Banknote}
                       title={t("payCod")}
                       desc={t("payCodDesc")}
                     />
-                    <PayOption
-                      selected={false}
-                      disabled
-                      onSelect={() => {}}
-                      icon={Wallet}
-                      title={t("payWallet")}
-                      desc={t("payWalletDesc")}
-                      badge={lang === "vi" ? "Sắp ra mắt" : "Soon"}
-                    />
                   </div>
 
-                  {method === "vietqr" && (
-                    <div className="mt-4 flex flex-col gap-4 border border-border bg-background p-4 sm:flex-row">
-                      <div className="shrink-0 self-center rounded-2xl border border-border bg-white p-2 shadow-soft sm:self-start">
-                        {qrPayload ? (
-                          <SafeBoundary
-                            fallback={
-                              <div className="flex h-[168px] w-[168px] items-center justify-center px-3 text-center text-[11px] leading-snug text-muted-foreground">
-                                {t("qrUnavailable")}
-                              </div>
-                            }
-                          >
-                            <QRCodeSVG value={qrPayload} size={168} />
-                          </SafeBoundary>
-                        ) : (
-                          <div className="flex h-[168px] w-[168px] items-center justify-center text-xs text-muted-foreground">
-                            …
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1 space-y-2 text-sm">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                          {t("bankDetails")}
-                        </p>
-                        <p className="font-display text-lg font-bold">
-                          {paymentSettings?.bankName ?? "…"}
-                        </p>
-                        <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-                          <span className="text-muted-foreground">
-                            {t("accountNoL")}
-                          </span>
-                          <span className="truncate text-right font-semibold tabular-nums">
-                            {paymentSettings?.accountNo ?? "…"}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {t("holderL")}
-                          </span>
-                          <span className="truncate text-right font-semibold">
-                            {paymentSettings?.accountHolder ?? "…"}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between border border-border bg-secondary px-3 py-2.5">
-                          <span className="text-xs font-semibold uppercase tracking-widest">
-                            {t("amountDue")}
-                          </span>
-                          <span className="font-display text-xl font-bold tabular-nums">
-                            {formatVnd(total)}
-                          </span>
-                        </div>
-                        <p className="text-xs leading-relaxed text-muted-foreground">
-                          {t("transferNote")}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  <p className="mt-4 border border-border bg-background p-4 text-sm leading-relaxed text-muted-foreground">
+                    {t("codInstructions")}
+                  </p>
 
                   <button
                     type="button"
@@ -1027,6 +999,10 @@ export default function Checkout() {
                         {shipping.street}, {shipping.ward}, {shipping.district},{" "}
                         {shipping.province}
                       </p>
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        {t("shippingZoneLabel")}:{" "}
+                        {lang === "vi" ? zone.labelVi : zone.labelEn}
+                      </p>
                     </div>
                     <div className="border border-border bg-background p-3.5">
                       <div className="flex items-center justify-between gap-2">
@@ -1046,11 +1022,7 @@ export default function Checkout() {
                         {methodLabel(method, lang)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {shipping.note
-                          ? shipping.note
-                          : method === "vietqr"
-                            ? t("payVietqrDesc")
-                            : t("payCodDesc")}
+                        {shipping.note ? shipping.note : t("payCodDesc")}
                       </p>
                     </div>
                   </div>

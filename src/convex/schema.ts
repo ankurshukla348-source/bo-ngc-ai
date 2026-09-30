@@ -75,6 +75,12 @@ const schema = defineSchema(
       // undefined and the order is only visible in the seller dashboard.
       userId: v.optional(v.id("users")),
       customerEmail: v.optional(v.string()),
+      // Email a guest typed at checkout (order confirmations go here). Kept
+      // separate from `customerEmail`, which belongs to a signed-in account.
+      guestEmail: v.optional(v.string()),
+      // Site language at checkout, so the order email matches the language
+      // the customer used while ordering.
+      lang: v.optional(v.string()),
       // Set once the seller erases the delivery details of a finished order,
       // so the dashboard can show "đã xóa" instead of the redacted fields.
       addressRedactedAt: v.optional(v.number()),
@@ -134,6 +140,14 @@ const schema = defineSchema(
       readAt: v.optional(v.number()), // set when the seller opens the thread
       createdAt: v.number(),
     }).index("by_conversation", ["conversationId"]),
+
+    // ── Spam throttle ──────────────────────────────────────────
+    // One row per recent request from a phone number or chat thread. Rows are
+    // pruned on write, so the table stays small and needs no sweeper.
+    throttle: defineTable({
+      key: v.string(), // e.g. "order:0901234567" or "chat:c:abc123"
+      at: v.number(),
+    }).index("by_key", ["key"]),
 
     // ── One-time seed marker ───────────────────────────────────
     // A single row here means starter products were either inserted or the
