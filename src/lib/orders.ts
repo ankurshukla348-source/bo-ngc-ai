@@ -50,3 +50,42 @@ export const PAYMENT_LABELS_EN: Record<string, string> = {
   cod: "Cash on delivery",
   wallet: "E-wallet",
 };
+
+/** Placeholder written over every delivery field once the details are erased. */
+export const REDACTED_TEXT = "Đã xóa";
+
+/** True for the finished orders whose delivery details may be erased. */
+export function isRedactableStatus(value: string | undefined): boolean {
+  const status = normalizeStatus(value);
+  return status === "delivered" || status === "cancelled";
+}
+
+/**
+ * The customer block of a finished order with its delivery details erased.
+ * The name stays (it is not part of the shipping record), while street, ward,
+ * district, province, phone and the delivery note are dropped entirely.
+ */
+export function redactCustomer(customer: {
+  name: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
+  street: string;
+}): {
+  name: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
+  street: string;
+} {
+  return {
+    name: customer.name,
+    phone: REDACTED_TEXT,
+    province: REDACTED_TEXT,
+    district: REDACTED_TEXT,
+    ward: REDACTED_TEXT,
+    street: REDACTED_TEXT,
+  };
+}

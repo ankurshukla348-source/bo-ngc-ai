@@ -3,8 +3,9 @@ import { v } from "convex/values";
 import { shippingFeeFor } from "../lib/catalog";
 import {
   isOrderStatus,
-  normalizeStatus,
+  isRedactableStatus,
   ORDER_STATUSES,
+  redactCustomer,
 } from "../lib/orders";
 import { requireOwner } from "../lib/owner";
 import { mutation, query } from "./_generated/server";
@@ -225,9 +226,6 @@ export const setStatus = mutation({
   },
 });
 
-/** Stand-in written over every delivery field once the details are erased. */
-const REDACTED = "Đã xóa";
-
 /**
  * Permanently erase the customer's delivery details from a finished order.
  *
@@ -243,8 +241,7 @@ export const redactAddress = mutation({
     const order = await ctx.db.get(args.id);
     if (!order) return { redacted: false as const, reason: "not_found" as const };
 
-    const status = normalizeStatus(order.status);
-    if (status !== "delivered" && status !== "cancelled") {
+    if (!isRedactableStatus(order.status)) {
       return { redacted: false as const, reason: "still_active" as const };
     }
     if (order.addressRedactedAt !== undefined) {
@@ -253,14 +250,7 @@ export const redactAddress = mutation({
 
     try {
       await ctx.db.patch(args.id, {
-        customer: {
-          name: order.customer.name,
-          phone: REDACTED,
-          province: REDACTED,
-          district: REDACTED,
-          ward: REDACTED,
-          street: REDACTED,
-        },
+        customer: redactCustomer(order.customer),
         addressRedactedAt: Date.now(),
       });
       return { redacted: true as const, reason: "redacted" as const };

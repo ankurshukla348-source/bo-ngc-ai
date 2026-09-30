@@ -11,10 +11,14 @@
  * Nothing here is destructive: a missing API key returns a readable result
  * (the seller UI shows a banner) instead of throwing and leaving the tab in
  * a permanent error state.
+ *
+ * Owner-only: this spends the store's Resend quota and emails real customers,
+ * so the guard is enforced here and not just hidden behind the /seller UI.
  */
 import { Resend } from "resend";
 import { v } from "convex/values";
 import { makeFunctionReference } from "convex/server";
+import { requireOwner } from "../lib/owner";
 import { action } from "./_generated/server";
 
 const audienceQuery = makeFunctionReference<"query">("users:marketingAudience");
@@ -59,6 +63,7 @@ export const sendBroadcast = action({
     testRecipient: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx);
     const subject = args.subject.trim().slice(0, 200);
     const body = args.body.trim().slice(0, 8000);
     if (!subject || !body) {

@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { requireOwner } from "../lib/owner";
 import { mutation, query } from "./_generated/server";
 
 /**
@@ -112,10 +113,14 @@ export const setMarketingOptIn = mutation({
  * Consent is opt-OUT: `marketingOptIn === false` is the only value that
  * excludes a customer, so anyone who registered before this field existed
  * (or never explicitly ticked the box) still receives the newsletter.
+ *
+ * Owner-only: this hands out customer email addresses, so it must never be
+ * readable from the public endpoint — only the seller dashboard calls it.
  */
 export const marketingAudience = query({
   args: {},
   handler: async (ctx) => {
+    await requireOwner(ctx);
     const users = await ctx.db.query("users").collect();
     return users
       .filter((user) => user.marketingOptIn !== false && !!user.email)
