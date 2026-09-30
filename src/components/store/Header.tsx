@@ -158,21 +158,25 @@ export function Header({
             <span className="hidden font-display text-xl font-bold leading-tight tracking-[0.08em] md:block lg:text-2xl">
               {TEXT.brandFull}
             </span>
-          </Link>
-
-          {showNav && (
-            <nav className="ml-2 hidden items-center gap-7 lg:flex">
-              {NAV_LINKS.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
+          </Link>            {showNav && (
+              <nav className="ml-2 hidden items-center gap-7 lg:flex">
+                {NAV_LINKS.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+                  >
+                    {t(link.key)}
+                  </a>
+                ))}
+                <Link
+                  to="/policy"
                   className="text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
                 >
-                  {t(link.key)}
-                </a>
-              ))}
-            </nav>
-          )}
+                  {t("policyLabel")}
+                </Link>
+              </nav>
+            )}
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
             {showNav && (
@@ -249,6 +253,12 @@ export function Header({
                 {t(link.key)}
               </a>
             ))}
+            <Link
+              to="/policy"
+              className="shrink-0 rounded-full bg-secondary px-3.5 py-1.5 text-xs font-medium text-foreground/80"
+            >
+              {t("policyLabel")}
+            </Link>
           </div>
         )}
       </div>

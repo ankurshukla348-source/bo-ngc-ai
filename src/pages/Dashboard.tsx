@@ -4,7 +4,7 @@ import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
 import { useMutation } from "convex/react";
-import { Heart, LogOut, Package, Store, UserRound } from "lucide-react";
+import { Heart, LogOut, Package, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -123,25 +123,6 @@ export default function Dashboard() {
               {t("accountInfoHint")}
             </p>
             <MarketingOptIn checked={optIn} onChange={handleOptInChange} />
-          </section>
-
-          {/* Seller shortcut */}
-          <section className="flex flex-col rounded-3xl border border-border bg-secondary p-6">
-            <span className="flex size-11 items-center justify-center rounded-full bg-card">
-              <Store className="size-5 text-brand-rose" />
-            </span>
-            <h2 className="mt-4 font-display text-xl font-bold">
-              {t("sellerShortcutTitle")}
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {t("sellerShortcutBody")}
-            </p>
-            <Link
-              to="/seller"
-              className="mt-5 w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 hover:shadow-soft"
-            >
-              {t("sellerShortcutCta")}
-            </Link>
           </section>
         </div>
 

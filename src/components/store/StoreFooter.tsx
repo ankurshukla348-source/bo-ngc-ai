@@ -86,6 +86,14 @@ export function StoreFooter({
               {t("footerSupport")}
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm text-white/80">
+              <li>
+                <Link
+                  to="/policy"
+                  className="inline-block text-white transition-colors hover:text-white/70"
+                >
+                  {t("policyLabel")}
+                </Link>
+              </li>
               <li>{t("supportShipping")}</li>
               <li>{t("supportReturns")}</li>
               <li>{t("supportPayment")}</li>

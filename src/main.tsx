@@ -1,6 +1,7 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
 import { RequireAuth } from "@/components/RequireAuth";
+import { PolicyGate } from "@/components/store/PolicyGate";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
@@ -20,6 +21,7 @@ const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const AuthPage = lazy(() =>
   import("./pages/Auth.tsx").then((m) => ({ default: m.AuthPage })),
 );
+const Policy = lazy(() => import("./pages/Policy.tsx"));
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -133,18 +135,33 @@ createRoot(document.getElementById("root")!).render(
           <CartProvider>
             <BrowserRouter>
               <RouteSyncer />
+              {/* First-login store policy consent — sits above every route so
+                  the notice cannot be skipped by going straight to /checkout. */}
+              <PolicyGate />
               <Suspense fallback={<RouteLoading />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/seller" element={<Admin />} />
+                  {/* Public store policy — reachable from the header, the
+                      footer and the first-login consent modal. */}
+                  <Route path="/policy" element={<Policy />} />
                   {/* OAuth can land back on the app at /auth (optionally with
                       a sub-path or the ?code= param) — all of them resolve to
                       the sign-in screen, never to an unhandled route. */}
                   <Route path="/auth/*" element={<AuthPage redirectAfterAuth="/" />} />
                   <Route
                     path="/dashboard"
+                    element={
+                      <RequireAuth>
+                        <Dashboard />
+                      </RequireAuth>
+                    }
+                  />
+                  {/* Same customer account view, friendlier URL. */}
+                  <Route
+                    path="/account"
                     element={
                       <RequireAuth>
                         <Dashboard />

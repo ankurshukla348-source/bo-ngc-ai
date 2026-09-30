@@ -128,6 +128,9 @@ const vi = {
   supportReturns: "Hỗ trợ đổi trả hàng trong vòng 7 ngày.",
   supportPayment: "Thanh toán VietQR & COD",
   supportLiveChat: "Hỗ trợ trực tuyến qua Live Chat",
+  policyLabel: "Chính sách mua hàng",
+  policyUpdatedNote:
+    "Chính sách hiện hành, áp dụng cho mọi đơn hàng tại Shop Bảo Ngọc.",
   companyStory: "Câu chuyện",
   companyReviews: "Đánh giá khách hàng",
   rights: "© 2026 Shop Thời Trang & Mỹ Phẩm Bảo Ngọc. Mọi quyền được bảo lưu.",
@@ -318,11 +321,6 @@ const vi = {
   wishlistTitle: "Danh sách yêu thích",
   wishlistEmpty: "Chưa lưu món nào — chạm vào trái tim trên sản phẩm để lưu lại.",
   wishlistCount: "món đã lưu",
-  sellerShortcutTitle: "Bạn là chủ shop?",
-  sellerShortcutBody:
-    "Mở khu bán hàng bằng mã truy cập để quản lý sản phẩm và đơn hàng.",
-  sellerShortcutCta: "Đăng nhập người bán",
-
   // ── Google Sign-In ──────────────────────────────────────────
   googleSignInCta: "Đăng nhập với Google",
   googleSignInHint: "Dùng tài khoản Google để mua sắm nhanh hơn — không cần mật khẩu.",
@@ -509,6 +507,9 @@ const en: Record<TKey, string> = {
   supportReturns: "Exchange support within 7 days.",
   supportPayment: "VietQR & cash on delivery",
   supportLiveChat: "Live chat support",
+  policyLabel: "Store policy",
+  policyUpdatedNote:
+    "Current policy, applied to every order placed at Shop Bảo Ngọc.",
   companyStory: "Our story",
   companyReviews: "Customer reviews",
   rights: "© 2026 Shop Thời Trang & Mỹ Phẩm Bảo Ngọc. All rights reserved.",
@@ -698,10 +699,7 @@ const en: Record<TKey, string> = {
   wishlistTitle: "Wishlist",
   wishlistEmpty: "Nothing saved yet — tap the heart on a product to save it.",
   wishlistCount: "items saved",
-  sellerShortcutTitle: "Are you the shop owner?",
-  sellerShortcutBody:
-    "Open the seller area with your access code to manage products and orders.",
-  sellerShortcutCta: "Seller sign in",
+
 
   // ── Google Sign-In ──────────────────────────────────────────
   googleSignInCta: "Sign in with Google",
