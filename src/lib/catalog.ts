@@ -1,12 +1,13 @@
 /** Store catalog constants shared by the client and Convex functions.
  * Keep this module pure (no React, no browser APIs). */
 
+/** Store categories. The two former beauty sections were merged into the
+ *  single "trousers" entry, which is labelled "Mỹ Phẩm & Chăm Sóc Da". */
 export const CATEGORIES = [
   "tops",
   "dresses",
   "cardigans",
   "trousers",
-  "accessories",
   "bestsellers",
 ] as const;
 

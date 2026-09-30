@@ -1,7 +1,11 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { shippingFeeFor } from "../lib/catalog";
-import { isOrderStatus, ORDER_STATUSES } from "../lib/orders";
+import {
+  isOrderStatus,
+  normalizeStatus,
+  ORDER_STATUSES,
+} from "../lib/orders";
 import { requireOwner } from "../lib/owner";
 import { mutation, query } from "./_generated/server";
 
@@ -217,6 +221,51 @@ export const setStatus = mutation({
       return { updated: true };
     } catch {
       return { updated: false };
+    }
+  },
+});
+
+/** Stand-in written over every delivery field once the details are erased. */
+const REDACTED = "Đã xóa";
+
+/**
+ * Permanently erase the customer's delivery details from a finished order.
+ *
+ * Only the store owner may run it, and only once the order is delivered or
+ * cancelled — the point at which the address has no operational use left.
+ * Everything the shop needs for accounting (order id, items, totals, the
+ * completion date) is deliberately left untouched.
+ */
+export const redactAddress = mutation({
+  args: { id: v.id("orders") },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx);
+    const order = await ctx.db.get(args.id);
+    if (!order) return { redacted: false as const, reason: "not_found" as const };
+
+    const status = normalizeStatus(order.status);
+    if (status !== "delivered" && status !== "cancelled") {
+      return { redacted: false as const, reason: "still_active" as const };
+    }
+    if (order.addressRedactedAt !== undefined) {
+      return { redacted: true as const, reason: "already" as const };
+    }
+
+    try {
+      await ctx.db.patch(args.id, {
+        customer: {
+          name: order.customer.name,
+          phone: REDACTED,
+          province: REDACTED,
+          district: REDACTED,
+          ward: REDACTED,
+          street: REDACTED,
+        },
+        addressRedactedAt: Date.now(),
+      });
+      return { redacted: true as const, reason: "redacted" as const };
+    } catch {
+      return { redacted: false as const, reason: "failed" as const };
     }
   },
 });

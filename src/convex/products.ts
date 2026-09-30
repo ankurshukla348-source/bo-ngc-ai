@@ -9,7 +9,6 @@ export const categoryValidator = v.union(
   v.literal("dresses"),
   v.literal("cardigans"),
   v.literal("trousers"),
-  v.literal("accessories"),
   v.literal("bestsellers"),
 );
 
@@ -189,7 +188,6 @@ export const seedIfEmpty = mutation({
         | "dresses"
         | "cardigans"
         | "trousers"
-        | "accessories"
         | "bestsellers";
       price: number;
       sizes: string[];
@@ -199,11 +197,11 @@ export const seedIfEmpty = mutation({
       { nameVi: "Quần lót cotton thoáng khí", nameEn: "Breathable Cotton Panty", category: "dresses", price: 95000, sizes: clothing, inStock: true },
       { nameVi: "Set bộ đồ lót ren cao cấp", nameEn: "Premium Lace Lingerie Set", category: "cardigans", price: 455000, sizes: clothing, inStock: true },
       { nameVi: "Váy ngủ lụa thép", nameEn: "Silk Slip Nightgown", category: "trousers", price: 390000, sizes: clothing, inStock: true },
-      { nameVi: "Serum dưỡng trắng da", nameEn: "Brightening Face Serum", category: "accessories", price: 260000, sizes: ["Free Size"], inStock: true },
+      { nameVi: "Serum dưỡng trắng da", nameEn: "Brightening Face Serum", category: "trousers", price: 260000, sizes: ["Free Size"], inStock: true },
       { nameVi: "Kem chống nắng định hình", nameEn: "Tone-Up Sunscreen", category: "bestsellers", price: 185000, sizes: ["Free Size"], inStock: true },
       { nameVi: "Bra lót vô hình không đường may", nameEn: "Seamless Invisible Bra", category: "tops", price: 225000, sizes: clothing, inStock: true },
       { nameVi: "Set đồ ngủ cotton hai món", nameEn: "Two-Piece Cotton Pajama Set", category: "trousers", price: 340000, sizes: clothing, inStock: true },
-      { nameVi: "Nước tẩy trang dịu nhẹ", nameEn: "Gentle Micellar Water", category: "accessories", price: 145000, sizes: ["Free Size"], inStock: false },
+      { nameVi: "Nước tẩy trang dịu nhẹ", nameEn: "Gentle Micellar Water", category: "trousers", price: 145000, sizes: ["Free Size"], inStock: false },
     ];
 
     for (let i = 0; i < seeds.length; i++) {

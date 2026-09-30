@@ -24,7 +24,6 @@ export const CATEGORY_LABELS_VI = {
   tops: "Áo Lót & Bra",
   dresses: "Quần Trong",
   cardigans: "Set Bộ Đồ Lót",
-  trousers: "Mỹ Phẩm Làm Đẹp & Chăm Sóc Da",
-  accessories: "Chăm Sóc Da & Làm Đẹp",
+  trousers: "Mỹ Phẩm & Chăm Sóc Da",
   bestsellers: "Những mặt hàng bán chạy nhất",
 } as const;

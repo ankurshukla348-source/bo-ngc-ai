@@ -54,7 +54,6 @@ const schema = defineSchema(
         v.literal("dresses"),
         v.literal("cardigans"),
         v.literal("trousers"),
-        v.literal("accessories"),
         v.literal("bestsellers"),
       ),
       price: v.number(), // VND
@@ -76,6 +75,9 @@ const schema = defineSchema(
       // undefined and the order is only visible in the seller dashboard.
       userId: v.optional(v.id("users")),
       customerEmail: v.optional(v.string()),
+      // Set once the seller erases the delivery details of a finished order,
+      // so the dashboard can show "đã xóa" instead of the redacted fields.
+      addressRedactedAt: v.optional(v.number()),
       items: v.array(
         v.object({
           productId: v.string(),

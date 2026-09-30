@@ -45,16 +45,14 @@ const STYLE_CARDS: { category: Category; tintIndex: number }[] = [
   { category: "dresses", tintIndex: 0 },
   { category: "tops", tintIndex: 1 },
   { category: "cardigans", tintIndex: 2 },
-  { category: "accessories", tintIndex: 3 },
+  { category: "trousers", tintIndex: 3 },
 ];
 
-/** "bestsellers" is represented by the black SALE circle instead.
- *  "trousers" is hidden from the pill bar — it shares the beauty/skincare
- *  section with "accessories" (which stays as the single visible pill),
- *  so the category bar doesn't show the same section twice. */
+/** "bestsellers" is represented by the black SALE circle instead, so it is
+ *  left out of the pill bar. */
 const CIRCLE_CATEGORIES = [
   "all",
-  ...CATEGORIES.filter((c) => c !== "bestsellers" && c !== "trousers"),
+  ...CATEGORIES.filter((c) => c !== "bestsellers"),
 ] as const;
 
 /** Stable pseudo-rating per product id (deterministic across renders). */

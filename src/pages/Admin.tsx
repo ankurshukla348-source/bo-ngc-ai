@@ -22,6 +22,16 @@ import {
   type OrderStatus,
 } from "@/lib/orders";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useConvex, useAction, useMutation, useQuery } from "convex/react";
 import {
   Camera,
@@ -925,7 +935,9 @@ function OrdersPanel() {
   const { t, lang } = useI18n();
   const orders = useQuery(api.orders.list, {});
   const setStatus = useMutation(api.orders.setStatus);
+  const redactAddress = useMutation(api.orders.redactAddress);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [redactId, setRedactId] = useState<Id<"orders"> | null>(null);
 
   const change = async (id: Id<"orders">, status: OrderStatus) => {
     setBusyId(id);
@@ -937,6 +949,23 @@ function OrdersPanel() {
       toast.error(t("orderStatusSaveFailed"));
     } finally {
       setBusyId(null);
+    }
+  };
+
+  // Erases the street address, phone and delivery note of a finished order.
+  // The mutation is owner-only on the server, so this is just the trigger.
+  const eraseAddress = async (id: Id<"orders">) => {
+    setBusyId(id);
+    try {
+      const result = await redactAddress({ id });
+      if (result.redacted) toast.success(t("orderDeleteAddressDone"));
+      else toast.error(t("orderDeleteAddressFailed"));
+    } catch (error) {
+      console.error(error);
+      toast.error(t("orderDeleteAddressFailed"));
+    } finally {
+      setBusyId(null);
+      setRedactId(null);
     }
   };
 
@@ -958,7 +987,8 @@ function OrdersPanel() {
   }
 
   return (
-    <ul className="flex flex-col gap-4">
+    <>
+      <ul className="flex flex-col gap-4">
       {orders.map((order) => {
         const address = [
           order.customer.street,
@@ -968,6 +998,13 @@ function OrdersPanel() {
         ]
           .filter(Boolean)
           .join(", ");
+        const orderStatus = normalizeStatus(order.status);
+        const redacted = order.addressRedactedAt !== undefined;
+        // Only finished orders (delivered / cancelled) can have their
+        // delivery details erased, and only once per order.
+        const canRedact =
+          !redacted &&
+          (orderStatus === "delivered" || orderStatus === "cancelled");
         return (
           <li
             key={order._id}
@@ -994,21 +1031,40 @@ function OrdersPanel() {
                 <p className="mt-1.5 text-sm font-semibold">
                   {order.customer.name}
                 </p>
-                <p className="text-sm text-muted-foreground tabular-nums">
-                  {order.customer.phone}
-                </p>
                 {order.customerEmail && (
                   <p className="text-sm text-muted-foreground break-all">
                     {order.customerEmail}
                   </p>
                 )}
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  {address}
-                </p>
-                {order.customer.note && (
-                  <p className="mt-1.5 text-xs italic text-muted-foreground">
-                    “{order.customer.note}”
+                {redacted ? (
+                  <p className="mt-1.5 text-sm text-muted-foreground">
+                    {t("orderAddressRedacted")}
                   </p>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground tabular-nums">
+                      {order.customer.phone}
+                    </p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                      {address}
+                    </p>
+                    {order.customer.note && (
+                      <p className="mt-1.5 text-xs italic text-muted-foreground">
+                        “{order.customer.note}”
+                      </p>
+                    )}
+                    {canRedact && (
+                      <button
+                        type="button"
+                        disabled={busyId === order._id}
+                        onClick={() => setRedactId(order._id)}
+                        className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-destructive hover:text-destructive disabled:opacity-60"
+                      >
+                        <Trash2 className="size-3.5" />
+                        {t("orderDeleteAddress")}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -1052,7 +1108,7 @@ function OrdersPanel() {
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {ORDER_STATUSES.map((status) => {
-                  const on = normalizeStatus(order.status) === status;
+                  const on = orderStatus === status;
                   return (
                     <button
                       key={status}
@@ -1086,7 +1142,36 @@ function OrdersPanel() {
           </li>
         );
       })}
-    </ul>
+      </ul>
+
+      <AlertDialog
+        open={redactId !== null}
+        onOpenChange={(open) => {
+          if (!open) setRedactId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("orderDeleteAddressTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("orderDeleteAddressBody")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={redactId === null}
+              onClick={(event) => {
+                event.preventDefault();
+                if (redactId) void eraseAddress(redactId);
+              }}
+            >
+              {t("orderDeleteAddress")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
