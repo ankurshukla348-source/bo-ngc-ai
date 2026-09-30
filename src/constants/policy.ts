@@ -3,10 +3,26 @@
  *
  * Hardcoded on purpose and kept in one place so the first-login modal, the
  * `/policy` page and anything else that quotes the policy can never drift
- * apart. Vietnamese only, matching the store's customer-facing documents.
+ * apart. Both languages live here as parallel documents, so switching the site
+ * to English switches the policy too.
  */
 
-export const POLICY = {
+export type PolicySection = {
+  heading: string;
+  lead: string | null;
+  bullets: readonly string[];
+};
+
+export type PolicyCopy = {
+  title: string;
+  greeting: string;
+  story: string;
+  bridge: string;
+  sections: readonly PolicySection[];
+};
+
+/** Vietnamese — the store's original, legally-loaded wording. */
+export const POLICY: PolicyCopy = {
   title: "GIỚI THIỆU VỀ SHOP & CHÍNH SÁCH MUA SẮM TOÀN DIỆN",
   greeting:
     "Chào mừng bạn đến với Shop Bảo Ngọc – Điểm đến mua sắm uy tín tại Diên Khánh.",
@@ -56,7 +72,67 @@ export const POLICY = {
       ],
     },
   ],
-} as const;
+};
+
+/** English — section order and terms mirror the Vietnamese document 1:1. */
+export const POLICY_EN: PolicyCopy = {
+  title: "ABOUT OUR SHOP & COMPLETE PURCHASING POLICY",
+  greeting:
+    "Welcome to Shop Bảo Ngọc – your trusted shopping destination in Diên Khánh.",
+  story:
+    "We started out as a small, familiar stall in Diên Khánh, Khánh Hoà. We have always been proud to be a companion who understands and cherishes women’s natural beauty. With the wish to bring you confidence from within and a radiant look from without, the shop specialises in affordable lingerie, lifting bras, soft silk sleepwear and authentic skincare products. Every product we stock is hand-picked with great care — from the fabric and stitching to its safe, gentle origin. Your satisfaction and peace of mind are our greatest joy.",
+  bridge:
+    "To make online shopping as pleasant and reassuring as shopping in person at the stall, we set out our purchasing, returns and promotion policies in detail below:",
+  sections: [
+    {
+      heading: "Purchasing & Safe Delivery Policy.",
+      lead: null,
+      bullets: [
+        "Delivery rules (no opening before payment): To keep beauty products fully sealed, their boxes from being crushed, and to guarantee absolute hygiene for lingerie items, the shop applies a NO OPENING BEFORE PAYMENT policy. Please pay the courier in full on delivery. We commit to packing every order exactly and completely as ordered.",
+        "Your rights after delivery: Please rest assured — if, after receiving and paying for your order, you find an item defective, damaged in transit or not matching the sample, the shop will exchange it or refund you immediately under our returns policy.",
+        "Order privacy: All of your lingerie orders are packed discreetly and tastefully, with 100% of the product names hidden on the delivery slip, so your privacy is fully protected.",
+        "Delivery times: Customers in the Diên Khánh and Nha Trang areas receive their order quickly, within 1 – 2 days. Other provinces take 3 – 5 business days.",
+      ],
+    },
+    {
+      heading: "Flexible Returns Within 7 Days.",
+      lead: "We always want you to receive products that fit and that you love. If an item does not fit or has any manufacturing fault, the shop supports exchanges under the following terms:",
+      bullets: [
+        "Timeframe: Within 7 days of the day you successfully received your order.",
+        "Item condition: Items for exchange must be new and intact, unused and unwashed, with all tags and the purchase invoice (where issued) still attached.",
+        "Eligible items: The shop can exchange sizes or samples for these products: bras, sleepwear, loungewear sets and skincare (skincare must still be sealed and unopened).",
+        "Important note: To guarantee absolute personal hygiene for every customer, the shop does NOT accept exchanges or returns on underwear (except where the wrong item was sent or the goods are faulty on our side).",
+        "Exchange costs: If we sent the wrong item or the goods are faulty, the shop covers 100% of the shipping cost. If you would like a different size or sample for personal reasons, please pay the return shipping both ways.",
+      ],
+    },
+    {
+      heading: "Offers & Promotions.",
+      lead: "To thank you for your support, the shop regularly brings attractive offers so you can shop freely without worrying about price:",
+      bullets: [
+        "Free shipping offer (Freeship): Free delivery nationwide on every order worth 400,000 VND or more. Customers inside Diên Khánh receive our best possible shipping rate.",
+        "Loyalty programme: Every order you place on the website is automatically credited with points using the phone number used to order. Those points are converted into direct discount vouchers of 5% or 10%, or into lovely skincare and lingerie gifts during your birthday month.",
+        "Seasonal sales and holidays: On celebratory days for women (8 March, 20 October), the shop runs programmes such as “Buy 1 Get 1”, “Value lingerie combos” or “Up to 30% off skincare”. Do keep an eye on the “Bestsellers / Promotions” section of the website so you don’t miss out!",
+      ],
+    },
+    {
+      heading: "Shipping Rates",
+      lead: null,
+      bullets: [
+        "Diên Khánh inner city (near Chợ Thành): Flat 15,000 VND per order (same-day express delivery).",
+        "Nha Trang city and neighbouring districts: Flat 20,000 VND per order (1 – 2 days).",
+        "All other provinces nationwide: Flat 30,000 VND per order (3 – 5 days).",
+        "FREESHIP: 100% free shipping nationwide on orders from 400,000 VND or more.",
+      ],
+    },
+  ],
+};
+
+export type PolicyLang = "vi" | "en";
+
+/** The policy document for the active site language. */
+export function policyFor(lang: PolicyLang): PolicyCopy {
+  return lang === "en" ? POLICY_EN : POLICY;
+}
 
 /** localStorage key holding the signed-in customer's agreement. */
 export const POLICY_AGREEMENT_KEY = "mama-policy-agreement-v1";

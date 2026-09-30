@@ -131,6 +131,12 @@ const vi = {
   policyLabel: "Chính sách mua hàng",
   policyUpdatedNote:
     "Chính sách hiện hành, áp dụng cho mọi đơn hàng tại Shop Bảo Ngọc.",
+  policyModalTitle: "Chính sách mua sắm & Đổi trả",
+  policyModalDesc:
+    "Vui lòng đọc kỹ chính sách của Shop Bảo Ngọc trước khi tiếp tục mua sắm.",
+  policyAgreeLabel:
+    "Tôi đã đọc và đồng ý với các chính sách mua hàng của Shop Bảo Ngọc",
+  policyContinueCta: "Tiếp tục mua sắm",
   companyStory: "Câu chuyện",
   companyReviews: "Đánh giá khách hàng",
   rights: "© 2026 Shop Thời Trang & Mỹ Phẩm Bảo Ngọc. Mọi quyền được bảo lưu.",
@@ -510,6 +516,12 @@ const en: Record<TKey, string> = {
   policyLabel: "Store policy",
   policyUpdatedNote:
     "Current policy, applied to every order placed at Shop Bảo Ngọc.",
+  policyModalTitle: "Purchase & Returns Policy",
+  policyModalDesc:
+    "Please read Shop Bảo Ngọc’s policy carefully before you continue shopping.",
+  policyAgreeLabel:
+    "I have read and agree to the purchasing policies of Shop Bảo Ngọc",
+  policyContinueCta: "Continue shopping",
   companyStory: "Our story",
   companyReviews: "Customer reviews",
   rights: "© 2026 Shop Thời Trang & Mỹ Phẩm Bảo Ngọc. All rights reserved.",

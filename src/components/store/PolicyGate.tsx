@@ -10,6 +10,7 @@ import { PolicyContent } from "@/components/store/PolicyContent";
 import { hasAgreedToPolicy, rememberPolicyAgreement } from "@/constants/policy";
 import { useAuth } from "@/hooks/use-auth";
 import { ADMIN_EMAIL } from "@/lib/admin";
+import { useI18n } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 
 /**
@@ -25,6 +26,7 @@ import { useEffect, useState } from "react";
  */
 export function PolicyGate() {
   const { isLoading, isAuthenticated, user } = useAuth();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
@@ -60,11 +62,8 @@ export function PolicyGate() {
         className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"
       >
         <DialogHeader>
-          <DialogTitle className="text-brand-ink">Chính sách mua sắm &amp; Đổi trả</DialogTitle>
-          <DialogDescription>
-            Vui lòng đọc kỹ chính sách của Shop Bảo Ngọc trước khi tiếp tục mua
-            sắm.
-          </DialogDescription>
+          <DialogTitle className="text-brand-ink">{t("policyModalTitle")}</DialogTitle>
+          <DialogDescription>{t("policyModalDesc")}</DialogDescription>
         </DialogHeader>
 
         <PolicyContent className="mt-2" />
@@ -74,12 +73,11 @@ export function PolicyGate() {
             <Checkbox
               checked={agreed}
               onCheckedChange={(next) => setAgreed(next === true)}
-              aria-label="Tôi đã đọc và đồng ý với các chính sách mua hàng của Shop Bảo Ngọc"
+              aria-label={t("policyAgreeLabel")}
               className="mt-0.5"
             />
             <span className="text-sm font-semibold leading-snug">
-              Tôi đã đọc và đồng ý với các chính sách mua hàng của Shop Bảo
-              Ngọc
+              {t("policyAgreeLabel")}
             </span>
           </label>
 
@@ -89,7 +87,7 @@ export function PolicyGate() {
             disabled={!agreed}
             className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50"
           >
-            Tiếp tục mua sắm
+            {t("policyContinueCta")}
           </button>
         </div>
       </DialogContent>
