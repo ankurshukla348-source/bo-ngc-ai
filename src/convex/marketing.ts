@@ -51,26 +51,36 @@ export const sendBroadcast = action({
     subject: v.string(),
     body: v.string(),
     from: v.optional(v.string()),
+    /**
+     * When set, the campaign goes to this single address instead of the
+     * audience — the "send a test first" path, so a draft can be proof-read
+     * without emailing every opted-in customer.
+     */
+    testRecipient: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const subject = args.subject.trim().slice(0, 200);
     const body = args.body.trim().slice(0, 8000);
     if (!subject || !body) {
-      return { ok: false, reason: "empty_campaign" as const, sent: 0, failed: 0, total: 0 };
+      return { ok: false, reason: "empty_campaign" as const, sent: 0, failed: 0, total: 0, mode: "broadcast" as const };
     }
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      return { ok: false, reason: "missing_key" as const, sent: 0, failed: 0, total: 0 };
+      return { ok: false, reason: "missing_key" as const, sent: 0, failed: 0, total: 0, mode: "broadcast" as const };
     }
 
-    const audience = await ctx.runQuery(audienceQuery, {});
-    const recipients: { email: string; name: string | null }[] = audience.slice(
-      0,
-      MAX_RECIPIENTS,
-    );
+    const testRecipient = args.testRecipient?.trim().toLowerCase() || undefined;
+    if (testRecipient && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(testRecipient)) {
+      return { ok: false, reason: "bad_test_address" as const, sent: 0, failed: 0, total: 0, mode: "test" as const };
+    }
+
+    const audience = testRecipient ? [] : await ctx.runQuery(audienceQuery, {});
+    const recipients: { email: string; name: string | null }[] = testRecipient
+      ? [{ email: testRecipient, name: null }]
+      : audience.slice(0, MAX_RECIPIENTS);
     if (recipients.length === 0) {
-      return { ok: false, reason: "no_recipients" as const, sent: 0, failed: 0, total: 0 };
+      return { ok: false, reason: "no_recipients" as const, sent: 0, failed: 0, total: 0, mode: "broadcast" as const };
     }
 
     const from = (args.from || process.env.RESEND_FROM || DEFAULT_FROM).trim();
@@ -89,16 +99,27 @@ export const sendBroadcast = action({
         html,
       }));
 
-      const { data, error } = await resend.batch.send(batch);
-      if (error) {
+      // `permissive` keeps one undeliverable address from failing the whole
+      // batch — the rest of the list still goes out, and the bad index is
+      // reported back for the seller.
+      const { data, error } = await resend.batch.send(batch, {
+        batchValidation: "permissive",
+      });
+      if (error || !data) {
         failed += batch.length;
-        if (errors.length < 3) errors.push(error.message);
+        if (error && errors.length < 3) errors.push(error.message);
         continue;
       }
-      if (data) {
-        sent += data.length;
-      } else {
-        failed += batch.length;
+
+      // The success payload nests the created ids: { data: { data: [{ id }] } }.
+      sent += data.data.length;
+      for (const item of data.errors ?? []) {
+        failed += 1;
+        if (errors.length < 3) {
+          errors.push(
+            `${batch[item.index]?.to ?? "?"}: ${item.message}`,
+          );
+        }
       }
     }
 
@@ -109,6 +130,7 @@ export const sendBroadcast = action({
       failed,
       total: recipients.length,
       skipped: Math.max(0, audience.length - MAX_RECIPIENTS),
+      mode: (testRecipient ? "test" : "broadcast") as "test" | "broadcast",
       errors,
     };
   },

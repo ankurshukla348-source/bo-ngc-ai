@@ -1040,25 +1040,38 @@ function ChatInbox() {
 
 type BroadcastResult = {
   ok: boolean;
-  reason: "ok" | "partial" | "missing_key" | "no_recipients" | "empty_campaign";
+  reason:
+    | "ok"
+    | "partial"
+    | "missing_key"
+    | "no_recipients"
+    | "empty_campaign"
+    | "bad_test_address";
   sent: number;
   failed: number;
   total: number;
+  mode: "test" | "broadcast";
 };
 
 function BroadcastPanel() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const sendBroadcast = useAction(api.marketing.sendBroadcast);
   const audience = useQuery(api.users.marketingAudience);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [from, setFrom] = useState("");
+  const [testTo, setTestTo] = useState("");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<BroadcastResult | null>(null);
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (sending) return;
+  // Default the test address to the signed-in owner so proof-reading a
+  // campaign never means emailing the whole list.
+  useEffect(() => {
+    setTestTo((prev) => prev || (user?.email ?? ""));
+  }, [user]);
+
+  const run = async (mode: "test" | "broadcast") => {
     if (!subject.trim() || !body.trim()) {
       toast.error(t("broadcastEmptyCampaign"));
       return;
@@ -1070,9 +1083,12 @@ function BroadcastPanel() {
         subject: subject.trim(),
         body: body.trim(),
         ...(from.trim() ? { from: from.trim() } : {}),
+        ...(mode === "test" && testTo.trim() ? { testRecipient: testTo.trim() } : {}),
       });
       setResult(res);
-      if (res.ok) {
+      if (res.ok && res.mode === "test") {
+        toast.success(t("broadcastTestSent").replace("{n}", String(res.sent)));
+      } else if (res.ok) {
         toast.success(t("broadcastSent").replace("{n}", String(res.sent)));
         setSubject("");
         setBody("");
@@ -1080,6 +1096,8 @@ function BroadcastPanel() {
         toast.error(t("broadcastNoKey"));
       } else if (res.reason === "no_recipients") {
         toast.error(t("broadcastNoRecipients"));
+      } else if (res.reason === "bad_test_address") {
+        toast.error(t("broadcastBadTestAddress"));
       } else {
         toast.error(
           t("broadcastPartial")
@@ -1093,6 +1111,12 @@ function BroadcastPanel() {
     } finally {
       setSending(false);
     }
+  };
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (sending) return;
+    void run("broadcast");
   };
 
   const inputClass =
@@ -1152,6 +1176,17 @@ function BroadcastPanel() {
           />
         </label>
 
+        <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("broadcastTestToLabel")}
+          <input
+            type="email"
+            value={testTo}
+            onChange={(e) => setTestTo(e.target.value)}
+            placeholder={t("broadcastTestToPlaceholder")}
+            className={inputClass}
+          />
+        </label>
+
         {result && !result.ok && result.reason !== "missing_key" && (
           <p className="rounded-2xl bg-secondary px-4 py-3 text-xs text-muted-foreground">
             {result.reason === "no_recipients"
@@ -1162,20 +1197,31 @@ function BroadcastPanel() {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={sending}
-          className="flex h-12 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-60"
-        >
-          {sending ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              {t("broadcastSending")}
-            </>
-          ) : (
-            t("broadcastSendCta")
-          )}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => void run("test")}
+            disabled={sending || !testTo.trim() || !subject.trim() || !body.trim()}
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-secondary text-sm font-semibold text-foreground transition-all hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-60"
+          >
+            {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+            {t("broadcastTestCta")}
+          </button>
+          <button
+            type="submit"
+            disabled={sending}
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-60"
+          >
+            {sending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                {t("broadcastSending")}
+              </>
+            ) : (
+              t("broadcastSendCta")
+            )}
+          </button>
+        </div>
       </form>
     </section>
   );

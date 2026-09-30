@@ -380,6 +380,9 @@ const vi = {
   broadcastBodyPlaceholder: "Chào bạn! Bộ sưu tập mới đã về cửa hàng...",
   broadcastFromLabel: "Địa chỉ gửi (tùy chọn)",
   broadcastFromPlaceholder: "Shop Bảo Ngọc <shop@yourdomain.com>",
+  broadcastTestToLabel: "Gửi thử tới (không gửi cho khách)",
+  broadcastTestToPlaceholder: "email của bạn để xem thử",
+  broadcastTestCta: "Gửi thử cho tôi",
   broadcastSendCta: "Gửi email quảng cáo",
   broadcastSending: "Đang gửi...",
   broadcastAudience: "Số khách đã đồng ý nhận email",
@@ -390,6 +393,8 @@ const vi = {
     "Chưa cấu hình RESEND_API_KEY. Thêm khoá API trong tab Keys/API keys rồi gửi lại.",
   broadcastNoRecipients: "Chưa có khách hàng nào bật nhận email quảng cáo.",
   broadcastEmptyCampaign: "Vui lòng nhập tiêu đề và nội dung email.",
+  broadcastTestSent: "Đã gửi thử tới {n} địa chỉ.",
+  broadcastBadTestAddress: "Địa chỉ gửi thử không hợp lệ.",
 };
 
 export type TKey = keyof typeof vi;
@@ -758,6 +763,9 @@ const en: Record<TKey, string> = {
   broadcastBodyPlaceholder: "Hi there! Our new collection has arrived...",
   broadcastFromLabel: "From address (optional)",
   broadcastFromPlaceholder: "Shop Bảo Ngọc <shop@yourdomain.com>",
+  broadcastTestToLabel: "Send a test to (nobody else)",
+  broadcastTestToPlaceholder: "your email to preview it",
+  broadcastTestCta: "Send me a test",
   broadcastSendCta: "Send promo email",
   broadcastSending: "Sending...",
   broadcastAudience: "Customers who opted in",
@@ -767,6 +775,8 @@ const en: Record<TKey, string> = {
   broadcastNoKey: "RESEND_API_KEY is not configured yet — add it in the Keys/API keys tab.",
   broadcastNoRecipients: "No customer has opted in to promo emails yet.",
   broadcastEmptyCampaign: "Please enter a subject and email content.",
+  broadcastTestSent: "Test sent to {n} address(es).",
+  broadcastBadTestAddress: "That test address is not valid.",
 };
 
 const CATEGORY_LABELS: Record<Lang, Record<Category, string>> = {
