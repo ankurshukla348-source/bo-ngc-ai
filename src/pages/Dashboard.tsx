@@ -1,10 +1,14 @@
 import { Header } from "@/components/store/Header";
 import { MarketingOptIn } from "@/components/store/MarketingOptIn";
+import { OrderStatusBadge } from "@/components/store/OrderStatusBadge";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/hooks/use-auth";
+import { ADMIN_EMAIL } from "@/lib/admin";
+import { formatVnd } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { useMutation } from "convex/react";
-import { Heart, LogOut, Package, UserRound } from "lucide-react";
+import { PAYMENT_LABELS_EN, PAYMENT_LABELS_VI } from "@/lib/orders";
+import { useMutation, useQuery } from "convex/react";
+import { Heart, LogOut, Package, Store, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -19,12 +23,32 @@ function readWishlistCount(): number {
   }
 }
 
-/** Signed-in customer area. Order history stays out of v1 (see README). */
+function orderDate(ts: number, lang: "vi" | "en") {
+  try {
+    return new Date(ts).toLocaleDateString(lang === "vi" ? "vi-VN" : "en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return "";
+  }
+}
+
+/** Signed-in customer area: order tracking, wishlist and account settings. */
 export default function Dashboard() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [wishlistCount] = useState(readWishlistCount);
+
+  // Reactive: the admin changing a status updates these cards immediately.
+  const orders = useQuery(api.orders.mine, {});
+
+  // Only the store owner ever sees the seller shortcut — customers must not
+  // be offered a way into /seller.
+  const isOwner =
+    (user?.email ?? "").trim().toLowerCase() === ADMIN_EMAIL;
 
   // Consent lives on the profile; absent means "subscribed" (opt-out model).
   const [optIn, setOptIn] = useState(user?.marketingOptIn !== false);
@@ -62,7 +86,7 @@ export default function Dashboard() {
         <p className="mt-2 text-sm text-muted-foreground">{t("authSub")}</p>
 
         <div className="mt-10 grid gap-5 md:grid-cols-2">
-          {/* Orders */}
+          {/* Orders — live status set by the shop */}
           <section className="flex flex-col rounded-3xl border border-border bg-card p-6 shadow-soft">
             <span className="flex size-11 items-center justify-center rounded-full bg-secondary">
               <Package className="size-5 text-brand-rose" />
@@ -70,14 +94,64 @@ export default function Dashboard() {
             <h2 className="mt-4 font-display text-xl font-bold">
               {t("ordersTitle")}
             </h2>
-            <p className="mt-2 text-sm font-medium">{t("ordersEmpty")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{t("ordersNote")}</p>
-            <Link
-              to="/"
-              className="mt-5 w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 hover:shadow-soft"
-            >
-              {t("continueShopping")}
-            </Link>
+
+            {orders === undefined ? (
+              <p className="mt-2 text-sm text-muted-foreground">…</p>
+            ) : orders.length === 0 ? (
+              <>
+                <p className="mt-2 text-sm font-medium">{t("ordersEmpty")}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t("ordersNote")}
+                </p>
+                <Link
+                  to="/"
+                  className="mt-5 w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 hover:shadow-soft"
+                >
+                  {t("continueShopping")}
+                </Link>
+              </>
+            ) : (
+              <ul className="mt-3 space-y-3">
+                {orders.map((order) => (
+                  <li
+                    key={order._id}
+                    className="rounded-2xl border border-border bg-background p-3.5"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-display text-sm font-bold tabular-nums">
+                        {order.orderCode}
+                      </span>
+                      <OrderStatusBadge status={order.status} />
+                      <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+                        {orderDate(order.createdAt, lang)}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      {order.items
+                        .map(
+                          (item) =>
+                            `${item.nameVi} ×${item.qty}${
+                              item.size ? ` (${item.size})` : ""
+                            }`,
+                        )
+                        .join(" · ")}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        {lang === "vi"
+                          ? (PAYMENT_LABELS_VI[order.paymentMethod] ??
+                            order.paymentMethod)
+                          : (PAYMENT_LABELS_EN[order.paymentMethod] ??
+                            order.paymentMethod)}
+                      </span>
+                      <span className="font-bold tabular-nums">
+                        {formatVnd(order.total)}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           {/* Wishlist */}
@@ -124,6 +198,27 @@ export default function Dashboard() {
             </p>
             <MarketingOptIn checked={optIn} onChange={handleOptInChange} />
           </section>
+
+          {/* Seller shortcut — store owner only */}
+          {isOwner && (
+            <section className="flex flex-col rounded-3xl border border-border bg-secondary p-6">
+              <span className="flex size-11 items-center justify-center rounded-full bg-card">
+                <Store className="size-5 text-brand-rose" />
+              </span>
+              <h2 className="mt-4 font-display text-xl font-bold">
+                {t("sellerDashboardTitle")}
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t("sellerDashboardBody")}
+              </p>
+              <Link
+                to="/seller"
+                className="mt-5 w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 hover:shadow-soft"
+              >
+                {t("sellerDashboardCta")}
+              </Link>
+            </section>
+          )}
         </div>
 
         <button

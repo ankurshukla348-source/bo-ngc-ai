@@ -1,5 +1,8 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { shippingFeeFor } from "../lib/catalog";
+import { isOrderStatus, ORDER_STATUSES } from "../lib/orders";
+import { requireOwner } from "../lib/owner";
 import { mutation, query } from "./_generated/server";
 
 /** Order lines only keep real image URLs. Inline `data:` artwork (placeholder
@@ -118,7 +121,7 @@ export const create = mutation({
 
     await ctx.db.insert("orders", {
       orderCode,
-      status: "new",
+      status: "processing",
       items,
       customer,
       paymentMethod: args.paymentMethod,
@@ -129,6 +132,92 @@ export const create = mutation({
     });
 
     return { orderCode, subtotal, shippingFee, total, createdAt };
+  },
+});
+
+/**
+ * Link the order to the signed-in customer so /account can list it.
+ *
+ * Read *after* the order is inserted, on a best-effort basis: a guest order
+ * stays unlinked, and a failed lookup can never cost the customer their order.
+ */
+export const linkToAccount = mutation({
+  args: { orderCode: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return { linked: false };
+    const user = await ctx.db.get(userId);
+    if (!user?.email) return { linked: false };
+
+    const order = await ctx.db
+      .query("orders")
+      .withIndex("by_code", (q) => q.eq("orderCode", args.orderCode))
+      .unique();
+    if (!order) return { linked: false };
+
+    try {
+      await ctx.db.patch(order._id, {
+        userId,
+        customerEmail: user.email,
+      });
+      return { linked: true };
+    } catch {
+      return { linked: false };
+    }
+  },
+});
+
+/** Every order, newest first — the seller dashboard. */
+export const list = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx);
+    return await ctx.db
+      .query("orders")
+      .order("desc")
+      .take(Math.min(args.limit ?? 100, 300));
+  },
+});
+
+/** The signed-in customer's own orders, newest first. */
+export const mine = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return [];
+    return await ctx.db
+      .query("orders")
+      .filter((q) => q.eq(q.field("userId"), userId))
+      .order("desc")
+      .take(50);
+  },
+});
+
+/**
+ * Move an order along the fulfilment flow.
+ *
+ * The status is validated against the shared ORDER_STATUSES list rather than
+ * trusted, so a typo (or a hand-crafted request) can never write a status the
+ * customer UI has no badge for.
+ */
+export const setStatus = mutation({
+  args: { id: v.id("orders"), status: v.string() },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx);
+    const status = args.status.trim().toLowerCase();
+    if (!isOrderStatus(status)) {
+      throw new Error(
+        `Unknown status. Expected one of: ${ORDER_STATUSES.join(", ")}`,
+      );
+    }
+    const order = await ctx.db.get(args.id);
+    if (!order) return { updated: false };
+    try {
+      await ctx.db.patch(args.id, { status });
+      return { updated: true };
+    } catch {
+      return { updated: false };
+    }
   },
 });
 

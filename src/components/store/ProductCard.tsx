@@ -24,6 +24,9 @@ export type StoreProduct = {
   price: number;
   sizes: string[];
   inStock: boolean;
+  /** Seller-only detail fields; null when not set. */
+  description: string | null;
+  stock: number | null;
   image: string | null;
 };
 

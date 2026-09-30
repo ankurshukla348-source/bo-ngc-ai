@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { placeholderArt } from "../lib/art";
+import { requireOwner } from "../lib/owner";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
@@ -27,6 +28,8 @@ export const list = query({
         price: product.price,
         sizes: product.sizes,
         inStock: product.inStock,
+        description: product.description ?? null,
+        stock: product.stock ?? null,
         image: product.imageStorageId
           ? await ctx.storage.getUrl(product.imageStorageId)
           : (product.imageSrc ?? null),
@@ -51,23 +54,41 @@ export const add = mutation({
     price: v.number(),
     sizes: v.array(v.string()),
     inStock: v.boolean(),
+    description: v.optional(v.string()),
+    stock: v.optional(v.number()),
     imageStorageId: v.optional(v.id("_storage")),
     imageSrc: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx);
     if (!args.nameVi.trim() && !args.nameEn.trim()) {
       throw new Error("A product name is required");
     }
+    const description = args.description?.trim().slice(0, 2000);
+    const stock = Number.isFinite(args.stock as number)
+      ? Math.max(0, Math.round(args.stock as number))
+      : undefined;
+
     await ctx.db.insert("products", {
       ...args,
       nameVi: args.nameVi.trim(),
       nameEn: args.nameEn.trim() || args.nameVi.trim(),
       price: Math.max(0, Math.round(args.price)),
+      ...(description ? { description } : {}),
+      ...(stock === undefined ? {} : { stock }),
       createdAt: Date.now(),
     });
   },
 });
 
+/**
+ * Edit any product field, including a replacement photo.
+ *
+ * Only the fields actually supplied are written, so a caller that omits
+ * `description` or `stock` keeps whatever was already stored. A new
+ * `imageStorageId` also clears the inline `imageSrc` placeholder — otherwise
+ * the storefront would keep rendering the old SVG.
+ */
 export const update = mutation({
   args: {
     id: v.id("products"),
@@ -76,23 +97,45 @@ export const update = mutation({
     category: categoryValidator,
     price: v.number(),
     sizes: v.array(v.string()),
+    description: v.optional(v.string()),
+    stock: v.optional(v.number()),
+    imageStorageId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
-    const { id, ...fields } = args;
+    await requireOwner(ctx);
+    const { id, description, stock, imageStorageId, ...fields } = args;
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Product not found");
-    await ctx.db.patch(id, {
+
+    const patch: Record<string, unknown> = {
       ...fields,
       nameVi: fields.nameVi.trim(),
       nameEn: fields.nameEn.trim() || fields.nameVi.trim(),
       price: Math.max(0, Math.round(fields.price)),
-    });
+    };
+    if (description !== undefined) {
+      patch.description = description.trim().slice(0, 2000) || undefined;
+    }
+    if (stock !== undefined && Number.isFinite(stock)) {
+      patch.stock = Math.max(0, Math.round(stock));
+    }
+    if (imageStorageId) {
+      patch.imageStorageId = imageStorageId;
+      patch.imageSrc = undefined;
+      // The blob this replaces is no longer referenced by anything.
+      if (existing.imageStorageId) {
+        await ctx.storage.delete(existing.imageStorageId).catch(() => {});
+      }
+    }
+
+    await ctx.db.patch(id, patch);
   },
 });
 
 export const setStock = mutation({
   args: { id: v.id("products"), inStock: v.boolean() },
   handler: async (ctx, { id, inStock }) => {
+    await requireOwner(ctx);
     await ctx.db.patch(id, { inStock });
   },
 });
@@ -100,6 +143,7 @@ export const setStock = mutation({
 export const remove = mutation({
   args: { id: v.id("products") },
   handler: async (ctx, { id }) => {
+    await requireOwner(ctx);
     const existing = await ctx.db.get(id);
     if (!existing) return;
     await ctx.db.delete(id);

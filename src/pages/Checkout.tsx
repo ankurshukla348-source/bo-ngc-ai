@@ -614,6 +614,7 @@ export default function Checkout() {
 
   const paymentSettings = useQuery(api.settings.getPayment);
   const saveMarketingOptIn = useMutation(api.users.setMarketingOptIn);
+  const linkToAccount = useMutation(api.orders.linkToAccount);
 
   /* Once the order is confirmed the grid is driven by the frozen snapshot
      instead of the live cart, so the deferred clear() below cannot touch the
@@ -725,6 +726,11 @@ export default function Checkout() {
       // Store the promo consent on the profile. No-ops for guest checkout, and
       // never allowed to fail the order that was already placed.
       void saveMarketingOptIn({ optedIn: marketingOptIn }).catch(() => {
+        /* best effort */
+      });
+      // Link the order to the signed-in account so it shows up in /account.
+      // Guest checkout has no account, so this is a no-op there.
+      void linkToAccount({ orderCode: result.orderCode }).catch(() => {
         /* best effort */
       });
       window.scrollTo({ top: 0 });

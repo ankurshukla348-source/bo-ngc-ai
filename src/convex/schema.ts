@@ -60,6 +60,8 @@ const schema = defineSchema(
       price: v.number(), // VND
       sizes: v.array(v.string()),
       inStock: v.boolean(),
+      description: v.optional(v.string()), // free-text detail for the seller page
+      stock: v.optional(v.number()), // units on hand; absent = not tracked
       imageStorageId: v.optional(v.id("_storage")),
       imageSrc: v.optional(v.string()), // data-URI placeholder fallback
       createdAt: v.number(),
@@ -68,7 +70,12 @@ const schema = defineSchema(
     // ── Checkout orders ────────────────────────────────────────
     orders: defineTable({
       orderCode: v.string(), // unique human-facing order ID, e.g. BN-260923-4821
-      status: v.string(), // "new" | "confirmed" | "shipped" | "delivered"
+      status: v.string(), // see ORDER_STATUSES in src/lib/orders.ts
+      // Set when the order was placed by a signed-in customer, so /account can
+      // list their own orders. Guest checkout has no account, so these stay
+      // undefined and the order is only visible in the seller dashboard.
+      userId: v.optional(v.id("users")),
+      customerEmail: v.optional(v.string()),
       items: v.array(
         v.object({
           productId: v.string(),

@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { requireOwner } from "../lib/owner";
 import { mutation, query } from "./_generated/server";
 
 /** Longest body we accept in one line of chat (keeps the inbox readable). */
@@ -33,6 +34,9 @@ export const send = mutation({
     userId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
+    // Only the owner may post as the shop; a customer can only ever post as
+    // themselves, so nobody can forge a reply from Bảo Ngọc.
+    if (args.author === "seller") await requireOwner(ctx);
     const conversationId = cleanConversationId(args.conversationId);
     const body = args.body.trim().slice(0, MAX_BODY);
     if (!conversationId) throw new Error("Missing conversation");
@@ -105,6 +109,7 @@ export type ThreadSummary = {
 export const threads = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args): Promise<ThreadSummary[]> => {
+    await requireOwner(ctx);
     const rows = await ctx.db
       .query("messages")
       .order("desc")
@@ -145,6 +150,7 @@ export const threads = query({
 export const unreadTotal = query({
   args: {},
   handler: async (ctx) => {
+    await requireOwner(ctx);
     const rows = await ctx.db.query("messages").order("desc").take(2000);
     return rows.filter(
       (row) => row.author === "customer" && row.readAt === undefined,
@@ -176,5 +182,45 @@ export const markRead = mutation({
       }
     }
     return marked;
+  },
+});
+
+/** Delete a single message from a thread (seller moderation). */
+export const remove = mutation({
+  args: { id: v.id("messages") },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx);
+    try {
+      await ctx.db.delete(args.id);
+      return { removed: true };
+    } catch {
+      return { removed: false };
+    }
+  },
+});
+
+/** Delete an entire conversation (seller moderation). */
+export const clearThread = mutation({
+  args: { conversationId: v.string() },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx);
+    const conversationId = cleanConversationId(args.conversationId);
+    if (!conversationId) return { removed: 0 };
+
+    const rows = await ctx.db
+      .query("messages")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", conversationId))
+      .collect();
+
+    let removed = 0;
+    for (const row of rows) {
+      try {
+        await ctx.db.delete(row._id);
+        removed += 1;
+      } catch {
+        // Already gone — keep clearing the rest of the thread.
+      }
+    }
+    return { removed };
   },
 });

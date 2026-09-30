@@ -2,21 +2,37 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { placeholderArt } from "@/lib/art";
 import { CATEGORIES, SIZE_OPTIONS, type Category } from "@/lib/catalog";
-import { ADMIN_EMAIL } from "@/lib/admin";
+import {
+  ADMIN_EMAIL,
+  checkSellerPin,
+  grantSellerPin,
+  hasSellerPin,
+  revokeSellerPin,
+} from "@/lib/admin";
 import { useAuth } from "@/hooks/use-auth";
 import { formatVnd, sanitizePriceInput } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import type { StoreProduct } from "@/components/store/ProductCard";
+import { OrderStatusBadge } from "@/components/store/OrderStatusBadge";
+import {
+  normalizeStatus,
+  ORDER_STATUSES,
+  PAYMENT_LABELS_EN,
+  PAYMENT_LABELS_VI,
+  type OrderStatus,
+} from "@/lib/orders";
 import { cn } from "@/lib/utils";
 import { useConvex, useAction, useMutation, useQuery } from "convex/react";
 import {
   Camera,
   ImagePlus,
   Loader2,
+  Lock,
   MessageCircle,
   Pencil,
   Send,
   LogOut,
+  Package,
   Store,
   Trash2,
 } from "lucide-react";
@@ -57,6 +73,24 @@ function StockToggle({
 }
 
 /* ────────────────────────────────────────────────────────────────
+   Storage upload — one place, used by both the create and edit flows
+   ──────────────────────────────────────────────────────────────── */
+
+async function uploadFile(
+  uploadUrl: string,
+  file: File,
+): Promise<Id<"_storage">> {
+  const res = await fetch(uploadUrl, {
+    method: "POST",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!res.ok) throw new Error(`upload failed: ${res.status}`);
+  const data = (await res.json()) as { storageId: Id<"_storage"> };
+  return data.storageId;
+}
+
+/* ────────────────────────────────────────────────────────────────
    New product form: dropzone + camera capture + fields
    ──────────────────────────────────────────────────────────────── */
 
@@ -74,6 +108,8 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [description, setDescription] = useState("");
+  const [stock, setStock] = useState("");
 
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -104,6 +140,8 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
     setInStock(true);
     setFile(null);
     setPreview(null);
+    setDescription("");
+    setStock("");
   };
 
   const handlePublish = async (event: FormEvent) => {
@@ -132,14 +170,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
           api.products.generateUploadUrl,
           {},
         );
-        const res = await fetch(uploadUrl, {
-          method: "POST",
-          headers: { "Content-Type": file.type },
-          body: file,
-        });
-        if (!res.ok) throw new Error(`upload failed: ${res.status}`);
-        const data = (await res.json()) as { storageId: Id<"_storage"> };
-        imageStorageId = data.storageId;
+        imageStorageId = await uploadFile(uploadUrl, file);
       } else {
         imageSrc = placeholderArt(trimmedEn || trimmedVi, variantSeed);
       }
@@ -151,6 +182,8 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
         price: priceValue,
         sizes,
         inStock,
+        ...(description.trim() ? { description: description.trim() } : {}),
+        ...(stock.trim() ? { stock: Number(stock) } : {}),
         ...(imageStorageId ? { imageStorageId } : {}),
         ...(imageSrc ? { imageSrc } : {}),
       });
@@ -373,6 +406,31 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
           </div>
         </div>
 
+        {/* Units on hand */}
+        <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("stockCountLabel")}
+          <input
+            value={stock}
+            onChange={(e) => setStock(sanitizePriceInput(e.target.value))}
+            inputMode="numeric"
+            placeholder={t("stockCountPlaceholder")}
+            className={cn("mt-1.5 tabular-nums", fieldClass)}
+          />
+        </label>
+
+        {/* Description */}
+        <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("descriptionLabel")}
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            maxLength={2000}
+            placeholder={t("descriptionPlaceholder")}
+            className="mt-1.5 w-full rounded-2xl border border-input bg-background px-3 py-2.5 text-sm font-normal normal-case tracking-normal outline-none focus:border-ring"
+          />
+        </label>
+
         <button
           type="submit"
           disabled={publishing}
@@ -408,7 +466,29 @@ function ProductRow({ product }: { product: StoreProduct }) {
     price: String(product.price),
     category: product.category,
     sizes: product.sizes,
+    description: product.description ?? "",
+    stock: product.stock === null || product.stock === undefined ? "" : String(product.stock),
   });
+  const replaceRef = useRef<HTMLInputElement>(null);
+  const [replaceFile, setReplaceFile] = useState<File | null>(null);
+  const [newImage, setNewImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (newImage?.startsWith("blob:")) URL.revokeObjectURL(newImage);
+    };
+  }, [newImage]);
+
+  const pickReplacement = (files: FileList | null) => {
+    const next = files?.[0];
+    if (!next) return;
+    if (!next.type.startsWith("image/")) {
+      toast.error(t("uploadFailed"));
+      return;
+    }
+    setReplaceFile(next);
+    setNewImage(URL.createObjectURL(next));
+  };
 
   useEffect(() => {
     if (!confirmDelete) return;
@@ -423,6 +503,15 @@ function ProductRow({ product }: { product: StoreProduct }) {
     }
     setBusy(true);
     try {
+      // Upload the replacement photo first, then reference the new blob. A
+      // failed upload leaves the existing image untouched.
+      let imageStorageId: Id<"_storage"> | undefined;
+      if (replaceFile) {
+        const url = await convex.mutation(api.products.generateUploadUrl, {});
+        const storageId = await uploadFile(url, replaceFile);
+        imageStorageId = storageId;
+      }
+
       await convex.mutation(api.products.update, {
         id: product._id,
         nameVi: draft.nameVi,
@@ -430,9 +519,15 @@ function ProductRow({ product }: { product: StoreProduct }) {
         category: draft.category,
         price: Number(sanitizePriceInput(draft.price)) || 0,
         sizes: draft.sizes.length ? draft.sizes : product.sizes,
+        description: draft.description,
+        ...(draft.stock.trim() ? { stock: Number(draft.stock) } : {}),
+        ...(imageStorageId ? { imageStorageId } : {}),
       });
       setEditing(false);
+      setReplaceFile(null);
+      setNewImage(null);
       toast.success(t("productUpdated"));
+
     } catch (error) {
       console.error(error);
       toast.error(t("fillNames"));
@@ -553,6 +648,70 @@ function ProductRow({ product }: { product: StoreProduct }) {
                 );
               })}
             </div>
+
+            {/* Description */}
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {t("descriptionLabel")}
+              <textarea
+                value={draft.description}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, description: e.target.value }))
+                }
+                rows={3}
+                maxLength={2000}
+                placeholder={t("descriptionPlaceholder")}
+                className="mt-1 w-full rounded-2xl border border-input bg-background px-3 py-2 text-sm normal-case tracking-normal outline-none focus:border-ring"
+              />
+            </label>
+
+            {/* Stock count */}
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {t("stockCountLabel")}
+              <input
+                value={draft.stock}
+                onChange={(e) =>
+                  setDraft((d) =>
+                    d.stock === "" && e.target.value === ""
+                      ? d
+                      : { ...d, stock: sanitizePriceInput(e.target.value) },
+                  )
+                }
+                inputMode="numeric"
+                placeholder={t("stockCountPlaceholder")}
+                className="mt-1 w-full rounded-full border border-input bg-background px-3 text-sm tabular-nums normal-case tracking-normal outline-none focus:border-ring"
+              />
+            </label>
+
+            {/* Replace photo */}
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                {t("replaceImageLabel")}
+              </p>
+              <div className="mt-1 flex items-center gap-3">
+                {newImage && (
+                  <img
+                    src={newImage}
+                    alt=""
+                    className="size-14 rounded-xl border border-border object-cover"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => replaceRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-[10px] font-semibold uppercase transition-colors"
+                >
+                  <ImagePlus className="size-3.5" />
+                  {newImage ? t("replaceImageAgain") : t("replaceImageCta")}
+                </button>
+                <input
+                  ref={replaceRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => pickReplacement(e.target.files)}
+                />
+              </div>
+            </div>
           </div>
         ) : (
           <div>
@@ -579,7 +738,17 @@ function ProductRow({ product }: { product: StoreProduct }) {
                   {s}
                 </span>
               ))}
+              {product.stock !== null && (
+                <span className="border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tabular-nums text-muted-foreground">
+                  {t("stockCountShort")} {product.stock}
+                </span>
+              )}
             </div>
+            {product.description && (
+              <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                {product.description}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -615,12 +784,19 @@ function ProductRow({ product }: { product: StoreProduct }) {
               type="button"
               onClick={() => {
                 setEditing(false);
+                setReplaceFile(null);
+                setNewImage(null);
                 setDraft({
                   nameVi: product.nameVi,
                   nameEn: product.nameEn,
                   price: String(product.price),
                   category: product.category,
                   sizes: product.sizes,
+                  description: product.description ?? "",
+                  stock:
+                    product.stock === null || product.stock === undefined
+                      ? ""
+                      : String(product.stock),
                 });
               }}
               className="rounded-full bg-secondary px-4 py-2 text-xs font-semibold uppercase transition-colors"
@@ -742,6 +918,179 @@ function BankSettings() {
 }
 
 /* ────────────────────────────────────────────────────────────────
+   Orders — every placed order, with a live fulfilment control
+   ──────────────────────────────────────────────────────────────── */
+
+function OrdersPanel() {
+  const { t, lang } = useI18n();
+  const orders = useQuery(api.orders.list, {});
+  const setStatus = useMutation(api.orders.setStatus);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const change = async (id: Id<"orders">, status: OrderStatus) => {
+    setBusyId(id);
+    try {
+      await setStatus({ id, status });
+      toast.success(t("orderStatusSaved"));
+    } catch (error) {
+      console.error(error);
+      toast.error(t("orderStatusSaveFailed"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (orders === undefined) {
+    return (
+      <div className="flex items-center justify-center gap-3 py-16 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" />
+        {t("loadingProducts")}
+      </div>
+    );
+  }
+
+  if (orders.length === 0) {
+    return (
+      <p className="rounded-3xl border border-border bg-card p-12 text-center text-sm text-muted-foreground shadow-soft">
+        {t("noOrders")}
+      </p>
+    );
+  }
+
+  return (
+    <ul className="flex flex-col gap-4">
+      {orders.map((order) => {
+        const address = [
+          order.customer.street,
+          order.customer.ward,
+          order.customer.district,
+          order.customer.province,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        return (
+          <li
+            key={order._id}
+            className="rounded-3xl border border-border bg-card p-5 shadow-soft"
+          >
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-display text-lg font-bold tabular-nums">
+                {order.orderCode}
+              </span>
+              <OrderStatusBadge status={order.status} />
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {stamp(order.createdAt)}
+              </span>
+              <span className="ml-auto font-display text-lg font-bold tabular-nums">
+                {formatVnd(order.total)}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  {t("orderCustomer")}
+                </p>
+                <p className="mt-1.5 text-sm font-semibold">
+                  {order.customer.name}
+                </p>
+                <p className="text-sm text-muted-foreground tabular-nums">
+                  {order.customer.phone}
+                </p>
+                {order.customerEmail && (
+                  <p className="text-sm text-muted-foreground break-all">
+                    {order.customerEmail}
+                  </p>
+                )}
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  {address}
+                </p>
+                {order.customer.note && (
+                  <p className="mt-1.5 text-xs italic text-muted-foreground">
+                    “{order.customer.note}”
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  {t("orderItems")}
+                </p>
+                <ul className="mt-1.5 space-y-1 text-sm">
+                  {order.items.map((item, index) => (
+                    <li key={`${item.productId}-${index}`} className="flex gap-2">
+                      <span className="tabular-nums text-muted-foreground">
+                        ×{item.qty}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        {lang === "vi" ? item.nameVi : item.nameEn}
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · {item.size}
+                        </span>
+                      </span>
+                      <span className="tabular-nums text-muted-foreground">
+                        {formatVnd(item.price * item.qty)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t("orderPayment")}:{" "}
+                  {lang === "vi"
+                    ? (PAYMENT_LABELS_VI[order.paymentMethod] ??
+                      order.paymentMethod)
+                    : (PAYMENT_LABELS_EN[order.paymentMethod] ??
+                      order.paymentMethod)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 border-t border-border pt-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                {t("orderStatusLabel")}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {ORDER_STATUSES.map((status) => {
+                  const on = normalizeStatus(order.status) === status;
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      disabled={busyId === order._id}
+                      onClick={() => void change(order._id, status)}
+                      aria-pressed={on}
+                      className={cn(
+                        "rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60",
+                        on
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-foreground/70 hover:text-foreground",
+                      )}
+                    >
+                      {t(
+                        status === "processing"
+                          ? "orderStatusProcessing"
+                          : status === "shipped"
+                            ? "orderStatusShipped"
+                            : status === "out_for_delivery"
+                              ? "orderStatusOutForDelivery"
+                              : status === "delivered"
+                                ? "orderStatusDelivered"
+                                : "orderStatusCancelled",
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
    Live chat inbox — every storefront conversation, newest first
    ──────────────────────────────────────────────────────────────── */
 
@@ -763,11 +1112,34 @@ function ChatInbox() {
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   const threads = useQuery(api.messages.threads, {});
   const markRead = useMutation(api.messages.markRead);
   const send = useMutation(api.messages.send);
+  const removeMessage = useMutation(api.messages.remove);
+  const clearThread = useMutation(api.messages.clearThread);
+
+  // Moderation acts on the *currently open* thread only.
+  useEffect(() => {
+    if (!confirmClear) return;
+    const timer = setTimeout(() => setConfirmClear(false), 4000);
+    return () => clearTimeout(timer);
+  }, [confirmClear]);
+
+  const clearActive = async () => {
+    if (!activeId) return;
+    try {
+      const res = await clearThread({ conversationId: activeId });
+      setConfirmClear(false);
+      setSelected(null);
+      toast.success(t("chatCleared").replace("{n}", String(res.removed)));
+    } catch (error) {
+      console.error(error);
+      toast.error(t("chatActionFailed"));
+    }
+  };
 
   // Fall back to the newest thread so the panel is never empty on open.
   const activeId = selected ?? threads?.[0]?.conversationId ?? null;
@@ -864,13 +1236,33 @@ function ChatInbox() {
 
       {/* Active thread */}
       <section className="flex min-h-[24rem] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
-        <div className="border-b border-border px-5 py-3.5">
-          <h3 className="font-display text-base font-bold">
-            {active?.name || active?.email || t("chatInboxAnonymous")}
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            {active ? `${active.messageCount} tin nhắn` : ""}
-          </p>
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3.5">
+          <div className="min-w-0">
+            <h3 className="font-display text-base font-bold">
+              {active?.name || active?.email || t("chatInboxAnonymous")}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {active ? `${active.messageCount} ${t("chatMessageUnit")}` : ""}
+            </p>
+          </div>
+          {activeId && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirmClear) void clearActive();
+                else setConfirmClear(true);
+              }}
+              className={cn(
+                "ml-auto inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors",
+                confirmClear
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-foreground/70 hover:text-foreground",
+              )}
+            >
+              <Trash2 className="size-3.5" />
+              {confirmClear ? t("chatClearConfirm") : t("chatClearThread")}
+            </button>
+          )}
         </div>
 
         <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto p-5">
@@ -884,8 +1276,27 @@ function ChatInbox() {
               return (
                 <div
                   key={message._id}
-                  className={mine ? "flex justify-end" : "flex justify-start"}
+                  className={cn(
+                    "group flex items-start gap-1",
+                    mine ? "justify-end" : "justify-start",
+                  )}
                 >
+                  {!mine && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void removeMessage({ id: message._id }).catch((error) => {
+                          console.error(error);
+                          toast.error(t("chatActionFailed"));
+                        })
+                      }
+                      aria-label={t("chatDeleteMessage")}
+                      title={t("chatDeleteMessage")}
+                      className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-secondary hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  )}
                   <div
                     className={cn(
                       "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm",
@@ -1136,24 +1547,112 @@ function BroadcastPanel() {
 }
 
 /* ────────────────────────────────────────────────────────────────
+   Seller PIN gate — the owner's second check before /seller opens
+   ──────────────────────────────────────────────────────────────── */
+
+function SellerPinGate({ onUnlock }: { onUnlock: () => void }) {
+  const { t } = useI18n();
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState(false);
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (checkSellerPin(pin)) {
+      grantSellerPin();
+      setError(false);
+      onUnlock();
+    } else {
+      setError(true);
+      setPin("");
+    }
+  };
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background p-4">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 shadow-soft-lg"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex size-11 items-center justify-center rounded-2xl bg-primary font-display text-2xl font-bold text-primary-foreground">
+            B
+          </span>
+          <span>
+            <span className="block font-display text-xl font-bold tracking-tight">
+              {t("sellerPinTitle")}
+            </span>
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+              {t("adminSub")}
+            </span>
+          </span>
+        </div>
+
+        <p className="mt-6 text-sm text-muted-foreground">
+          {t("sellerPinBody")}
+        </p>
+
+        <label className="mt-5 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("pinPlaceholder")}
+          <input
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            autoFocus
+            maxLength={12}
+            value={pin}
+            onChange={(e) => {
+              setPin(e.target.value);
+              setError(false);
+            }}
+            placeholder="••••••••"
+            className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 text-center font-mono text-2xl tracking-[0.4em] outline-none focus:border-ring focus:bg-card"
+          />
+        </label>
+
+        {error && (
+          <p className="mt-3 rounded-full bg-accent px-3 py-2 text-center text-xs font-semibold text-accent-foreground">
+            {t("pinError")}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
+        >
+          <Lock className="size-4" />
+          {t("unlock")}
+        </button>
+      </form>
+    </main>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
    Page
    ──────────────────────────────────────────────────────────────── */
 
 export default function Admin() {
   const { isLoading, isAuthenticated, user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [pinOk, setPinOk] = useState(() => hasSellerPin());
 
-  // Access is identity-only: the store owner's Google account, no PIN.
+  // Check 1 — identity. Only the store owner's Google account may proceed;
+  // anyone else (signed out, or a customer) goes straight back to the store.
   const isOwner =
     isAuthenticated &&
     !!user?.email &&
     user.email.trim().toLowerCase() === ADMIN_EMAIL;
 
-  // Anyone else — signed out or a different account — is sent back to the
-  // storefront instead of being shown a prompt.
   useEffect(() => {
     if (!isLoading && !isOwner) navigate("/", { replace: true });
   }, [isLoading, isOwner, navigate]);
+
+  // Check 2 — the seller PIN, re-asked whenever the tab is locked.
+  const lock = async () => {
+    revokeSellerPin();
+    await signOut();
+    navigate("/", { replace: true });
+  };
 
   if (isLoading || !isOwner) {
     return (
@@ -1163,24 +1662,22 @@ export default function Admin() {
     );
   }
 
-  return (
-    <AdminPanel
-      onLock={async () => {
-        await signOut();
-        navigate("/", { replace: true });
-      }}
-    />
-  );
+  if (!pinOk) {
+    return <SellerPinGate onUnlock={() => setPinOk(true)} />;
+  }
+
+  return <AdminPanel onLock={lock} />;
 }
 
 function AdminPanel({ onLock }: { onLock: () => Promise<void> }) {
   const { t } = useI18n();
-  const [tab, setTab] = useState<"products" | "chat" | "broadcast">("products");
+  const [tab, setTab] = useState<"products" | "orders" | "chat" | "broadcast">("products");
   const products = useQuery(api.products.list);
   const unread = useQuery(api.messages.unreadTotal);
 
   const TABS = [
     { id: "products", label: t("sellerTabProducts"), icon: Store },
+    { id: "orders", label: t("sellerTabOrders"), icon: Package },
     { id: "chat", label: t("sellerTabChat"), icon: MessageCircle },
     { id: "broadcast", label: t("sellerTabBroadcast"), icon: Send },
   ] as const;
@@ -1215,7 +1712,7 @@ function AdminPanel({ onLock }: { onLock: () => Promise<void> }) {
               className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors"
             >
               <LogOut className="size-3.5" />
-              {t("signOutLabel")}
+              {t("lockSellerSession")}
             </button>
           </div>
         </div>
@@ -1259,7 +1756,11 @@ function AdminPanel({ onLock }: { onLock: () => Promise<void> }) {
         </div>
       </div>
 
-      {tab === "chat" ? (
+      {tab === "orders" ? (
+        <div className="mx-auto max-w-5xl px-4 py-8">
+          <OrdersPanel />
+        </div>
+      ) : tab === "chat" ? (
         <div className="mx-auto max-w-7xl px-4 py-8">
           <ChatInbox />
         </div>
