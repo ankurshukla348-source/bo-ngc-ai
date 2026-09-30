@@ -2,7 +2,7 @@ import { Header } from "@/components/store/Header";
 import { MarketingOptIn } from "@/components/store/MarketingOptIn";
 import { api } from "@/convex/_generated/api";
 import { useCart, type CartItem } from "@/lib/cart";
-import { shippingFeeFor } from "@/lib/catalog";
+import { shippingFeeFor, shippingZoneFor } from "@/lib/catalog";
 import { formatVnd } from "@/lib/format";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { buildVietqrPayload } from "@/lib/vietqr";
@@ -624,7 +624,10 @@ export default function Checkout() {
   const gridItems = confirmed ? confirmed.items : items;
   const gridSubtotal = confirmed ? confirmed.subtotal : subtotal;
 
-  const fee = shippingFeeFor(gridSubtotal);
+  // Preview the real fee from the address being typed, so the total the
+  // customer sees is the total the server charges.
+  const fee = shippingFeeFor(gridSubtotal, shipping);
+  const zone = shippingZoneFor(shipping);
   const total = gridSubtotal + fee;
 
   const qrPayload = useMemo(

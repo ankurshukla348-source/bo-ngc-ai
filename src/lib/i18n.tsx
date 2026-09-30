@@ -41,7 +41,7 @@ const vi = {
   vp1Title: "Tuyển chọn kỹ lưỡng",
   vp1Sub: "Từng món đều được chọn bằng tay",
   vp2Title: "Đổi trả dễ dàng",
-  vp2Sub: "Đổi trả trong 30 ngày",
+  vp2Sub: "Đổi trả trong 7 ngày",
   vp3Title: "Thanh toán an toàn",
   vp3Sub: "VietCOD · VietQR bảo mật",
 
@@ -447,7 +447,7 @@ export type TKey = keyof typeof vi;
 
 const en: Record<TKey, string> = {
   // Header / nav
-  announce: "Free shipping over 400.000 VND · 30-day returns",
+  announce: "Free shipping over 400.000 VND · 7-day returns",
   seller: "Seller dashboard",
   navShop: "Collection",
   navCategories: "Categories",
@@ -470,7 +470,7 @@ const en: Record<TKey, string> = {
   vp1Title: "Handpicked quality",
   vp1Sub: "Every piece chosen by hand",
   vp2Title: "Easy returns",
-  vp2Sub: "30-day returns",
+  vp2Sub: "7-day returns",
   vp3Title: "Secure transfer",
   vp3Sub: "Protected VietQR & COD",
 

@@ -100,7 +100,9 @@ export const create = mutation({
       });
     }
 
-    const shippingFee = shippingFeeFor(subtotal);
+    // Zone-based fee, resolved server-side from the delivery address so the
+    // amount charged can never be lower than the published rate.
+    const shippingFee = shippingFeeFor(subtotal, customer);
     const total = subtotal + shippingFee;
     const createdAt = Date.now();
 
