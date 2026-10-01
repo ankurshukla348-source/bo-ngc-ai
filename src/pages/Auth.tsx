@@ -90,7 +90,7 @@ function AuthInner({
       <section className="relative hidden overflow-hidden bg-[#3a2030] px-10 py-14 text-[#fdf2f6] lg:flex lg:flex-col lg:justify-between">
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 size-[28rem] rounded-full bg-[#e695b9]/20 blur-3xl"
+          className="pointer-events-none absolute -right-24 -top-24 size-[28rem] rounded-full bg-brand-rose/20 blur-3xl"
         />
         <div
           aria-hidden
@@ -111,11 +111,11 @@ function AuthInner({
           </p>
           <ul className="mt-8 space-y-3 text-sm text-white/80">
             <li className="flex items-center gap-3">
-              <Sparkles className="size-4 shrink-0 text-[#e695b9]" />
+              <Sparkles className="size-4 shrink-0 text-brand-rose" />
               Miễn phí giao hàng cho đơn từ 400.000 VND.
             </li>
             <li className="flex items-center gap-3">
-              <ShieldCheck className="size-4 shrink-0 text-[#e695b9]" />
+              <ShieldCheck className="size-4 shrink-0 text-brand-rose" />
               Hỗ trợ đổi trả Size trong vòng 7 ngày.
             </li>
           </ul>

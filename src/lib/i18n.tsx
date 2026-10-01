@@ -287,14 +287,14 @@ const vi = {
   chooseAccount: "Chọn loại tài khoản",
 
   // ── Trust strip / mockup copy ──────────────────────────────
-  trustShip: "Miễn phí giao hàng",
-  trustShipSub: "Cho đơn từ 400.000 VND",
-  trustReturns: "Đổi size dễ dàng",
-  trustReturnsSub: TEXT.policy7Day,
-  trustPay: "Thanh toán khi nhận hàng.",
-  trustPaySub: "Kiểm tra hàng rồi mới thanh toán",
-  trustSupport: "Phản hồi nhanh",
-  trustSupportSub: "Nhắn qua Live Chat trên web",
+  trustShip: "Miễn phí vận chuyển",
+  trustShipSub: "Đơn hàng từ 400.000 VNĐ",
+  trustReturns: "Đổi trả linh hoạt",
+  trustReturnsSub: "Hỗ trợ đổi size trong 7 ngày",
+  trustPay: "Đóng gói kín đáo & Bảo mật",
+  trustPaySub: "Giao hàng an toàn, che tên sản phẩm 100%",
+  trustSupport: "Hỗ trợ nhanh chóng",
+  trustSupportSub: "Nhắn tin trực tiếp qua Live Chat",
   heroTagline:
     "Khám phá các dòng đồ lót mềm mại, áo bra nâng dáng và váy ngủ lụa cao cấp — mang lại cảm giác dễ chịu tuyệt đối và nữ tính dành cho bạn.",
   slideLabel: "Slide",
@@ -737,8 +737,8 @@ const en: Record<TKey, string> = {
   trustShipSub: "On orders over 400.000 VND",
   trustReturns: "Easy size exchange",
   trustReturnsSub: "Size exchange within 7 days.",
-  trustPay: "Pay on delivery.",
-  trustPaySub: "Check it before you pay",
+  trustPay: "Discreet & secure packaging",
+  trustPaySub: "Delivered safely, product names hidden 100%",
   trustSupport: "Quick replies",
   trustSupportSub: "Message us on live chat",
   heroTagline:

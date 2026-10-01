@@ -47,20 +47,22 @@
 
    Brand pinks. `--accent` is a *light* pink surface, so anything that needs a
    saturated pink uses these instead:
-     brand-rose → icons, fills, hearts, large accents
-     brand-ink  → small text/eyebrows (4.7:1 on the canvas, still safe) */
+     brand-rose → icons, fills, hearts, large accents (#fe87b7)
+     brand-ink  → small text/eyebrows, high-contrast accent (#e0528b) */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
-  --color-brand-rose: #d9789f;
-  --color-brand-ink: #b8496f;
+  --color-brand-rose: #fe87b7;
+  --color-brand-ink: #e0528b;
 }
 
-/* CHANGE VALUES FOR THEME — Light Pink:
+/* CHANGE VALUES FOR THEME — Vibrant Feminine Pink:
    airy blush canvas #fef8fa, pure white cards, rose hairline borders,
-   deep plum ink for text, light-pink accent surfaces, dark-pink brand pinks,
+   deep plum ink for text, vibrant #fe87b7 primary surfaces with the
+   #e0528b accent for focus rings and small text, soft #fff0f5 tints,
    rounded corners (radius 1rem) and soft diffuse shadows instead of hard
-   offsets. Contrast on every text pair below is >= 4.5:1. */
+   offsets. Contrast on every text pair below is >= 4.5:1 (plum #3b2a32 on
+   #fe87b7 = 5.9:1). */
 :root {
   --radius: 1rem;
   --background: #fef8fa;
@@ -69,18 +71,18 @@
   --card-foreground: #3b2a32;
   --popover: #ffffff;
   --popover-foreground: #3b2a32;
-  --primary: #3b2a32;
-  --primary-foreground: #fef8fa;
-  --secondary: #fbeaf1;
+  --primary: #fe87b7;
+  --primary-foreground: #3b2a32;
+  --secondary: rgb(254 135 183 / 0.12);
   --secondary-foreground: #3b2a32;
   --muted: #fdf2f6;
   --muted-foreground: #7d6470;
-  --accent: #f7d9e6;
+  --accent: #fff0f5;
   --accent-foreground: #4a2b39;
   --destructive: #b23a48;
   --border: #f6dfe8;
   --input: #f2d8e3;
-  --ring: #d9789f;
+  --ring: #e0528b;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -153,8 +155,8 @@
     cursor: pointer;
   }
   ::selection {
-    background: #2f1d26;
-    color: #fdf5f8;
+    background: #fe87b7;
+    color: #3b2a32;
   }
 }
 

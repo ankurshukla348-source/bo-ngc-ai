@@ -137,7 +137,7 @@ export function ProductCard({
             <Heart
               className={cn(
                 "size-4 transition-colors",
-                wished ? "fill-brand-rose text-brand-rose" : "text-foreground",
+                wished ? "fill-brand-rose text-brand-ink" : "text-foreground",
               )}
             />
           </button>

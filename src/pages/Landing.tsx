@@ -449,7 +449,7 @@ export default function Landing() {
                       className="absolute inset-0 h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#f4dbe6] to-[#e3bcd0]" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#fff0f5] to-brand-rose/45" />
                   )}
                 </div>
               </div>
@@ -611,7 +611,7 @@ export default function Landing() {
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#f9e4ec] to-[#e5bfd1]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#fff0f5] to-brand-rose/40" />
               )}
             </div>
             <div className="flex flex-col justify-center gap-4 p-8 sm:p-12">

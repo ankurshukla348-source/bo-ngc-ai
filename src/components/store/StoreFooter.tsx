@@ -140,7 +140,7 @@ export function StoreFooter({
                 <button
                   type="submit"
                   aria-label={t("newsCta")}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[#2c1622] transition-colors hover:bg-[#e695b9]"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[#2c1622] transition-colors hover:bg-brand-rose"
                 >
                   <ArrowRight className="size-4" />
                 </button>
