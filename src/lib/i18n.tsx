@@ -313,6 +313,35 @@ const vi = {
   emailFailedGeneric:
     "Vui lòng liên hệ khách qua số điện thoại trên đơn và gửi lại xác nhận.",
   emailNotSentBadge: "Chưa gửi email",
+
+  // ── Customer reviews ───────────────────────────────────────
+  reviewsTitle: "Đánh giá sản phẩm",
+  reviewsEmpty: "Chưa có đánh giá nào cho sản phẩm này.",
+  reviewWriteCta: "Viết đánh giá",
+  reviewOnlyDelivered:
+    "Chỉ khách hàng đã nhận hàng mới có thể đánh giá sản phẩm này.",
+  reviewRatingLabel: "Chấm điểm",
+  reviewTextPlaceholder: "Chia sẻ trải nghiệm của bạn về sản phẩm này...",
+  reviewAddPhoto: "Thêm ảnh",
+  reviewRemovePhoto: "Xóa ảnh",
+  reviewSubmit: "Gửi đánh giá",
+  reviewSending: "Đang gửi...",
+  reviewSubmitted: "Cảm ơn bạn đã đánh giá!",
+  reviewDuplicate: "Bạn đã đánh giá sản phẩm này rồi.",
+  reviewNotEligible:
+    "Chỉ đơn hàng đã giao mới được đánh giá. Vui lòng kiểm tra lại.",
+  reviewFailed: "Không gửi được đánh giá. Vui lòng thử lại.",
+  reviewPhotoFailed: "Tải ảnh thất bại.",
+  reviewPhotoTypeError: "Chỉ chấp nhận tệp ảnh.",
+  reviewVerified: "Đã mua",
+  reviewSectionTitle: "Sản phẩm đã mua — đánh giá",
+  tooManyImages: "Tối đa 6 ảnh cho mỗi sản phẩm.",
+  addMoreImages: "Thêm ảnh",
+  mainImageBadge: "Ảnh chính",
+  mainImageHint: "Ảnh đầu tiên là ảnh đại diện.",
+  galleryLabel: "Ảnh sản phẩm",
+  reviewEmptyState:
+    "Bạn chưa có đơn hàng đã giao nào để đánh giá. Sau khi nhận hàng, bạn có thể đánh giá sản phẩm tại đây.",
   guestCheckoutAuthNote:
     "Bạn không cần đăng nhập để đặt hàng. Chỉ cần số điện thoại và địa chỉ nhận hàng.",
   guestCheckoutAuthCta: "Mua hàng không cần đăng nhập",
@@ -786,6 +815,33 @@ const en: Record<TKey, string> = {
   emailFailedGeneric:
     "Please contact the customer on the phone number on the order and resend confirmation.",
   emailNotSentBadge: "Email not sent",
+
+  // Customer reviews
+  reviewsTitle: "Customer reviews",
+  reviewsEmpty: "No reviews for this product yet.",
+  reviewWriteCta: "Write a review",
+  reviewOnlyDelivered: "Only customers who received this product can review it.",
+  reviewRatingLabel: "Your rating",
+  reviewTextPlaceholder: "Share your experience with this product...",
+  reviewAddPhoto: "Add photo",
+  reviewRemovePhoto: "Remove photo",
+  reviewSubmit: "Submit review",
+  reviewSending: "Submitting...",
+  reviewSubmitted: "Thank you for your review!",
+  reviewDuplicate: "You have already reviewed this product.",
+  reviewNotEligible: "Only delivered orders can be reviewed. Please check again.",
+  reviewFailed: "Could not submit the review. Please try again.",
+  reviewPhotoFailed: "Photo upload failed.",
+  reviewPhotoTypeError: "Only image files are accepted.",
+  reviewVerified: "Verified purchase",
+  reviewSectionTitle: "Purchased products — review",
+  tooManyImages: "Up to 6 images per product.",
+  addMoreImages: "Add more images",
+  mainImageBadge: "Main",
+  mainImageHint: "The first image is the one shown in listings.",
+  galleryLabel: "Product images",
+  reviewEmptyState:
+    "You have no delivered orders to review yet. Once your order arrives, you can review the product here.",
   guestCheckoutAuthNote:
     "You do not need an account to order. Just a phone number and a delivery address.",
   guestCheckoutAuthCta: "Shop without signing in",

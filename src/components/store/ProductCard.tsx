@@ -11,7 +11,11 @@ import type { Category } from "@/lib/catalog";
 import { formatVnd } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { api } from "@/convex/_generated/api";
+import { useQuery } from "convex/react";
+import { ReviewSection } from "@/components/store/ReviewSection";
 import { Eye, Heart, Star, X } from "lucide-react";
+import { ProductGallery } from "@/components/store/ProductGallery";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -28,6 +32,10 @@ export type StoreProduct = {
   description: string | null;
   stock: number | null;
   image: string | null;
+  /** Extra gallery photos (resolved URLs), in order. */
+  images?: string[];
+  /** Storage ids, parallel to `images`. Seller editor only. */
+  imageIds?: string[];
 };
 
 const WISHLIST_KEY = "mama-wishlist-v1";
@@ -62,6 +70,10 @@ export function ProductCard({
 }) {
   const { t, lang, categoryLabel } = useI18n();
   const { add, items } = useCart();
+  // Reviews are per-product; `undefined` while the query is in flight.
+  const reviewable = useQuery(api.reviews.summary, {
+    productId: product._id,
+  });
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [wished, setWished] = useState(
     () => readWishlist().includes(product._id),
@@ -114,13 +126,14 @@ export function ProductCard({
     <>
       <article className="card-lift group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
         <div className="relative aspect-[4/5] overflow-hidden bg-secondary">
-          {product.image ? (
-            <img
-              src={product.image}
-              alt={name}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
+          {product.image || product.images?.length ? (
+            <div className="h-full w-full transition-transform duration-500 group-hover:scale-105">
+              <ProductGallery
+                images={[product.image, ...(product.images ?? [])]}
+                alt={name}
+                showThumbs={false}
+              />
+            </div>
           ) : (
             <div className="flex h-full items-center justify-center font-display text-5xl font-bold text-muted-foreground/50">
               {monogram(name)}
@@ -258,13 +271,12 @@ export function ProductCard({
 
           <div className="grid gap-0 sm:grid-cols-2">
             <div className="relative aspect-[4/5] overflow-hidden bg-secondary sm:aspect-auto sm:min-h-full">
-              {product.image ? (
-                <img
-                  src={product.image}
-                  alt={name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
+                {product.image || product.images?.length ? (
+                  <ProductGallery
+                    images={[product.image, ...(product.images ?? [])]}
+                    alt={name}
+                  />
+                ) : (
                 <div className="flex h-full min-h-64 items-center justify-center font-display text-5xl font-bold text-muted-foreground/50">
                   {monogram(name)}
                 </div>
@@ -340,10 +352,19 @@ export function ProductCard({
                 type="button"
                 onClick={handleModalAdd}
                 disabled={!product.inStock}
-                className="mt-auto w-full rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-foreground disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {product.inStock ? t("addToCart") : t("soldOut")}
               </button>
+
+              {/* Reviews live inside the quick view: it is the only product
+                  detail surface, and it is already a scrollable panel. */}
+              {reviewable === undefined ? null : (
+                <ReviewSection
+                  productId={product._id}
+                  canReview={false}
+                />
+              )}
             </div>
           </div>
         </DialogContent>

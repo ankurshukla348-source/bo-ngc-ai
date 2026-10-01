@@ -74,6 +74,11 @@ const schema = defineSchema(
       description: v.optional(v.string()), // free-text detail for the seller page
       stock: v.optional(v.number()), // units on hand; absent = not tracked
       imageStorageId: v.optional(v.id("_storage")),
+      // Every additional photo, in gallery order. The first entry is the
+      // thumbnail (`imageStorageId` above is kept in sync with it so existing
+      // rows, cart snapshots and the storefront hero keep working untouched).
+      // Storage ids live here as strings so one array can hold them all.
+      images: v.optional(v.array(v.string())),
       imageSrc: v.optional(v.string()), // data-URI placeholder fallback
       createdAt: v.number(),
     }).index("by_category", ["category"]),
@@ -164,6 +169,27 @@ const schema = defineSchema(
       readAt: v.optional(v.number()), // set when the seller opens the thread
       createdAt: v.number(),
     }).index("by_conversation", ["conversationId"]),
+
+    // ── Customer reviews ──────────────────────────────────────
+    // One review per product per customer. Eligibility is not a field but an
+    // invariant enforced by reviews.ts: the reviewer must have a DELIVERED
+    // order containing that product. Kept as a separate table rather than an
+    // array on `products` so a photo upload never rewrites the product row
+    // every other shopper is subscribed to.
+    reviews: defineTable({
+      productId: v.id("products"),
+      userId: v.id("users"),
+      // The order that proved eligibility. Kept so a deleted order does not
+      // silently re-open an unreviewable product, and so the seller can trace
+      // a review back to a real purchase.
+      orderId: v.optional(v.id("orders")),
+      rating: v.number(), // 1..5, validated in reviews.ts
+      text: v.optional(v.string()), // up to 2000 chars, trimmed server-side
+      photos: v.optional(v.array(v.string())), // customer photo storage ids
+      createdAt: v.number(),
+    })
+      .index("by_product", ["productId"])
+      .index("by_user", ["userId"]),
 
     // ── Spam throttle ──────────────────────────────────────────
     // One row per recent request from a phone number or chat thread. Rows are

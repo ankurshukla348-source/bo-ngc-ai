@@ -1,6 +1,7 @@
 import { Header } from "@/components/store/Header";
 import { MarketingOptIn } from "@/components/store/MarketingOptIn";
 import { OrderStatusBadge } from "@/components/store/OrderStatusBadge";
+import { ReviewSection } from "@/components/store/ReviewSection";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/hooks/use-auth";
 import { ADMIN_EMAIL } from "@/lib/admin";
@@ -54,6 +55,10 @@ export default function Dashboard() {
   // Consent lives on the profile; absent means "subscribed" (opt-out model).
   const [optIn, setOptIn] = useState(user?.marketingOptIn !== false);
   const saveOptIn = useMutation(api.users.setMarketingOptIn);
+
+  /* Reviews: only products from a DELIVERED order of this account, and only
+     those not already reviewed. The server re-checks all of this on submit. */
+  const reviewable = useQuery(api.reviews.reviewable, {});
 
   useEffect(() => {
     if (user) setOptIn(user.marketingOptIn !== false);
@@ -232,6 +237,49 @@ export default function Dashboard() {
             </section>
           )}
         </div>
+
+        {/* ── Review delivered products ── */}
+        <section className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft">
+          <h2 className="font-display text-xl font-bold">
+            {t("reviewSectionTitle")}
+          </h2>
+          {reviewable === undefined ? (
+            <p className="mt-2 text-sm text-muted-foreground">…</p>
+          ) : reviewable.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("reviewEmptyState")}
+            </p>
+          ) : (
+            <ul className="mt-4 flex flex-col gap-5">
+              {reviewable.map((entry) => (
+                <li key={entry.productId}>
+                  <div className="flex items-center gap-3">
+                    {entry.image && (
+                      <img
+                        src={entry.image}
+                        alt=""
+                        className="size-12 shrink-0 rounded-xl border border-border object-cover"
+                      />
+                    )}
+                    <p className="min-w-0 flex-1 truncate text-sm font-semibold">
+                      {lang === "vi" ? entry.nameVi : entry.nameEn}
+                    </p>
+                  </div>
+                  {entry.reviewed ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {t("reviewDuplicate")}
+                    </p>
+                  ) : (
+                    <ReviewSection
+                      productId={entry.productId}
+                      canReview
+                    />
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <button
           type="button"

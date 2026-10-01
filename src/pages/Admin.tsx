@@ -35,6 +35,8 @@ import {
 import { useConvex, useAction, useMutation, useQuery } from "convex/react";
 import {
   Camera,
+  ChevronDown,
+  ChevronUp,
   Download,
   ImagePlus,
   Loader2,
@@ -47,6 +49,7 @@ import {
   Package,
   Store,
   Trash2,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
@@ -88,6 +91,9 @@ function StockToggle({
    Storage upload — one place, used by both the create and edit flows
    ──────────────────────────────────────────────────────────────── */
 
+/** Must stay in step with MAX_PRODUCT_IMAGES in src/convex/products.ts. */
+const MAX_PRODUCT_IMAGES = 6;
+
 async function uploadFile(
   uploadUrl: string,
   file: File,
@@ -116,8 +122,10 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
   const [price, setPrice] = useState("");
   const [sizes, setSizes] = useState<string[]>(["S", "M", "L", "XL"]);
   const [inStock, setInStock] = useState(true);
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  // Multiple photos per product. The first entry is the thumbnail the
+  // storefront, cart and order emails all use.
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [description, setDescription] = useState("");
@@ -128,19 +136,52 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
 
   useEffect(() => {
     return () => {
-      if (preview?.startsWith("blob:")) URL.revokeObjectURL(preview);
+      for (const url of previews) {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      }
     };
-  }, [preview]);
+  }, [previews]);
 
-  const acceptFile = (files: FileList | null) => {
-    const next = files?.[0];
-    if (!next) return;
-    if (!next.type.startsWith("image/")) {
+  const acceptFiles = (list: FileList | null) => {
+    const incoming = Array.from(list ?? []);
+    if (incoming.length === 0) return;
+    if (incoming.some((f) => !f.type.startsWith("image/"))) {
       toast.error(t("uploadFailed"));
       return;
     }
-    setFile(next);
-    setPreview(URL.createObjectURL(next));
+    const room = MAX_PRODUCT_IMAGES - files.length;
+    if (room <= 0) {
+      toast.error(t("tooManyImages"));
+      return;
+    }
+    const next = incoming.slice(0, room);
+    if (incoming.length > room) toast.error(t("tooManyImages"));
+    setFiles((prev) => [...prev, ...next]);
+    setPreviews((prev) => [...prev, ...next.map((f) => URL.createObjectURL(f))]);
+  };
+
+  const removeFileAt = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => {
+      const url = prev[index];
+      if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const moveFile = (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= files.length) return;
+    setFiles((prev) => {
+      const next = [...prev];
+      [next[index], next[target]] = [next[target]!, next[index]!];
+      return next;
+    });
+    setPreviews((prev) => {
+      const next = [...prev];
+      [next[index], next[target]] = [next[target]!, next[index]!];
+      return next;
+    });
   };
 
   const reset = () => {
@@ -150,8 +191,13 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
     setPrice("");
     setSizes(["S", "M", "L", "XL"]);
     setInStock(true);
-    setFile(null);
-    setPreview(null);
+    setPreviews((prev) => {
+      for (const url of prev) {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      }
+      return [];
+    });
+    setFiles([]);
     setDescription("");
     setStock("");
   };
@@ -176,14 +222,28 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
     try {
       let imageStorageId: Id<"_storage"> | undefined;
       let imageSrc: string | undefined;
+      const imageIds: string[] = [];
 
-      if (file) {
-        const uploadUrl = await convex.mutation(
-          api.products.generateUploadUrl,
-          {},
-        );
-        imageStorageId = await uploadFile(uploadUrl, file);
-      } else {
+      if (files.length > 0) {
+        // Uploaded one at a time: a single failed upload must not discard the
+        // photos that already succeeded.
+        for (const file of files) {
+          try {
+            const uploadUrl = await convex.mutation(
+              api.products.generateUploadUrl,
+              {},
+            );
+            imageIds.push(await uploadFile(uploadUrl, file));
+          } catch (error) {
+            console.error(error);
+            toast.error(t("uploadFailed"));
+          }
+        }
+        if (imageIds.length > 0) {
+          imageStorageId = imageIds[0] as Id<"_storage">;
+        }
+      }
+      if (imageIds.length === 0) {
         imageSrc = placeholderArt(trimmedEn || trimmedVi, variantSeed);
       }
 
@@ -197,6 +257,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(stock.trim() ? { stock: Number(stock) } : {}),
         ...(imageStorageId ? { imageStorageId } : {}),
+        ...(imageIds.length > 1 ? { images: imageIds } : {}),
         ...(imageSrc ? { imageSrc } : {}),
       });
 
@@ -235,30 +296,74 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
           onDrop={(e) => {
             e.preventDefault();
             setDragging(false);
-            acceptFile(e.dataTransfer.files);
+            acceptFiles(e.dataTransfer.files);
           }}
           className={cn(
             "relative flex min-h-[170px] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border p-4 text-center transition-colors",
             dragging ? "bg-accent/10" : "bg-background",
           )}
         >
-          {preview ? (
+          {previews.length > 0 ? (
             <>
-              <img
-                src={preview}
-                alt=""
-                className="max-h-44 rounded-xl border border-border object-contain"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setFile(null);
-                  setPreview(null);
-                }}
-                className="text-xs font-semibold uppercase underline-offset-4 hover:underline"
-              >
-                {t("cancel")}
-              </button>
+              <div className="flex w-full flex-wrap justify-center gap-2">
+                {previews.map((url, index) => (
+                  <div
+                    key={`${url}-${index}`}
+                    className="relative size-20 overflow-hidden rounded-xl border border-border"
+                  >
+                    <img
+                      src={url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                    {index === 0 && (
+                      <span className="absolute bottom-0 left-0 right-0 bg-foreground/80 px-1 py-0.5 text-[9px] font-bold uppercase text-background">
+                        {t("mainImageBadge")}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeFileAt(index)}
+                      aria-label={t("cancel")}
+                      className="absolute right-0.5 top-0.5 flex size-5 items-center justify-center rounded-full bg-background/90"
+                    >
+                      <X className="size-3" />
+                    </button>
+                    <div className="absolute left-0.5 top-0.5 flex flex-col gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => moveFile(index, -1)}
+                        disabled={index === 0}
+                        aria-label="Lên"
+                        className="flex size-5 items-center justify-center rounded-full bg-background/90 disabled:opacity-30"
+                      >
+                        <ChevronUp className="size-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveFile(index, 1)}
+                        disabled={index === previews.length - 1}
+                        aria-label="Xuống"
+                        className="flex size-5 items-center justify-center rounded-full bg-background/90 disabled:opacity-30"
+                      >
+                        <ChevronDown className="size-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {previews.length < MAX_PRODUCT_IMAGES && (
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="mt-1 rounded-full bg-secondary px-4 py-2 text-xs font-semibold uppercase transition-colors"
+                >
+                  {t("addMoreImages")}
+                </button>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {previews.length}/{MAX_PRODUCT_IMAGES} · {t("mainImageHint")}
+              </p>
             </>
           ) : (
             <>
@@ -294,9 +399,10 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
             ref={fileRef}
             type="file"
             accept="image/*"
+            multiple
             className="hidden"
             onChange={(e) => {
-              acceptFile(e.target.files);
+              acceptFiles(e.target.files);
               e.target.value = "";
             }}
           />
@@ -307,7 +413,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
             capture="environment"
             className="hidden"
             onChange={(e) => {
-              acceptFile(e.target.files);
+              acceptFiles(e.target.files);
               e.target.value = "";
             }}
           />
@@ -463,6 +569,74 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
 }
 
 /* ────────────────────────────────────────────────────────────────
+   One photo in the gallery editor: preview, remove, reorder.
+   ──────────────────────────────────────────────────────────────── */
+
+function ProductThumb({
+  src,
+  fallback,
+  onRemove,
+  onMove,
+  canMoveUp,
+  canMoveDown,
+}: {
+  /** Undefined for a stored photo whose blob we could not resolve. */
+  src?: string;
+  /** Marks the photo that will be used as the listing thumbnail. */
+  fallback: boolean;
+  onRemove: () => void;
+  onMove: (delta: number) => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="relative size-16 overflow-hidden rounded-xl border border-border bg-secondary">
+      {src ? (
+        <img src={src} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <span className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+          ?
+        </span>
+      )}
+      {fallback && (
+        <span className="absolute bottom-0 left-0 right-0 bg-foreground/80 px-1 py-0.5 text-[9px] font-bold uppercase text-background">
+          {t("mainImageBadge")}
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={t("cancel")}
+        className="absolute right-0.5 top-0.5 flex size-5 items-center justify-center rounded-full bg-background/90"
+      >
+        <X className="size-3" />
+      </button>
+      <div className="absolute left-0.5 top-0.5 flex flex-col gap-0.5">
+        <button
+          type="button"
+          onClick={() => onMove(-1)}
+          disabled={!canMoveUp}
+          aria-label="Lên"
+          className="flex size-5 items-center justify-center rounded-full bg-background/90 disabled:opacity-30"
+        >
+          <ChevronUp className="size-3" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onMove(1)}
+          disabled={!canMoveDown}
+          aria-label="Xuống"
+          className="flex size-5 items-center justify-center rounded-full bg-background/90 disabled:opacity-30"
+        >
+          <ChevronDown className="size-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
    Product row with inline edit, stock toggle, two-step delete
    ──────────────────────────────────────────────────────────────── */
 
@@ -482,24 +656,61 @@ function ProductRow({ product }: { product: StoreProduct }) {
     stock: product.stock === null || product.stock === undefined ? "" : String(product.stock),
   });
   const replaceRef = useRef<HTMLInputElement>(null);
-  const [replaceFile, setReplaceFile] = useState<File | null>(null);
-  const [newImage, setNewImage] = useState<string | null>(null);
+  // Gallery being edited: existing storage ids plus any newly picked files.
+  // Existing ids stay as strings so a photo the seller does not touch is not
+  // re-uploaded (and keeps its URL stable across saves).
+  const [keepIds, setKeepIds] = useState<string[]>([]);
+  const [addFiles, setAddFiles] = useState<File[]>([]);
+  const [addPreviews, setAddPreviews] = useState<string[]>([]);
 
   useEffect(() => {
     return () => {
-      if (newImage?.startsWith("blob:")) URL.revokeObjectURL(newImage);
+      for (const url of addPreviews) {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      }
     };
-  }, [newImage]);
+  }, [addPreviews]);
 
-  const pickReplacement = (files: FileList | null) => {
-    const next = files?.[0];
-    if (!next) return;
-    if (!next.type.startsWith("image/")) {
+  const totalImages = keepIds.length + addFiles.length;
+
+  const clearGalleryEdits = () => {
+    for (const url of addPreviews) {
+      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+    }
+    setAddPreviews([]);
+    setAddFiles([]);
+    setKeepIds([]);
+  };
+
+  const pickAdditions = (list: FileList | null) => {
+    const incoming = Array.from(list ?? []);
+    if (incoming.length === 0) return;
+    if (incoming.some((f) => !f.type.startsWith("image/"))) {
       toast.error(t("uploadFailed"));
       return;
     }
-    setReplaceFile(next);
-    setNewImage(URL.createObjectURL(next));
+    const room = MAX_PRODUCT_IMAGES - totalImages;
+    if (room <= 0) {
+      toast.error(t("tooManyImages"));
+      return;
+    }
+    const next = incoming.slice(0, room);
+    if (incoming.length > room) toast.error(t("tooManyImages"));
+    setAddFiles((prev) => [...prev, ...next]);
+    setAddPreviews((prev) => [...prev, ...next.map((f) => URL.createObjectURL(f))]);
+  };
+
+  const openEditor = () => {
+    // Seed the gallery from what is stored: the primary blob first, then the
+    // rest, with any duplicate id dropped.
+    const stored = [
+      ...(product.images ?? []),
+      ...(product.image ? [product.image] : []),
+    ].filter((value, index, all) => !!value && all.indexOf(value) === index);
+    setKeepIds(stored);
+    setAddFiles([]);
+    setAddPreviews([]);
+    setEditing(true);
   };
 
   useEffect(() => {
@@ -515,14 +726,21 @@ function ProductRow({ product }: { product: StoreProduct }) {
     }
     setBusy(true);
     try {
-      // Upload the replacement photo first, then reference the new blob. A
-      // failed upload leaves the existing image untouched.
-      let imageStorageId: Id<"_storage"> | undefined;
-      if (replaceFile) {
-        const url = await convex.mutation(api.products.generateUploadUrl, {});
-        const storageId = await uploadFile(url, replaceFile);
-        imageStorageId = storageId;
+      // Upload any newly picked photos first, then send the whole ordered set.
+      // A failed upload leaves the stored photos untouched.
+      const uploaded: string[] = [];
+      for (const file of addFiles) {
+        try {
+          const url = await convex.mutation(api.products.generateUploadUrl, {});
+          uploaded.push(await uploadFile(url, file));
+        } catch (error) {
+          console.error(error);
+          toast.error(t("uploadFailed"));
+        }
       }
+
+      const gallery = [...keepIds, ...uploaded].slice(0, MAX_PRODUCT_IMAGES);
+      const primary = gallery[0] as Id<"_storage"> | undefined;
 
       await convex.mutation(api.products.update, {
         id: product._id,
@@ -533,13 +751,12 @@ function ProductRow({ product }: { product: StoreProduct }) {
         sizes: draft.sizes.length ? draft.sizes : product.sizes,
         description: draft.description,
         ...(draft.stock.trim() ? { stock: Number(draft.stock) } : {}),
-        ...(imageStorageId ? { imageStorageId } : {}),
+        ...(gallery.length ? { images: gallery } : {}),
+        ...(primary ? { imageStorageId: primary } : {}),
       });
       setEditing(false);
-      setReplaceFile(null);
-      setNewImage(null);
+      clearGalleryEdits();
       toast.success(t("productUpdated"));
-
     } catch (error) {
       console.error(error);
       toast.error(t("fillNames"));
@@ -698,35 +915,95 @@ function ProductRow({ product }: { product: StoreProduct }) {
               />
             </label>
 
-            {/* Replace photo */}
+            {/* Gallery manager */}
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                {t("replaceImageLabel")}
+                {t("galleryLabel")}
               </p>
-              <div className="mt-1 flex items-center gap-3">
-                {newImage && (
-                  <img
-                    src={newImage}
-                    alt=""
-                    className="size-14 rounded-xl border border-border object-cover"
+              <div className="mt-1 flex flex-wrap items-start gap-2">
+                {keepIds.map((id, index) => (
+                  <ProductThumb
+                    key={id}
+                    src={
+                      // `imageIds` and `images` are parallel arrays, so the
+                      // storage id's position is the URL's position.
+                      product.imageIds && product.images
+                        ? product.images[product.imageIds.indexOf(id)]
+                        : undefined
+                    }
+                    fallback={index === 0}
+                    onRemove={() =>
+                      setKeepIds((prev) => prev.filter((v) => v !== id))
+                    }
+                    onMove={(delta: number) =>
+                      setKeepIds((prev) => {
+                        const next = [...prev];
+                        const target = index + delta;
+                        if (target < 0 || target >= next.length) return prev;
+                        [next[index], next[target]] = [next[target]!, next[index]!];
+                        return next;
+                      })
+                    }
+                    canMoveUp={index > 0}
+                    canMoveDown={index < keepIds.length - 1}
                   />
-                )}
+                ))}
+                {addPreviews.map((url, index) => (
+                  <ProductThumb
+                    key={url}
+                    src={url}
+                    fallback={keepIds.length === 0 && index === 0}
+                    onRemove={() => {
+                      URL.revokeObjectURL(url);
+                      setAddPreviews((prev) => prev.filter((v) => v !== url));
+                      setAddFiles((prev) => prev.filter((_, i) => i !== index));
+                    }}
+                    onMove={(delta: number) => {
+                      setAddPreviews((prev) => {
+                        const next = [...prev];
+                        const target = index + delta;
+                        if (target < 0 || target >= next.length) return prev;
+                        [next[index], next[target]] = [next[target]!, next[index]!];
+                        return next;
+                      });
+                      setAddFiles((prev) => {
+                        const next = [...prev];
+                        const target = index + delta;
+                        if (target < 0 || target >= next.length) return prev;
+                        [next[index], next[target]] = [next[target]!, next[index]!];
+                        return next;
+                      });
+                    }}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < addPreviews.length - 1}
+                  />
+                ))}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => replaceRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-[10px] font-semibold uppercase transition-colors"
+                  disabled={totalImages >= MAX_PRODUCT_IMAGES}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-[10px] font-semibold uppercase transition-colors disabled:opacity-50"
                 >
                   <ImagePlus className="size-3.5" />
-                  {newImage ? t("replaceImageAgain") : t("replaceImageCta")}
+                  {t("addMoreImages")}
                 </button>
-                <input
-                  ref={replaceRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => pickReplacement(e.target.files)}
-                />
+                <span className="text-[10px] text-muted-foreground">
+                  {totalImages}/{MAX_PRODUCT_IMAGES} · {t("mainImageHint")}
+                </span>
               </div>
+              <input
+                ref={replaceRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  pickAdditions(e.target.files);
+                  e.target.value = "";
+                }}
+              />
             </div>
           </div>
         ) : (
@@ -807,8 +1084,7 @@ function ProductRow({ product }: { product: StoreProduct }) {
               type="button"
               onClick={() => {
                 setEditing(false);
-                setReplaceFile(null);
-                setNewImage(null);
+                clearGalleryEdits();
                 setDraft({
                   nameVi: product.nameVi,
                   nameEn: product.nameEn,
@@ -830,7 +1106,7 @@ function ProductRow({ product }: { product: StoreProduct }) {
         ) : (
           <button
             type="button"
-            onClick={() => setEditing(true)}
+            onClick={openEditor}
             className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-xs font-semibold uppercase transition-colors"
           >
             <Pencil className="size-3.5" />

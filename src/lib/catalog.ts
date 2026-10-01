@@ -54,13 +54,22 @@ export const SHIPPING_ZONES: readonly ShippingZone[] = [
     fee: 20_000,
     labelVi: "Nha Trang và các huyện lân cận",
     labelEn: "Nha Trang and neighbouring districts",
+    // Must stay in step with the published policy line "Khu vực Thành phố Nha
+    // Trang và các huyện lân cận (Diên Lạc, Cam Lâm, Ninh Hoà)". The policy
+    // renamed two of these districts; the old spellings are kept so an address
+    // written either way still gets the 20.000đ rate it is promised, rather
+    // than silently falling through to the 30.000đ national rate.
     keywords: [
       "nha trang",
       "nhatrang",
       "cam lam",
       "camlam",
+      "dien lac",
+      "dienlac",
       "dien thap",
       "dienthap",
+      "ninh hoa",
+      "ninhhoa",
       "ninh hai",
       "ninhhai",
     ],

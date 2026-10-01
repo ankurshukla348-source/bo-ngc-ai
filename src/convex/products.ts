@@ -3,6 +3,9 @@ import { placeholderArt } from "../lib/art";
 import { normalizeProductRow } from "../lib/catalog";
 import { requireOwner } from "../lib/owner";
 import type { Id } from "./_generated/dataModel";
+
+/** Gallery entries are plain strings; storage helpers want a typed id. */
+const asStorageId = (value: string) => value as Id<"_storage">;
 import { mutation, query } from "./_generated/server";
 
 export const categoryValidator = v.union(
@@ -27,17 +30,34 @@ export const list = query({
     return await Promise.all(
       products.map(async (product) => {
         const row = normalizeProductRow(product);
+        // Resolve every gallery image. A blob deleted out from under us must
+        // degrade to "one image fewer", never reject the whole product list.
+        const resolved = await Promise.all(
+          (row.images ?? []).map(async (id) => {
+            try {
+              return { id, url: await ctx.storage.getUrl(asStorageId(id)) };
+            } catch {
+              return null;
+            }
+          }),
+        );
+        const live = resolved.filter(
+          (entry): entry is { id: string; url: string } => !!entry,
+        );
+        const gallery = live.map((entry) => entry.url);
+
         let image: string | null = null;
         if (row.imageStorageId) {
           try {
             image = await ctx.storage.getUrl(row.imageStorageId);
           } catch {
-            // The blob is gone — fall back to the inline artwork, then to null.
-            image = row.imageSrc ?? null;
+            // The blob is gone — fall back to the gallery, then the inline art.
+            image = gallery[0] ?? row.imageSrc ?? null;
           }
         } else {
-          image = row.imageSrc ?? null;
+          image = gallery[0] ?? row.imageSrc ?? null;
         }
+
         return {
           _id: row._id,
           _creationTime: row._creationTime,
@@ -50,6 +70,11 @@ export const list = query({
           description: row.description ?? null,
           stock: row.stock ?? null,
           image,
+          images: gallery,
+          // Storage ids alongside the URLs, so the seller dashboard can show
+          // each stored photo AND send the untouched ones back on save without
+          // re-uploading them (which would mint new ids every edit).
+          imageIds: live.map((entry) => entry.id),
         };
       }),
     );
@@ -68,6 +93,9 @@ export const generateUploadUrl = mutation({
   },
 });
 
+/** Most photos one product may carry. Storage cost stays bounded per product. */
+const MAX_PRODUCT_IMAGES = 6;
+
 export const add = mutation({
   args: {
     nameVi: v.string(),
@@ -79,6 +107,7 @@ export const add = mutation({
     description: v.optional(v.string()),
     stock: v.optional(v.number()),
     imageStorageId: v.optional(v.id("_storage")),
+    images: v.optional(v.array(v.string())),
     imageSrc: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -95,6 +124,13 @@ export const add = mutation({
     const sizes = Array.from(
       new Set(args.sizes.map((s) => s.trim()).filter(Boolean)),
     );
+    const images = Array.from(new Set(args.images ?? [])).slice(
+      0,
+      MAX_PRODUCT_IMAGES,
+    );
+    // The first uploaded photo is the thumbnail, so `imageStorageId` and the
+    // gallery can never disagree about what the shopfront shows.
+    const primary = args.imageStorageId ?? (images[0] as Id<"_storage"> | undefined);
 
     await ctx.db.insert("products", {
       nameVi: args.nameVi.trim(),
@@ -105,7 +141,8 @@ export const add = mutation({
       inStock: args.inStock,
       ...(description ? { description } : {}),
       ...(stock === undefined ? {} : { stock }),
-      ...(args.imageStorageId ? { imageStorageId: args.imageStorageId } : {}),
+      ...(primary ? { imageStorageId: primary } : {}),
+      ...(images.length ? { images } : {}),
       ...(args.imageSrc ? { imageSrc: args.imageSrc } : {}),
       createdAt: Date.now(),
     });
@@ -131,10 +168,11 @@ export const update = mutation({
     description: v.optional(v.string()),
     stock: v.optional(v.number()),
     imageStorageId: v.optional(v.id("_storage")),
+    images: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     await requireOwner(ctx);
-    const { id, description, stock, imageStorageId, ...fields } = args;
+    const { id, description, stock, imageStorageId, images, ...fields } = args;
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Product not found");
 
@@ -158,11 +196,34 @@ export const update = mutation({
     if (stock !== undefined && Number.isFinite(stock)) {
       patch.stock = Math.max(0, Math.round(stock));
     }
-    if (imageStorageId) {
+    // The gallery is replaced wholesale when the seller sends a new set, so
+    // "remove photo 3" is expressible. Blobs that dropped out of the set are
+    // deleted, and the thumbnail always follows the first remaining image.
+    const previous = existing.images ?? [];
+    if (images !== undefined) {
+      const next = Array.from(new Set(images)).slice(0, MAX_PRODUCT_IMAGES);
+      patch.images = next;
+      const first = next[0] as Id<"_storage"> | undefined;
+      if (first) {
+        patch.imageStorageId = first;
+        patch.imageSrc = undefined;
+      }
+      for (const old of previous) {
+        if (!next.includes(old)) {
+          await ctx.storage.delete(asStorageId(old)).catch(() => {});
+        }
+      }
+    } else if (imageStorageId) {
       patch.imageStorageId = imageStorageId;
       patch.imageSrc = undefined;
-      // The blob this replaces is no longer referenced by anything.
-      if (existing.imageStorageId) {
+    }
+
+    // A single-photo replace from an older client: drop the blob it replaces.
+    if (imageStorageId && images === undefined && existing.imageStorageId) {
+      const stillReferenced =
+        imageStorageId === existing.imageStorageId ||
+        (previous ?? []).includes(imageStorageId);
+      if (!stillReferenced) {
         await ctx.storage.delete(existing.imageStorageId).catch(() => {});
       }
     }
@@ -190,9 +251,13 @@ export const remove = mutation({
     const existing = await ctx.db.get(id);
     if (!existing) return;
     await ctx.db.delete(id);
-    if (existing.imageStorageId) {
+    // Every blob the product owned, not just the thumbnail — otherwise
+    // deleting a product silently leaves its other photos in storage forever.
+    const blobs = new Set<string>(existing.images ?? []);
+    if (existing.imageStorageId) blobs.add(existing.imageStorageId);
+    for (const blob of blobs) {
       // Best effort — a dangling blob must never block a delete.
-      await ctx.storage.delete(existing.imageStorageId).catch(() => {});
+      await ctx.storage.delete(asStorageId(blob)).catch(() => {});
     }
   },
 });
