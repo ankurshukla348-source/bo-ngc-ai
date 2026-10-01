@@ -271,12 +271,12 @@ export function ProductCard({
 
           <div className="grid gap-0 sm:grid-cols-2">
             <div className="relative aspect-[4/5] overflow-hidden bg-secondary sm:aspect-auto sm:min-h-full">
-                {product.image || product.images?.length ? (
-                  <ProductGallery
-                    images={[product.image, ...(product.images ?? [])]}
-                    alt={name}
-                  />
-                ) : (
+              {product.image || product.images?.length ? (
+                <ProductGallery
+                  images={[product.image, ...(product.images ?? [])]}
+                  alt={name}
+                />
+              ) : (
                 <div className="flex h-full min-h-64 items-center justify-center font-display text-5xl font-bold text-muted-foreground/50">
                   {monogram(name)}
                 </div>
