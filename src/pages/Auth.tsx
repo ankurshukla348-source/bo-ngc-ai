@@ -190,11 +190,27 @@ function AuthInner({
             {t("googleSignInHint")}
           </p>
 
+          {/* Sign-in is optional for buying. The shop takes guest orders and
+              the order can always be looked up with its code + phone at
+              /track, so a Google outage must never stand between a customer
+              and a purchase. */}
+          <div className="mt-8 rounded-2xl border border-border bg-card p-4">
+            <p className="text-center text-xs leading-relaxed text-muted-foreground">
+              {t("guestCheckoutAuthNote")}
+            </p>
+            <Link
+              to="/"
+              className="mt-3 block rounded-full bg-primary px-5 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
+            >
+              {t("guestCheckoutAuthCta")}
+            </Link>
+          </div>
+
           <Link
-            to="/"
-            className="mt-8 block text-center text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+            to="/track"
+            className="mt-5 block text-center text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
           >
-            Quay lại trang chủ
+            {t("trackOrderCta")}
           </Link>
         </div>
       </section>

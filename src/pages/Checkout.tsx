@@ -290,7 +290,20 @@ function describeError(err: unknown, fallback: string): string {
         ? err
         : "";
   const cleaned = raw.replace(/\s+/g, " ").trim();
-  return cleaned ? cleaned.slice(0, 200) : fallback;
+  if (!cleaned) return fallback;
+
+  // Server-side reasons that must never be shown raw: they are internal codes,
+  // not sentences a customer can act on.
+  if (cleaned === "ORDER_RATE_LIMIT") {
+    return "Bạn đã đặt khá nhiều đơn trong thời gian ngắn. Vui lòng gọi cho shop để được hỗ trợ đặt hàng, hoặc thử lại sau ít phút.";
+  }
+  if (/too many (orders|messages)/i.test(cleaned)) {
+    return "Bạn đang thao tác hơi nhanh. Vui lòng chờ một chút rồi thử lại.";
+  }
+  if (/not authorized/i.test(cleaned)) {
+    return "Phiên đăng nhập đã hết hạn. Vui lòng tải lại trang rồi đặt hàng.";
+  }
+  return cleaned.slice(0, 200);
 }
 
 /** Checkout error alert. The message is always readable wording. */

@@ -39,6 +39,7 @@ import {
   ImagePlus,
   Loader2,
   Lock,
+  MailWarning,
   MessageCircle,
   Pencil,
   Send,
@@ -954,8 +955,10 @@ function OrdersPanel() {
   const orders = useQuery(api.orders.list, {});
   const setStatus = useMutation(api.orders.setStatus);
   const redactAddress = useMutation(api.orders.redactAddress);
+  const deleteOrder = useMutation(api.orders.remove);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [redactId, setRedactId] = useState<Id<"orders"> | null>(null);
+  const [deleteId, setDeleteId] = useState<Id<"orders"> | null>(null);
   const [exporting, setExporting] = useState(false);
 
   // Accounting export: newest orders last, so a second export appends cleanly.
@@ -1010,6 +1013,22 @@ function OrdersPanel() {
     }
   };
 
+  // Removes a test / duplicate / spam order outright. Confirmed via dialog below.
+  const removeOrder = async (id: Id<"orders">) => {
+    setBusyId(id);
+    try {
+      const result = await deleteOrder({ id });
+      if (result.removed) toast.success(t("orderDeleteDone"));
+      else toast.error(t("orderDeleteFailed"));
+    } catch (error) {
+      console.error(error);
+      toast.error(t("orderDeleteFailed"));
+    } finally {
+      setBusyId(null);
+      setDeleteId(null);
+    }
+  };
+
   if (orders === undefined) {
     return (
       <div className="flex items-center justify-center gap-3 py-16 text-sm text-muted-foreground">
@@ -1027,8 +1046,28 @@ function OrdersPanel() {
     );
   }
 
+  /* Operational visibility: an order whose confirmation email never left is
+     an order the customer never heard about. Previously that failure was
+     completely silent (the mail job is best-effort by design), so the seller
+     had no way to know. Count it, name it, and point at the fix. */
+  const emailFailed = orders.filter((order) => order.emailStatus === "failed");
+  const needsDomain = emailFailed.some(
+    (order) => order.emailReason === "domain_not_verified",
+  );
+
   return (
     <>
+      {emailFailed.length > 0 && (
+        <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+          <p className="font-semibold">
+            {t("emailFailedBanner").replace("{n}", String(emailFailed.length))}
+          </p>
+          <p className="mt-1 text-xs opacity-90">
+            {needsDomain ? t("emailFailedDomain") : t("emailFailedGeneric")}
+          </p>
+        </div>
+      )}
+
       <div className="mb-4 flex justify-end">
         <button
           type="button"
@@ -1074,6 +1113,12 @@ function OrdersPanel() {
                 {order.orderCode || "—"}
               </span>
               <OrderStatusBadge status={order.status} />
+              {order.emailStatus === "failed" && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-200">
+                  <MailWarning className="size-3" />
+                  {t("emailNotSentBadge")}
+                </span>
+              )}
               <span className="text-xs tabular-nums text-muted-foreground">
                 {stamp(order.createdAt)}
               </span>
@@ -1203,6 +1248,17 @@ function OrdersPanel() {
                   );
                 })}
               </div>
+              <div className="mt-4 flex justify-end border-t border-border pt-3">
+                <button
+                  type="button"
+                  disabled={busyId === order._id}
+                  onClick={() => setDeleteId(order._id)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-destructive hover:text-destructive disabled:opacity-60"
+                >
+                  <Trash2 className="size-3.5" />
+                  {t("orderDelete")}
+                </button>
+              </div>
             </div>
           </li>
         );
@@ -1232,6 +1288,32 @@ function OrdersPanel() {
               }}
             >
               {t("orderDeleteAddress")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("orderDeleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("orderDeleteBody")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteId === null}
+              onClick={(event) => {
+                event.preventDefault();
+                if (deleteId) void removeOrder(deleteId);
+              }}
+            >
+              {t("orderDelete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

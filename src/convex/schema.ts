@@ -125,6 +125,18 @@ const schema = defineSchema(
       shippingFee: v.number(),
       total: v.number(),
       createdAt: v.number(),
+      // ── Order email outcome ────────────────────────────────
+      // The receipt/status email is best-effort: it must never cost a
+      // customer their order. But "best-effort" used to mean *silent* — the
+      // shop had no way to learn that Resend was rejecting every send because
+      // no sending domain was verified. The mail job writes the outcome here
+      // so the seller dashboard can show exactly which orders never got an
+      // email, and can still reach the customer another way.
+      //   emailStatus: "sent" | "failed"
+      //   emailReason: e.g. "domain_not_verified" | "no_email" | "send_failed"
+      emailStatus: v.optional(v.string()),
+      emailSentAt: v.optional(v.number()),
+      emailReason: v.optional(v.string()),
     }).index("by_code", ["orderCode"]),
 
     // ── Seller settings (VietQR bank account) ──────────────────

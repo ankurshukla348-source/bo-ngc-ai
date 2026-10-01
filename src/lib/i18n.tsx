@@ -305,6 +305,23 @@ const vi = {
   orderUnknownCustomer: "Khách hàng",
   ordersItemsUnavailable: "Chi tiết sản phẩm không khả dụng",
   sellerSaveFailed: "Không lưu được thay đổi. Vui lòng thử lại.",
+
+  // ── Operations: email delivery health ───────────────────────
+  emailFailedBanner: "Cảnh báo: {n} đơn hàng chưa gửi được email cho khách.",
+  emailFailedDomain:
+    "Nguyên nhân: chưa xác minh tên miền gửi trong Resend. Email xác nhận chỉ gửi được tới địa chỉ chủ tài khoản. Vui lòng liên hệ khách qua số điện thoại trên đơn, hoặc xác minh tên miền trong bảng điều khiển Resend.",
+  emailFailedGeneric:
+    "Vui lòng liên hệ khách qua số điện thoại trên đơn và gửi lại xác nhận.",
+  emailNotSentBadge: "Chưa gửi email",
+  guestCheckoutAuthNote:
+    "Bạn không cần đăng nhập để đặt hàng. Chỉ cần số điện thoại và địa chỉ nhận hàng.",
+  guestCheckoutAuthCta: "Mua hàng không cần đăng nhập",
+  orderDelete: "Xóa đơn hàng",
+  orderDeleteTitle: "Xóa vĩnh viễn đơn hàng này?",
+  orderDeleteBody:
+    "Đơn hàng và toàn bộ thông tin giao hàng của đơn hàng này sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.",
+  orderDeleteDone: "Đã xóa đơn hàng.",
+  orderDeleteFailed: "Không xóa được đơn hàng.",
   heroTagline:
     "Khám phá các dòng đồ lót mềm mại, áo bra nâng dáng và váy ngủ lụa cao cấp — mang lại cảm giác dễ chịu tuyệt đối và nữ tính dành cho bạn.",
   slideLabel: "Slide",
@@ -761,6 +778,23 @@ const en: Record<TKey, string> = {
   orderUnknownCustomer: "Customer",
   ordersItemsUnavailable: "Product details unavailable",
   sellerSaveFailed: "Could not save that change. Please try again.",
+
+  // Operations: email delivery health
+  emailFailedBanner: "Warning: {n} orders never reached the customer by email.",
+  emailFailedDomain:
+    "Cause: no sending domain is verified in Resend. Confirmation emails only reach the account owner. Please contact these customers on the phone number on the order, or verify a sending domain in Resend.",
+  emailFailedGeneric:
+    "Please contact the customer on the phone number on the order and resend confirmation.",
+  emailNotSentBadge: "Email not sent",
+  guestCheckoutAuthNote:
+    "You do not need an account to order. Just a phone number and a delivery address.",
+  guestCheckoutAuthCta: "Shop without signing in",
+  orderDelete: "Delete order",
+  orderDeleteTitle: "Permanently delete this order?",
+  orderDeleteBody:
+    "This order and all of its delivery details will be removed from the system. This cannot be undone.",
+  orderDeleteDone: "Order deleted.",
+  orderDeleteFailed: "Could not delete the order.",
   heroTagline:
     "Discover timeless pieces crafted for comfort and designed for elegance — made just for you.",
   slideLabel: "Slide",

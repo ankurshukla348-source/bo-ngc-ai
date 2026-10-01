@@ -33,6 +33,9 @@ import { makeFunctionReference } from "convex/server";
 const ORDER_MAIL_TOKEN = "b7n-order-mail-2f9c41";
 const orderMailRef = makeFunctionReference<"action">("notifications:sendOrderEmail");
 const mailPayloadRef = makeFunctionReference<"query">("orders:mailPayload");
+const recordMailRef = makeFunctionReference<"mutation">(
+  "orders:recordMailResult",
+);
 
 /** Order lines only keep real image URLs. Inline `data:` artwork (placeholder
  *  SVGs) and anything oversized are dropped so an order document can never
@@ -170,7 +173,11 @@ export const create = mutation({
       orderThrottleKey(customer.phone),
       ORDER_LIMIT,
     );
-    if (!allowed) throw new Error("Too many orders from this phone number");
+    if (!allowed) {
+      // Distinct message so the checkout can show the customer something
+      // actionable instead of a raw server string.
+      throw new Error("ORDER_RATE_LIMIT");
+    }
 
     const email = args.email?.trim().toLowerCase().slice(0, 200);
     const guestEmail =
@@ -241,7 +248,9 @@ export const linkToAccount = mutation({
 /** Every order, newest first — the seller dashboard.
  *
  *  Rows are normalised (see `normalizeOrder`) so a malformed legacy order can
- *  never take the whole seller order table down with a render-time TypeError. */
+ *  never take the whole seller order table down with a render-time TypeError.
+ *  `emailStatus` is deliberately left untouched by the normaliser: it is
+ *  operational metadata the seller needs to see. */
 export const list = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
@@ -420,6 +429,30 @@ export const setStatus = mutation({
 });
 
 /**
+ * Delete an order outright.
+ *
+ * Owner-only. Needed in practice for three ordinary situations: a test order,
+ * a duplicate double-submit, and a spam order that slipped past the throttle.
+ * Address redaction (`redactAddress`) erases the *personal data* of a finished
+ * order and keeps it for accounting; this is the harder delete, so it asks for
+ * confirmation in the UI.
+ */
+export const remove = mutation({
+  args: { id: v.id("orders") },
+  handler: async (ctx, args) => {
+    await requireOwner(ctx);
+    const order = await ctx.db.get(args.id);
+    if (!order) return { removed: false as const, reason: "not_found" as const };
+    try {
+      await ctx.db.delete(args.id);
+      return { removed: true as const, reason: "deleted" as const };
+    } catch {
+      return { removed: false as const, reason: "failed" as const };
+    }
+  },
+});
+
+/**
  * Permanently erase the customer's delivery details from a finished order.
  *
  * Only the store owner may run it, and only once the order is delivered or
@@ -515,5 +548,37 @@ export const exportCsv = query({
       .join("\r\n");
 
     return { filename: `bao-ngoc-orders-${Date.now()}.csv`, csv: `\uFEFF${csv}` };
+  },
+});
+
+/**
+ * Record whether the order email actually went out.
+ *
+ * Called by the scheduled mail action (which has no `db` of its own) and
+ * guarded by the same server-only token as `mailPayload`. This is what turns a
+ * silent mail failure into something the seller can see and act on: an order
+ * whose `emailStatus` is "failed" never reached the customer's inbox.
+ */
+export const recordMailResult = mutation({
+  args: {
+    token: v.string(),
+    id: v.id("orders"),
+    ok: v.boolean(),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (args.token !== ORDER_MAIL_TOKEN) throw new Error("Not authorized");
+    const order = await ctx.db.get(args.id);
+    if (!order) return { recorded: false };
+    try {
+      await ctx.db.patch(args.id, {
+        emailStatus: args.ok ? "sent" : "failed",
+        ...(args.ok ? { emailSentAt: Date.now() } : {}),
+        ...(args.ok ? {} : { emailReason: (args.reason ?? "send_failed").slice(0, 80) }),
+      });
+      return { recorded: true };
+    } catch {
+      return { recorded: false };
+    }
   },
 });

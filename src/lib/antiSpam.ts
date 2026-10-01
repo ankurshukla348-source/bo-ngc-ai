@@ -28,8 +28,17 @@ export function normalizePhone(value: string): string {
 
 export type Limit = { max: number; windowMs: number };
 
-/** Max orders one phone number may place per hour. */
-export const ORDER_LIMIT: Limit = { max: 5, windowMs: 60 * 60 * 1000 };
+/** Max orders one phone number may place per hour.
+ *
+ *  Tuned for a real shop, not a test rig. The previous limit of 5/hours
+ *  rejected genuine customers during any promotion: a family ordering several
+ *  sizes, or two people sharing a phone (common in Vietnam), hit the ceiling
+ *  and saw a bare "Too many orders from this phone number" with no way to
+ *  tell it apart from spam blocking. A scraper cannot do meaningful damage at
+ *  15 orders/hour from one number — each one still writes a row and sends the
+ *  customer an email — so the extra headroom is cheap insurance against lost
+ *  sales. Raise it further if a live sale ever trips it. */
+export const ORDER_LIMIT: Limit = { max: 15, windowMs: 60 * 60 * 1000 };
 
 /** Max lines one order may contain. */
 export const MAX_ORDER_ITEMS = 20;
