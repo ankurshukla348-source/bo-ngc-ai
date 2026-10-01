@@ -46,6 +46,18 @@ const schema = defineSchema(
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
     // ── Storefront catalog ─────────────────────────────────────
+    // Alignment contract with `products.add` / `products.update`:
+    //   * every non-optional field below (nameVi, nameEn, category, price,
+    //     sizes, inStock) is written explicitly by both mutations, and
+    //     `sizes` is de-duplicated and trimmed before it is stored;
+    //   * the seller dashboard edits only a subset, and `update` patches just
+    //     those fields, so a row keeps `inStock` and its existing sizes;
+    //   * `products.list` runs every row through `normalizeProductRow`
+    //     (src/lib/catalog.ts) before returning it, because schema validation
+    //     is disabled below and rows written by older builds are not
+    //     guaranteed to match this declaration. The storefront calls
+    //     `product.sizes.map(...)`, so that normalisation is what keeps one
+    //     legacy row from blanking the whole shop.
     products: defineTable({
       nameVi: v.string(),
       nameEn: v.string(),
@@ -159,6 +171,14 @@ const schema = defineSchema(
     }),
   },
   {
+    // Deliberately OFF. Turning it on would reject any write against a row
+    // created before a field was added, and rows in this deployment were
+    // written by several generations of the app (including before the
+    // `orders.items`/`addressRedactedAt` fields existed). Reads are hardened at
+    // the query boundary instead — `normalizeOrder` and `normalizeProductRow`
+    // guarantee the shape the UI renders, and every seller-only function calls
+    // `requireOwner` — so the guarantee does not depend on write-time
+    // validation.
     schemaValidation: false,
   },
 );

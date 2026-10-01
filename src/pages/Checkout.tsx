@@ -6,10 +6,8 @@ import { useCart, type CartItem } from "@/lib/cart";
 import { shippingFeeFor, shippingZoneFor } from "@/lib/catalog";
 import { formatVnd } from "@/lib/format";
 import { useI18n, type Lang } from "@/lib/i18n";
-import { buildVietqrPayload } from "@/lib/vietqr";
 import { cn } from "@/lib/utils";
 import { useConvex, useMutation, useQuery } from "convex/react";
-import { QRCodeSVG } from "qrcode.react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -27,7 +25,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { Component, useMemo, useState, type ReactNode } from "react";
+import { Component, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 
 type Shipping = {
@@ -370,20 +368,7 @@ function OrderFallback({ code, total }: { code: string; total: number }) {
 
 function Confirmation({ order }: { order: ConfirmedOrder }) {
   const { t, lang } = useI18n();
-  const payment = useQuery(api.settings.getPayment);
   const [copied, setCopied] = useState(false);
-
-  const payload = useMemo(
-    () =>
-      payment
-        ? buildVietqrPayload({
-            ...payment,
-            amount: order.total,
-            reference: order.orderCode,
-          })
-        : "",
-    [payment, order],
-  );
 
   const copyCode = async () => {
     try {
@@ -448,55 +433,23 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
         </h2>
         <div className="p-5">
           {order.paymentMethod === "vietqr" ? (
-            <div className="flex flex-col gap-5 sm:flex-row">
-              <div className="shrink-0 self-start rounded-2xl border border-border bg-white p-2 shadow-soft">
-                {payload ? (
-                  <SafeBoundary
-                    fallback={
-                      <div className="flex h-[168px] w-[168px] items-center justify-center px-3 text-center text-[11px] leading-snug text-muted-foreground">
-                        {t("qrUnavailable")}
-                      </div>
-                    }
-                  >
-                    <QRCodeSVG value={payload} size={168} />
-                  </SafeBoundary>
-                ) : (
-                  <div className="flex h-[168px] w-[168px] items-center justify-center text-xs text-muted-foreground">
-                    …
-                  </div>
-                )}
+            /* Orders placed before the switch to COD-only. The bank details are
+               owner-only on the server now, so this branch shows the amount due
+               and a clear note instead of subscribing to a query that can
+               never resolve for a customer (the source of a permanent
+               subscription error in the console). */
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between border border-border bg-secondary px-3 py-2.5">
+                <span className="text-xs font-semibold uppercase tracking-widest">
+                  {t("amountDue")}
+                </span>
+                <span className="font-display text-xl font-bold tabular-nums">
+                  {formatVnd(order.total)}
+                </span>
               </div>
-              <div className="flex-1 space-y-2 text-sm">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  {t("bankDetails")}
-                </p>
-                <p className="font-display text-lg font-bold">
-                  {payment?.bankName ?? "…"}
-                </p>
-                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-                  <span className="text-muted-foreground">
-                    {t("accountNoL")}
-                  </span>
-                  <span className="text-right font-semibold tabular-nums">
-                    {payment?.accountNo ?? "…"}
-                  </span>
-                  <span className="text-muted-foreground">{t("holderL")}</span>
-                  <span className="text-right font-semibold">
-                    {payment?.accountHolder ?? "…"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between border border-border bg-secondary px-3 py-2.5">
-                  <span className="text-xs font-semibold uppercase tracking-widest">
-                    {t("amountDue")}
-                  </span>
-                  <span className="font-display text-xl font-bold tabular-nums">
-                    {formatVnd(order.total)}
-                  </span>
-                </div>
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  {t("transferNote")}
-                </p>
-              </div>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {t("codInstructions")}
+              </p>
             </div>
           ) : (
             <p className="text-sm leading-relaxed text-muted-foreground">
@@ -628,7 +581,6 @@ export default function Checkout() {
   const [marketingOptIn, setMarketingOptIn] = useState(true);
   const [confirmed, setConfirmed] = useState<ConfirmedOrder | null>(null);
 
-  const paymentSettings = useQuery(api.settings.getPayment);
   const saveMarketingOptIn = useMutation(api.users.setMarketingOptIn);
   const linkToAccount = useMutation(api.orders.linkToAccount);
 
@@ -645,14 +597,6 @@ export default function Checkout() {
   const fee = shippingFeeFor(gridSubtotal, shipping);
   const zone = shippingZoneFor(shipping);
   const total = gridSubtotal + fee;
-
-  const qrPayload = useMemo(
-    () =>
-      paymentSettings
-        ? buildVietqrPayload({ ...paymentSettings, amount: total })
-        : "",
-    [paymentSettings, total],
-  );
 
   const setField = (field: keyof Shipping, value: string) =>
     setShipping((prev) => ({ ...prev, [field]: value }));

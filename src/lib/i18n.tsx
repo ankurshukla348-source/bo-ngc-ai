@@ -295,6 +295,16 @@ const vi = {
   trustPaySub: "Giao hàng an toàn, che tên sản phẩm 100%",
   trustSupport: "Hỗ trợ nhanh chóng",
   trustSupportSub: "Nhắn tin trực tiếp qua Live Chat",
+
+  // ── Crash fallback / defensive rendering ────────────────────────
+  errorBoundaryTitle: "Đã xảy ra lỗi nhỏ",
+  errorBoundaryBody:
+    "Vui lòng thử lại. Đơn hàng và sản phẩm bạn đã lưu vẫn còn nguyên.",
+  errorBoundaryRetry: "Thử lại",
+  errorBoundaryHome: "Về trang chủ",
+  orderUnknownCustomer: "Khách hàng",
+  ordersItemsUnavailable: "Chi tiết sản phẩm không khả dụng",
+  sellerSaveFailed: "Không lưu được thay đổi. Vui lòng thử lại.",
   heroTagline:
     "Khám phá các dòng đồ lót mềm mại, áo bra nâng dáng và váy ngủ lụa cao cấp — mang lại cảm giác dễ chịu tuyệt đối và nữ tính dành cho bạn.",
   slideLabel: "Slide",
@@ -741,6 +751,16 @@ const en: Record<TKey, string> = {
   trustPaySub: "Delivered safely, product names hidden 100%",
   trustSupport: "Quick replies",
   trustSupportSub: "Message us on live chat",
+
+  // Crash fallback / defensive rendering
+  errorBoundaryTitle: "Something went wrong",
+  errorBoundaryBody:
+    "Please try again — your saved orders and products are untouched.",
+  errorBoundaryRetry: "Try again",
+  errorBoundaryHome: "Back to home",
+  orderUnknownCustomer: "Customer",
+  ordersItemsUnavailable: "Product details unavailable",
+  sellerSaveFailed: "Could not save that change. Please try again.",
   heroTagline:
     "Discover timeless pieces crafted for comfort and designed for elegance — made just for you.",
   slideLabel: "Slide",

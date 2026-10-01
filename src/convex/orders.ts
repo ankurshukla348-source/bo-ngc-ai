@@ -11,6 +11,7 @@ import { shippingFeeFor } from "../lib/catalog";
 import {
   isOrderStatus,
   isRedactableStatus,
+  normalizeOrder,
   normalizeStatus,
   ORDER_STATUSES,
   redactCustomer,
@@ -237,15 +238,19 @@ export const linkToAccount = mutation({
   },
 });
 
-/** Every order, newest first — the seller dashboard. */
+/** Every order, newest first — the seller dashboard.
+ *
+ *  Rows are normalised (see `normalizeOrder`) so a malformed legacy order can
+ *  never take the whole seller order table down with a render-time TypeError. */
 export const list = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     await requireOwner(ctx);
-    return await ctx.db
+    const orders = await ctx.db
       .query("orders")
       .order("desc")
       .take(Math.min(args.limit ?? 100, 300));
+    return orders.map(normalizeOrder);
   },
 });
 
@@ -262,28 +267,29 @@ export const mailPayload = query({
     if (args.token !== ORDER_MAIL_TOKEN) throw new Error("Not authorized");
     const order = await ctx.db.get(args.id);
     if (!order) return null;
+    const row = normalizeOrder(order);
     return {
-      orderCode: order.orderCode,
-      status: order.status,
-      createdAt: order.createdAt,
+      orderCode: row.orderCode,
+      status: row.status,
+      createdAt: row.createdAt,
       lang: order.lang ?? "vi",
-      recipient: order.customerEmail ?? order.guestEmail ?? null,
+      recipient: row.customerEmail ?? row.guestEmail ?? null,
       customer: {
-        name: order.customer.name,
-        ward: order.customer.ward,
-        district: order.customer.district,
-        province: order.customer.province,
+        name: row.customer.name,
+        ward: row.customer.ward,
+        district: row.customer.district,
+        province: row.customer.province,
       },
-      items: order.items.map((item) => ({
+      items: row.items.map((item) => ({
         nameVi: item.nameVi,
         nameEn: item.nameEn,
         size: item.size,
         qty: item.qty,
         price: item.price,
       })),
-      subtotal: order.subtotal,
-      shippingFee: order.shippingFee,
-      total: order.total,
+      subtotal: row.subtotal,
+      shippingFee: row.shippingFee,
+      total: row.total,
     };
   },
 });
@@ -310,32 +316,33 @@ export const track = query({
       .withIndex("by_code", (q) => q.eq("orderCode", code))
       .unique();
     if (!order) return null;
-    if (normalizePhone(order.customer.phone) !== phone) return null;
+    const row = normalizeOrder(order);
+    if (normalizePhone(row.customer.phone) !== phone) return null;
 
-    const street = order.customer.street;
+    const street = row.customer.street;
     return {
-      orderCode: order.orderCode,
-      status: order.status,
-      createdAt: order.createdAt,
-      customerName: order.customer.name,
+      orderCode: row.orderCode,
+      status: row.status,
+      createdAt: row.createdAt,
+      customerName: row.customer.name,
       // Enough to recognise the address, not enough to deliver to it.
-      deliveryArea: [order.customer.ward, order.customer.district, order.customer.province]
+      deliveryArea: [row.customer.ward, row.customer.district, row.customer.province]
         .filter(Boolean)
         .join(", "),
       streetPreview: maskStreet(street),
       addressRedacted: order.addressRedactedAt !== undefined,
-      note: order.customer.note ?? null,
-      items: order.items.map((item) => ({
+      note: row.customer.note ?? null,
+      items: row.items.map((item) => ({
         nameVi: item.nameVi,
         nameEn: item.nameEn,
         size: item.size,
         qty: item.qty,
         price: item.price,
       })),
-      subtotal: order.subtotal,
-      shippingFee: order.shippingFee,
-      total: order.total,
-      paymentMethod: order.paymentMethod,
+      subtotal: row.subtotal,
+      shippingFee: row.shippingFee,
+      total: row.total,
+      paymentMethod: row.paymentMethod,
     };
   },
 });
@@ -360,11 +367,14 @@ export const mine = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) return [];
-    return await ctx.db
+    const orders = await ctx.db
       .query("orders")
       .filter((q) => q.eq(q.field("userId"), userId))
       .order("desc")
       .take(50);
+    // Same guarantee as the seller list: the customer's /account view can only
+    // ever receive rows it can render without optional-chaining everything.
+    return orders.map(normalizeOrder);
   },
 });
 
@@ -455,7 +465,9 @@ export const exportCsv = query({
   args: {},
   handler: async (ctx) => {
     await requireOwner(ctx);
-    const orders = await ctx.db.query("orders").order("asc").collect();
+    const orders = (await ctx.db.query("orders").order("asc").collect()).map(
+      normalizeOrder,
+    );
 
     const escapeCell = (value: string | number) => {
       const text = String(value);
@@ -503,16 +515,5 @@ export const exportCsv = query({
       .join("\r\n");
 
     return { filename: `bao-ngoc-orders-${Date.now()}.csv`, csv: `\uFEFF${csv}` };
-  },
-});
-
-/** Newest orders first — available for a future order-history view. */
-export const listRecent = query({
-  args: { limit: v.optional(v.number()) },
-  handler: async (ctx, { limit }) => {
-    return await ctx.db
-      .query("orders")
-      .order("desc")
-      .take(Math.min(limit ?? 20, 50));
   },
 });

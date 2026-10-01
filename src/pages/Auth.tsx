@@ -30,13 +30,32 @@ function GoogleMark({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Where the browser may go after sign-in.
+ *
+ * Only a same-origin path is honoured: an absolute URL would leave the app,
+ * and `/auth` itself would navigate straight back into this component and spin
+ * forever ("signed in but never lands anywhere"). Both fall back to Home.
+ */
+function sanitizeReturnTo(
+  raw: string | null,
+  fallback: string,
+): string {
+  const candidate = (raw ?? "").trim();
+  if (!candidate.startsWith("/") || candidate.startsWith("//")) return fallback;
+  // /auth, /auth/anything and ?code= handshakes all land back here.
+  if (/^\/auth(\/|$|\?|#)/i.test(candidate)) return fallback;
+  return candidate;
+}
+
 function AuthInner({
   redirectAfterAuth = "/",
 }: {
   redirectAfterAuth?: string;
 }) {
   const { t } = useI18n();
-  const { isLoading, isAuthenticated, user, signIn } = useAuth();
+  const { isLoading, isProfileLoading, isAuthenticated, user, signIn } =
+    useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [busy, setBusy] = useState(false);
@@ -44,25 +63,29 @@ function AuthInner({
 
   // Where a customer lands after signing in. `returnTo` wins so RequireAuth
   // can send them back to the page they asked for; otherwise we go Home.
-  const returnTo = searchParams.get("returnTo") || redirectAfterAuth;
+  const returnTo = sanitizeReturnTo(
+    searchParams.get("returnTo"),
+    redirectAfterAuth,
+  );
 
   // The OAuth round-trip appends ?code=... and ConvexAuthProvider exchanges it
-  // for a session. `isLoading` stays true until the profile query resolves, so
-  // the button holds a calm spinner instead of flashing a signed-out UI.
+  // for a session. `isLoading` stays true until that exchange settles, and
+  // `isProfileLoading` covers the extra tick it takes for the profile document
+  // to become readable — the button holds a calm spinner the whole time
+  // instead of flashing a signed-out UI.
   //
-  // Once the session resolves, route the store owner straight to /seller and
+  // Once BOTH have settled, route the store owner straight to /seller and
   // everyone else onward to wherever they were headed. Both paths are resolved
   // against the CURRENT origin — they must never be pinned to the Convex HTTP
   // host, which serves no frontend.
+  const settled = isAuthenticated && !isLoading && !isProfileLoading;
   useEffect(() => {
-    if (isLoading || !isAuthenticated || !user) return;
-    const email = (user.email ?? "").toLowerCase();
-    if (email === ADMIN_EMAIL.toLowerCase()) {
-      navigate("/seller", { replace: true });
-    } else {
-      navigate(returnTo, { replace: true });
-    }
-  }, [isLoading, isAuthenticated, user, navigate, returnTo]);
+    if (!settled) return;
+    const email = (user?.email ?? "").toLowerCase();
+    navigate(email === ADMIN_EMAIL.toLowerCase() ? "/seller" : returnTo, {
+      replace: true,
+    });
+  }, [settled, user, navigate, returnTo]);
 
   const handleGoogle = async () => {
     setBusy(true);
@@ -141,15 +164,17 @@ function AuthInner({
           <button
             type="button"
             onClick={handleGoogle}
-            disabled={busy || isLoading}
+            disabled={busy || isLoading || isProfileLoading}
             className="mt-8 flex h-12 w-full items-center justify-center gap-3 rounded-full bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {busy || isLoading ? (
+            {busy || isLoading || isProfileLoading ? (
               <Loader2 className="size-5 animate-spin" />
             ) : (
               <GoogleMark />
             )}
-            {isLoading ? "Đang hoàn tất đăng nhập…" : "Đăng nhập với Google"}
+            {isLoading || isProfileLoading
+              ? "Đang hoàn tất đăng nhập…"
+              : "Đăng nhập với Google"}
           </button>
 
           {error && !isLoading && (

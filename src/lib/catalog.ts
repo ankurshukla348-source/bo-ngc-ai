@@ -120,3 +120,58 @@ export function shippingFeeFor(
   if (subtotal >= FREE_SHIPPING_THRESHOLD) return 0;
   return shippingZoneFor(address).fee;
 }
+
+/* ── Defensive row normalisation ─────────────────────────────────
+   `products` is read with `schemaValidation: false`, and rows written by an
+   older build of the seller dashboard can be missing fields the declared type
+   promises (`sizes`, `nameEn`, `description`, …). The storefront does
+   `product.sizes.map(...)` in several places, so one malformed row was enough
+   to blank the whole shop. `normalizeProductRow` guarantees the shape at the
+   query boundary instead of guarding every render site. */
+
+export const FALLBACK_PRODUCT_NAME = "Sản phẩm";
+
+/** Is this one of the categories the storefront knows how to label? */
+export function isCategory(value: unknown): value is Category {
+  return (CATEGORIES as readonly unknown[]).includes(value);
+}
+
+export function normalizeCategory(value: unknown): Category {
+  return isCategory(value) ? value : "tops";
+}
+
+/**
+ * Repair a product row in place and return it (identity preserved, so React
+ * keys and the Convex `_id` type are untouched).
+ */
+export function normalizeProductRow<T extends { _id: string }>(doc: T): T {
+  const row = doc as unknown as Record<string, unknown>;
+
+  const nameVi = typeof row.nameVi === "string" ? row.nameVi.trim() : "";
+  const nameEn = typeof row.nameEn === "string" ? row.nameEn.trim() : "";
+  row.nameVi = nameVi || nameEn || FALLBACK_PRODUCT_NAME;
+  row.nameEn = nameEn || row.nameVi;
+
+  row.category = normalizeCategory(row.category);
+  row.price =
+    typeof row.price === "number" && Number.isFinite(row.price)
+      ? Math.max(0, row.price)
+      : 0;
+
+  row.sizes = Array.isArray(row.sizes)
+    ? row.sizes.filter((size): size is string => typeof size === "string" && !!size.trim())
+    : [];
+
+  row.inStock = typeof row.inStock === "boolean" ? row.inStock : true;
+
+  if (typeof row.description !== "string" || !row.description.trim()) {
+    delete row.description;
+  }
+  if (typeof row.stock !== "number" || !Number.isFinite(row.stock)) {
+    delete row.stock;
+  }
+  if (typeof row.createdAt !== "number" || !Number.isFinite(row.createdAt)) {
+    row.createdAt = 0;
+  }
+  return doc;
+}

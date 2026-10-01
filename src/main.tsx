@@ -1,5 +1,9 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
+import {
+  AppErrorBoundary,
+  installGlobalErrorHandlers,
+} from "@/components/AppErrorBoundary";
 import { RequireAuth } from "@/components/RequireAuth";
 import { PolicyGate } from "@/components/store/PolicyGate";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
@@ -91,6 +95,10 @@ class RootErrorBoundary extends React.Component<
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
+// Report unhandled rejections / stray window errors once, in one place, before
+// React mounts — otherwise a single failed mutation logs a wall of duplicates.
+installGlobalErrorHandlers();
+
 
 
 function RouteSyncer() {
@@ -133,6 +141,10 @@ createRoot(document.getElementById("root")!).render(
         replaceURL={(url) => window.history.replaceState(null, "", url)}
       >
         <I18nProvider>
+          {/* Localized last line of defence for anything that throws below
+              the providers: renders "Đã xảy ra lỗi nhỏ, vui lòng thử lại"
+              instead of a blank white screen. */}
+          <AppErrorBoundary>
           <CartProvider>
             <BrowserRouter>
               <RouteSyncer />
@@ -175,6 +187,7 @@ createRoot(document.getElementById("root")!).render(
               </Suspense>
             </BrowserRouter>
           </CartProvider>
+          </AppErrorBoundary>
         </I18nProvider>
         <Toaster />
       </ConvexAuthProvider>

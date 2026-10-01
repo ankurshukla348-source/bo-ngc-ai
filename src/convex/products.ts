@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { placeholderArt } from "../lib/art";
+import { normalizeProductRow } from "../lib/catalog";
 import { requireOwner } from "../lib/owner";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
@@ -12,35 +13,57 @@ export const categoryValidator = v.union(
   v.literal("bestsellers"),
 );
 
-/** All products, newest first, each with a resolved image URL. */
+/** All products, newest first, each with a resolved image URL.
+ *
+ *  Rows are normalised before they leave the query: the storefront calls
+ *  `product.sizes.map(...)` in several components, so a legacy row missing
+ *  `sizes` (schemaValidation is off) would blank the whole shop. Storage URLs
+ *  are resolved defensively too — a blob deleted out from under us must
+ *  degrade to the placeholder, not reject the entire product list. */
 export const list = query({
   args: {},
   handler: async (ctx) => {
     const products = await ctx.db.query("products").order("desc").collect();
     return await Promise.all(
-      products.map(async (product) => ({
-        _id: product._id,
-        _creationTime: product._creationTime,
-        nameVi: product.nameVi,
-        nameEn: product.nameEn,
-        category: product.category,
-        price: product.price,
-        sizes: product.sizes,
-        inStock: product.inStock,
-        description: product.description ?? null,
-        stock: product.stock ?? null,
-        image: product.imageStorageId
-          ? await ctx.storage.getUrl(product.imageStorageId)
-          : (product.imageSrc ?? null),
-      })),
+      products.map(async (product) => {
+        const row = normalizeProductRow(product);
+        let image: string | null = null;
+        if (row.imageStorageId) {
+          try {
+            image = await ctx.storage.getUrl(row.imageStorageId);
+          } catch {
+            // The blob is gone — fall back to the inline artwork, then to null.
+            image = row.imageSrc ?? null;
+          }
+        } else {
+          image = row.imageSrc ?? null;
+        }
+        return {
+          _id: row._id,
+          _creationTime: row._creationTime,
+          nameVi: row.nameVi,
+          nameEn: row.nameEn,
+          category: row.category,
+          price: row.price,
+          sizes: row.sizes,
+          inStock: row.inStock,
+          description: row.description ?? null,
+          stock: row.stock ?? null,
+          image,
+        };
+      }),
     );
   },
 });
 
-/** Short-lived upload URL for the admin dropzone (camera capture / file drop). */
+/** Short-lived upload URL for the admin dropzone (camera capture / file drop).
+ *
+ *  Owner-only: an open upload endpoint lets anyone fill the deployment's
+ *  storage (and its bill) with arbitrary blobs. */
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireOwner(ctx);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -67,14 +90,23 @@ export const add = mutation({
     const stock = Number.isFinite(args.stock as number)
       ? Math.max(0, Math.round(args.stock as number))
       : undefined;
+    // Every non-optional field is written explicitly — an uploaded row that is
+    // missing `sizes`/`inStock` is exactly what the storefront used to crash on.
+    const sizes = Array.from(
+      new Set(args.sizes.map((s) => s.trim()).filter(Boolean)),
+    );
 
     await ctx.db.insert("products", {
-      ...args,
       nameVi: args.nameVi.trim(),
       nameEn: args.nameEn.trim() || args.nameVi.trim(),
+      category: args.category,
       price: Math.max(0, Math.round(args.price)),
+      sizes,
+      inStock: args.inStock,
       ...(description ? { description } : {}),
       ...(stock === undefined ? {} : { stock }),
+      ...(args.imageStorageId ? { imageStorageId: args.imageStorageId } : {}),
+      ...(args.imageSrc ? { imageSrc: args.imageSrc } : {}),
       createdAt: Date.now(),
     });
   },
@@ -111,7 +143,15 @@ export const update = mutation({
       nameVi: fields.nameVi.trim(),
       nameEn: fields.nameEn.trim() || fields.nameVi.trim(),
       price: Math.max(0, Math.round(fields.price)),
+      // Normalise the editable arrays the same way `add` does, and never write
+      // an empty `sizes` (the storefront reads `sizes[0]`).
+      sizes: Array.from(
+        new Set((fields.sizes ?? []).map((s) => s.trim()).filter(Boolean)),
+      ),
     };
+    if ((patch.sizes as string[]).length === 0) {
+      patch.sizes = existing.sizes ?? [];
+    }
     if (description !== undefined) {
       patch.description = description.trim().slice(0, 2000) || undefined;
     }
@@ -135,7 +175,11 @@ export const setStock = mutation({
   args: { id: v.id("products"), inStock: v.boolean() },
   handler: async (ctx, { id, inStock }) => {
     await requireOwner(ctx);
+    const existing = await ctx.db.get(id);
+    // A row deleted from another tab must not throw into the seller UI.
+    if (!existing) return { updated: false };
     await ctx.db.patch(id, { inStock });
+    return { updated: true };
   },
 });
 

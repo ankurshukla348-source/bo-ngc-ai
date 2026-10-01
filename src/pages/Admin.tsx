@@ -556,6 +556,10 @@ function ProductRow({ product }: { product: StoreProduct }) {
     try {
       await convex.mutation(api.products.remove, { id: product._id });
       toast.success(t("productDeleted"));
+    } catch (error) {
+      // Deleted from another tab, or the session expired mid-click.
+      console.error(error);
+      toast.error(t("uploadFailed"));
     } finally {
       setBusy(false);
     }
@@ -773,10 +777,17 @@ function ProductRow({ product }: { product: StoreProduct }) {
           <StockToggle
             checked={product.inStock}
             onToggle={(next) =>
-              void convex.mutation(api.products.setStock, {
-                id: product._id,
-                inStock: next,
-              })
+              // `.catch` on purpose: a bare `void mutation(...)` turns any
+              // rejection into an unhandled promise rejection in the console.
+              void convex
+                .mutation(api.products.setStock, {
+                  id: product._id,
+                  inStock: next,
+                })
+                .catch((error) => {
+                  console.error(error);
+                  toast.error(t("uploadFailed"));
+                })
             }
           />
         </div>
@@ -873,6 +884,11 @@ function BankSettings() {
       });
       setDraft(null);
       toast.success(t("settingsSaved"));
+    } catch (error) {
+      // The mutation is owner-only: an expired session must say so, not throw
+      // an unhandled rejection into the console.
+      console.error(error);
+      toast.error(t("sellerSaveFailed"));
     } finally {
       setSaving(false);
     }
@@ -1026,11 +1042,18 @@ function OrdersPanel() {
       </div>
       <ul className="flex flex-col gap-4">
       {orders.map((order) => {
+        /* Every field below is read through a local guard. `orders.list`
+           normalises rows server-side, but this panel must survive a bad row
+           on its own: one order with a missing `items` array or `customer`
+           block used to throw `Cannot read properties of undefined` and take
+           the entire seller table (and the tab) down with it. */
+        const customer = order.customer ?? {};
+        const items = Array.isArray(order.items) ? order.items : [];
         const address = [
-          order.customer.street,
-          order.customer.ward,
-          order.customer.district,
-          order.customer.province,
+          customer.street,
+          customer.ward,
+          customer.district,
+          customer.province,
         ]
           .filter(Boolean)
           .join(", ");
@@ -1048,7 +1071,7 @@ function OrdersPanel() {
           >
             <div className="flex flex-wrap items-center gap-3">
               <span className="font-display text-lg font-bold tabular-nums">
-                {order.orderCode}
+                {order.orderCode || "—"}
               </span>
               <OrderStatusBadge status={order.status} />
               <span className="text-xs tabular-nums text-muted-foreground">
@@ -1065,7 +1088,7 @@ function OrdersPanel() {
                   {t("orderCustomer")}
                 </p>
                 <p className="mt-1.5 text-sm font-semibold">
-                  {order.customer.name}
+                  {customer.name || t("orderUnknownCustomer")}
                 </p>
                 {order.customerEmail && (
                   <p className="text-sm text-muted-foreground break-all">
@@ -1079,14 +1102,14 @@ function OrdersPanel() {
                 ) : (
                   <>
                     <p className="text-sm text-muted-foreground tabular-nums">
-                      {order.customer.phone}
+                      {customer.phone || "—"}
                     </p>
                     <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                      {address}
+                      {address || "—"}
                     </p>
-                    {order.customer.note && (
+                    {customer.note && (
                       <p className="mt-1.5 text-xs italic text-muted-foreground">
-                        “{order.customer.note}”
+                        “{customer.note}”
                       </p>
                     )}
                     {canRedact && (
@@ -1109,20 +1132,24 @@ function OrdersPanel() {
                   {t("orderItems")}
                 </p>
                 <ul className="mt-1.5 space-y-1 text-sm">
-                  {order.items.map((item, index) => (
-                    <li key={`${item.productId}-${index}`} className="flex gap-2">
+                  {items.map((item, index) => (
+                    <li key={`${item.productId ?? "item"}-${index}`} className="flex gap-2">
                       <span className="tabular-nums text-muted-foreground">
-                        ×{item.qty}
+                        ×{item.qty ?? 1}
                       </span>
                       <span className="min-w-0 flex-1">
-                        {lang === "vi" ? item.nameVi : item.nameEn}
-                        <span className="text-muted-foreground">
-                          {" "}
-                          · {item.size}
-                        </span>
+                        {lang === "vi"
+                          ? (item.nameVi ?? item.nameEn)
+                          : (item.nameEn ?? item.nameVi)}
+                        {item.size && (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            · {item.size}
+                          </span>
+                        )}
                       </span>
                       <span className="tabular-nums text-muted-foreground">
-                        {formatVnd(item.price * item.qty)}
+                        {formatVnd((item.price ?? 0) * (item.qty ?? 1))}
                       </span>
                     </li>
                   ))}
@@ -1131,9 +1158,11 @@ function OrdersPanel() {
                   {t("orderPayment")}:{" "}
                   {lang === "vi"
                     ? (PAYMENT_LABELS_VI[order.paymentMethod] ??
-                      order.paymentMethod)
+                      order.paymentMethod ??
+                      "—")
                     : (PAYMENT_LABELS_EN[order.paymentMethod] ??
-                      order.paymentMethod)}
+                      order.paymentMethod ??
+                      "—")}
                 </p>
               </div>
             </div>
@@ -1215,7 +1244,8 @@ function OrdersPanel() {
    Live chat inbox — every storefront conversation, newest first
    ──────────────────────────────────────────────────────────────── */
 
-function stamp(ts: number) {
+function stamp(ts: number | undefined) {
+  if (typeof ts !== "number" || !Number.isFinite(ts) || ts <= 0) return "—";
   try {
     return new Date(ts).toLocaleString("vi-VN", {
       day: "2-digit",
@@ -1753,7 +1783,8 @@ function SellerPinGate({ onUnlock }: { onUnlock: () => void }) {
    ──────────────────────────────────────────────────────────────── */
 
 export default function Admin() {
-  const { isLoading, isAuthenticated, user, signOut } = useAuth();
+  const { isLoading, isProfileLoading, isAuthenticated, user, signOut } =
+    useAuth();
   const navigate = useNavigate();
   const [pinOk, setPinOk] = useState(() => hasSellerPin());
 
@@ -1764,9 +1795,16 @@ export default function Admin() {
     !!user?.email &&
     user.email.trim().toLowerCase() === ADMIN_EMAIL;
 
+  // The identity check must not run on a half-read profile: right after the
+  // OAuth callback the session is valid a tick before the profile document is
+  // readable, and deciding "not the owner" in that window bounced the seller
+  // back to the storefront right after signing in. Wait for the profile (with
+  // the hook's grace window) before deciding anything.
+  const deciding = isLoading || isProfileLoading;
+
   useEffect(() => {
-    if (!isLoading && !isOwner) navigate("/", { replace: true });
-  }, [isLoading, isOwner, navigate]);
+    if (!deciding && !isOwner) navigate("/", { replace: true });
+  }, [deciding, isOwner, navigate]);
 
   // Check 2 — the seller PIN, re-asked whenever the tab is locked.
   const lock = async () => {
@@ -1775,7 +1813,7 @@ export default function Admin() {
     navigate("/", { replace: true });
   };
 
-  if (isLoading || !isOwner) {
+  if (deciding || !isOwner) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />

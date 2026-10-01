@@ -23,7 +23,8 @@ function readWishlistCount(): number {
   }
 }
 
-function orderDate(ts: number, lang: "vi" | "en") {
+function orderDate(ts: number | undefined, lang: "vi" | "en") {
+  if (typeof ts !== "number" || !Number.isFinite(ts) || ts <= 0) return "—";
   try {
     return new Date(ts).toLocaleDateString(lang === "vi" ? "vi-VN" : "en-GB", {
       day: "2-digit",
@@ -112,14 +113,31 @@ export default function Dashboard() {
               </>
             ) : (
               <ul className="mt-3 space-y-3">
-                {orders.map((order) => (
+                {orders.map((order) => {
+                  /* Defensive on purpose: `orders.mine` normalises rows
+                     server-side, but this list must never be the thing that
+                     blanks /account. A missing `items` array renders an
+                     explicit fallback line instead of throwing. */
+                  const items = Array.isArray(order.items) ? order.items : [];
+                  const summary =
+                    items
+                      .map(
+                        (item) =>
+                          `${
+                            item?.nameVi || item?.nameEn || "—"
+                          } ×${item?.qty ?? 1}${
+                            item?.size ? ` (${item.size})` : ""
+                          }`,
+                      )
+                      .join(" · ") || t("ordersItemsUnavailable");
+                  return (
                   <li
                     key={order._id}
                     className="rounded-2xl border border-border bg-background p-3.5"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-display text-sm font-bold tabular-nums">
-                        {order.orderCode}
+                        {order.orderCode || "—"}
                       </span>
                       <OrderStatusBadge status={order.status} />
                       <span className="ml-auto text-xs tabular-nums text-muted-foreground">
@@ -127,14 +145,7 @@ export default function Dashboard() {
                       </span>
                     </div>
                     <p className="mt-1.5 text-xs text-muted-foreground">
-                      {order.items
-                        .map(
-                          (item) =>
-                            `${item.nameVi} ×${item.qty}${
-                              item.size ? ` (${item.size})` : ""
-                            }`,
-                        )
-                        .join(" · ")}
+                      {summary}
                     </p>
                     <div className="mt-2 flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">
@@ -149,7 +160,8 @@ export default function Dashboard() {
                       </span>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </section>

@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
  * The store owner is exempt: /seller is a workspace, not a shopping session.
  */
 export function PolicyGate() {
-  const { isLoading, isAuthenticated, user } = useAuth();
+  const { isLoading, isProfileLoading, isAuthenticated, user } = useAuth();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -33,7 +33,10 @@ export function PolicyGate() {
   const email = user?.email?.trim().toLowerCase() || undefined;
 
   useEffect(() => {
-    if (isLoading || !isAuthenticated || !email) return;
+    // Wait for the profile row too: deciding consent from a profile that has
+    // not resolved yet would skip the notice for the very account that needs
+    // it (and could inherit another account's stored answer).
+    if (isLoading || isProfileLoading || !isAuthenticated || !email) return;
     // The store owner runs the shop — they are exempt, and are already routed
     // straight to /seller after sign-in.
     if (email === ADMIN_EMAIL) return;
@@ -43,7 +46,7 @@ export function PolicyGate() {
       setAgreed(false);
       setOpen(true);
     }
-  }, [isLoading, isAuthenticated, email]);
+  }, [isLoading, isProfileLoading, isAuthenticated, email]);
 
   const accept = () => {
     if (!agreed || !email) return;

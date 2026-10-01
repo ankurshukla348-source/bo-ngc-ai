@@ -1,3 +1,4 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import {
   CHAT_CUSTOMER_LIMIT,
@@ -45,6 +46,10 @@ export const send = mutation({
     // Only the owner may post as the shop; a customer can only ever post as
     // themselves, so nobody can forge a reply from Bảo Ngọc.
     if (args.author === "seller") await requireOwner(ctx);
+    // `userId` is taken from the session, never from the request body: a
+    // customer could otherwise attach their line to somebody else's account.
+    const sessionUserId = await getAuthUserId(ctx).catch(() => null);
+    const userId = sessionUserId;
     const conversationId = cleanConversationId(args.conversationId);
     const body = args.body.trim().slice(0, MAX_BODY);
     if (!conversationId) throw new Error("Missing conversation");
@@ -83,7 +88,7 @@ export const send = mutation({
         ...(cleanText(args.email, MAX_LABEL)
           ? { email: cleanText(args.email, MAX_LABEL) }
           : {}),
-        ...(args.userId ? { userId: args.userId } : {}),
+        ...(userId ? { userId } : {}),
         // Seller messages start read; customer messages start unread.
         ...(args.author === "seller" ? { readAt: createdAt } : {}),
         createdAt,
