@@ -2,3 +2,12 @@
 node_modules
 dist
 src/convex/_generated
+
+# Platform build snapshot (a full copy of a build: index.html + assets/).
+# It must be ignored, and not only because it is a build artefact — Tailwind
+# auto-detects source files by walking the project, and this directory was not
+# excluded. It therefore kept *resurrecting* class names from old builds into
+# the stylesheet: a `max-h-[45dvh]` that had been removed from the source was
+# still being emitted weeks later purely because a stale bundle still contained
+# the literal string. Ignoring it keeps the CSS honest about what is used.
+isolate

@@ -301,8 +301,18 @@ export function ProductCard({
             </button>
           </DialogClose>
 
-          <div className="grid gap-0 sm:grid-cols-2">
-            <div className="relative aspect-[4/5] max-h-[45dvh] overflow-hidden bg-secondary sm:aspect-auto sm:max-h-none sm:min-h-full">
+          {/* `min-h-0` lets this grid actually shrink inside the scrollable
+              dialog. Without it a grid item defaults to `min-height: auto`,
+              so the detail column refuses to compress and overflows past the
+              dialog's 85dvh cap instead of scrolling.
+              On mobile the photo is a short fixed band rather than a 4:5 block:
+              at 45dvh it consumed most of the dialog and pushed the price,
+              the description AND the add-to-cart button below the fold, so a
+              phone shopper saw the photo and nothing else. Desktop keeps the
+              side-by-side layout where the photo does not steal vertical space
+              from the copy. */}
+          <div className="grid min-h-0 gap-0 sm:grid-cols-2">
+            <div className="relative h-[30dvh] overflow-hidden bg-secondary sm:h-auto sm:aspect-auto sm:max-h-none sm:min-h-full">
               {product.image || product.images?.length ? (
                 <ProductGallery
                   images={[product.image, ...(product.images ?? [])]}
