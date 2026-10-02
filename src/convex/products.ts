@@ -94,7 +94,7 @@ export const generateUploadUrl = mutation({
 });
 
 /** Most photos one product may carry. Storage cost stays bounded per product. */
-const MAX_PRODUCT_IMAGES = 6;
+const MAX_PRODUCT_IMAGES = 10;
 
 export const add = mutation({
   args: {

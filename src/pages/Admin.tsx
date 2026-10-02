@@ -86,7 +86,7 @@ function StockToggle({
    ──────────────────────────────────────────────────────────────── */
 
 /** Must stay in step with MAX_PRODUCT_IMAGES in src/convex/products.ts. */
-const MAX_PRODUCT_IMAGES = 6;
+const MAX_PRODUCT_IMAGES = 10;
 
 async function uploadFile(
   uploadUrl: string,
