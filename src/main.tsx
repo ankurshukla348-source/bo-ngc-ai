@@ -94,7 +94,76 @@ class RootErrorBoundary extends React.Component<
   }
 }
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
+/**
+ * The Convex deployment URL, validated before anything else boots.
+ *
+ * `new ConvexReactClient(undefined)` throws at module-evaluation time — before
+ * React mounts, and therefore before any error boundary exists to catch it. The
+ * symptom is a completely blank white page with nothing in the console that a
+ * shop owner can act on, which is the worst possible failure mode for a missing
+ * environment variable. Checking it here turns that into a readable message.
+ *
+ * `VITE_*` variables are inlined at BUILD time, not read at runtime, so this
+ * only guards the build — it is not a way to configure the site after it has
+ * been deployed.
+ */
+const CONVEX_URL = import.meta.env.VITE_CONVEX_URL?.trim();
+
+function renderFatalConfigError(detail: string) {
+  const root = document.getElementById("root");
+  if (!root) return;
+  root.innerHTML = "";
+  const box = document.createElement("div");
+  box.style.cssText =
+    "min-height:100vh;display:flex;align-items:center;justify-content:center;" +
+    "padding:2rem;background:#fdf7f9;color:#3b2a32;" +
+    "font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif";
+  const inner = document.createElement("div");
+  inner.style.cssText = "max-width:34rem;text-align:center";
+  const heading = document.createElement("h1");
+  heading.textContent = "Shop chưa được cấu hình xong";
+  heading.style.cssText = "font-size:1.25rem;font-weight:700;margin:0 0 .75rem";
+  const body = document.createElement("p");
+  body.textContent =
+    "Trang chưa thể khởi động vì thiếu cấu hình. Vui lòng thử lại sau.";
+  body.style.cssText = "margin:0 0 1rem;line-height:1.6;opacity:.8";
+  const detailEl = document.createElement("code");
+  detailEl.textContent = detail;
+  detailEl.style.cssText =
+    "display:block;padding:.75rem;border-radius:.5rem;background:#fff1f5;" +
+    "font-size:.8rem;opacity:.85;word-break:break-word";
+  inner.append(heading, body, detailEl);
+  box.append(inner);
+  root.append(box);
+}
+
+/**
+ * Whether the app can boot at all.
+ *
+ * When this is false the Convex client is never constructed and React is never
+ * mounted — the message on screen is the whole experience. That is deliberate:
+ * constructing the client with a bad URL throws at module-evaluation time,
+ * before any error boundary is in place, which is what produces a blank page.
+ */
+const IS_CONFIGURED = !!CONVEX_URL && CONVEX_URL.includes("://");
+
+if (!IS_CONFIGURED) {
+  renderFatalConfigError(
+    CONVEX_URL
+      ? `VITE_CONVEX_URL is not an absolute URL: ${CONVEX_URL}`
+      : "Missing environment variable: VITE_CONVEX_URL",
+  );
+}
+
+/**
+ * The client is constructed either way so that this module never throws and
+ * leaves an uncaught error in the console. `https://unconfigured.invalid` is a
+ * syntactically valid absolute URL that can never resolve; it is unreachable in
+ * practice because React is only mounted when `IS_CONFIGURED` is true.
+ */
+const convex = new ConvexReactClient(
+  (CONVEX_URL || "https://unconfigured.invalid") as string,
+);
 
 // Report unhandled rejections / stray window errors once, in one place, before
 // React mounts — otherwise a single failed mutation logs a wall of duplicates.
@@ -128,7 +197,12 @@ function RouteSyncer() {
 }
 
 
-createRoot(document.getElementById("root")!).render(
+// Only mount when the deployment URL is valid. On a misconfigured build
+// `renderFatalConfigError` has already put a readable message in #root, and
+// mounting React on top of it would just replace that message with the very
+// blank page this guard exists to prevent.
+if (IS_CONFIGURED) {
+  createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <RootErrorBoundary>
       <ToolbarErrorBoundary>
@@ -201,4 +275,5 @@ createRoot(document.getElementById("root")!).render(
       </ConvexAuthProvider>
     </RootErrorBoundary>
   </StrictMode>,
-);
+  );
+}

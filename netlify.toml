@@ -1,0 +1,34 @@
+# Netlify deployment config.
+#
+# ── Why `convex codegen` runs first ────────────────────────────────────────
+# `src/convex/_generated/` is in .gitignore: Convex generates those TypeScript
+# bindings locally, they are not committed. A fresh clone therefore has no
+# `api.d.ts` / `dataModel.d.ts` / `server.d.ts`, and `tsc -b` fails with
+#
+#     error TS2307: Cannot find module '@/convex/_generated/api'
+#
+# on every file that imports it. Because `api` is then untyped, every
+# `.map((order) => ...)` on a Convex result also reports
+#
+#     error TS7006: Parameter 'order' implicitly has an 'any' type
+#
+# Those TS7006 errors are a SYMPTOM, not the cause — annotating the parameters
+# by hand would only hide them and replace real types with `any`. Generating
+# the bindings first fixes all of them at once.
+#
+# This needs CONVEX_DEPLOYMENT and CONVEX_DEPLOY_KEY set in the Netlify
+# environment (Site settings → Environment variables). See README note below.
+[build]
+  command = "npx convex codegen --typecheck disable && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# React Router owns the URL, so every path has to resolve to the same
+# index.html. Without this, a hard refresh or a shared link to /checkout,
+# /track or /account returns Netlify's 404 page instead of the app.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
