@@ -1,0 +1,1 @@
+import{c as o}from"./index-CSqkg1_N.js";const n=[["path",{d:"m6 9 6 6 6-6",key:"qrunsl"}]],c=o("chevron-down",n);const t=[["path",{d:"m16 17 5-5-5-5",key:"1bji2h"}],["path",{d:"M21 12H9",key:"dn1m92"}],["path",{d:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4",key:"1uf3rs"}]],a=o("log-out",t);export{c as C,a as L};
