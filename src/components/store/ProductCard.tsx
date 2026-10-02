@@ -125,6 +125,16 @@ export function ProductCard({
   return (
     <>
       <article className="card-lift group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+        {/* The photo itself is the quick-view trigger.
+          //
+          // It used to be reachable only through the hover-revealed button,
+          // which is `hidden md:flex` — on a phone that button does not exist,
+          // so a mobile shopper had NO way to open the detail modal at all. This
+          // overlay makes the whole image tappable on every device, and carries
+          // role/tabIndex/onKeyDown so it is reachable by keyboard too.
+          //
+          // It sits UNDER the wishlist and quick-view buttons (z-0 vs z-10), and
+          // those stop propagation, so tapping them never also opens the modal. */}
         <div className="relative aspect-[4/5] overflow-hidden bg-secondary">
           {product.image || product.images?.length ? (
             <div className="h-full w-full transition-transform duration-500 group-hover:scale-105">
@@ -142,7 +152,19 @@ export function ProductCard({
 
           <button
             type="button"
-            onClick={toggleWishlist}
+            onClick={() => setQuickViewOpen(true)}
+            aria-label={`${t("quickView")}: ${name}`}
+            className="absolute inset-0 z-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-primary"
+          />
+
+          <button
+            type="button"
+            onClick={(event) => {
+              // The image overlay underneath is the quick-view trigger; without
+              // this, favouriting would also open the modal.
+              event.stopPropagation();
+              toggleWishlist();
+            }}
             aria-label={wished ? t("wishlistRemove") : t("wishlistAdd")}
             aria-pressed={wished}
             className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full bg-white/90 shadow-soft transition-colors hover:bg-white"
@@ -157,7 +179,7 @@ export function ProductCard({
 
           {/* Inline "in cart" indicator — Amazon/Flipkart style, mirrors the header badge. */}
           {inCartQty > 0 && (
-            <span className="absolute left-3 top-3 z-10 flex h-7 min-w-7 items-center justify-center gap-1 rounded-full bg-accent px-2 text-[11px] font-bold text-accent-foreground shadow-soft">
+            <span className="pointer-events-none absolute left-3 top-3 z-10 flex h-7 min-w-7 items-center justify-center gap-1 rounded-full bg-accent px-2 text-[11px] font-bold text-accent-foreground shadow-soft">
               {inCartQty}
               <span className="hidden sm:inline">{t("inCartBadge")}</span>
             </span>
@@ -175,7 +197,7 @@ export function ProductCard({
           </button>
 
           {!product.inStock && (
-            <div className="absolute inset-x-3 bottom-3 z-20 rounded-full bg-foreground/85 px-3 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-background">
+            <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 rounded-full bg-foreground/85 px-3 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-background">
               {t("soldOut")}
             </div>
           )}
@@ -254,7 +276,14 @@ export function ProductCard({
       </article>
 
       <Dialog open={quickViewOpen} onOpenChange={setQuickViewOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-2xl">
+        {/* Mobile-first sizing: the dialog is `fixed top-1/2 translate-y-[-50%]`,
+            so on a short screen (landscape phone, small browser chrome) a 90vh
+            panel plus its offset overflows the viewport and the bottom half —
+            the add-to-cart controls — becomes unreachable. Capping at 85dvh and
+            letting the inner column scroll keeps every control reachable.
+            `dvh` tracks the dynamic viewport, so the mobile browser URL bar
+            collapsing no longer crops the panel. */}
+        <DialogContent className="max-h-[85dvh] overflow-y-auto overscroll-contain p-0 sm:max-h-[90vh] sm:max-w-2xl">
           <DialogTitle className="sr-only">{t("quickView")}</DialogTitle>
           <DialogDescription className="sr-only">
             {name}
@@ -263,14 +292,17 @@ export function ProductCard({
             <button
               type="button"
               aria-label={t("quickViewClose")}
-              className="absolute right-4 top-4 z-20 flex size-9 items-center justify-center rounded-full bg-background/80 text-foreground shadow-soft backdrop-blur transition-colors hover:bg-background"
+              // 44px on touch, 36px on pointer devices. The close button is the
+              // way out of this dialog, so a 36px target is a real usability
+              // problem on a phone.
+              className="absolute right-3 top-3 z-20 flex size-11 items-center justify-center rounded-full bg-background/80 text-foreground shadow-soft backdrop-blur transition-colors hover:bg-background sm:right-4 sm:top-4 sm:size-9"
             >
               <X className="size-4" />
             </button>
           </DialogClose>
 
           <div className="grid gap-0 sm:grid-cols-2">
-            <div className="relative aspect-[4/5] overflow-hidden bg-secondary sm:aspect-auto sm:min-h-full">
+            <div className="relative aspect-[4/5] max-h-[45dvh] overflow-hidden bg-secondary sm:aspect-auto sm:max-h-none sm:min-h-full">
               {product.image || product.images?.length ? (
                 <ProductGallery
                   images={[product.image, ...(product.images ?? [])]}
