@@ -95,6 +95,22 @@ class RootErrorBoundary extends React.Component<
 }
 
 /**
+ * Force light-mode rendering.
+ *
+ * `index.html` carries `<meta name="color-scheme" content="light">` and
+ * `index.css` sets `color-scheme: light` on `:root`; this is the belt-and-
+ * braces third copy, applied before React mounts.
+ *
+ * It exists because the two previous fixes live in files that a static host
+ * can serve stale: the meta tag in HTML and the declaration in the CSS bundle.
+ * Setting it from JS means the very first thing the entry chunk does is pin the
+ * colour scheme, so a browser applying Chrome's "Auto Dark Mode" (which inverts
+ * the near-white `--background` and the plum text behind the app's back — the
+ * whole shop turns dark on desktop) has nothing left to invert against.
+ */
+document.documentElement.style.colorScheme = "light";
+
+/**
  * The Convex deployment URL, validated before anything else boots.
  *
  * `new ConvexReactClient(undefined)` throws at module-evaluation time — before
