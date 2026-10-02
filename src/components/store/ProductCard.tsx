@@ -312,11 +312,16 @@ export function ProductCard({
               side-by-side layout where the photo does not steal vertical space
               from the copy. */}
           <div className="grid min-h-0 gap-0 sm:grid-cols-2">
-            <div className="relative h-[30dvh] overflow-hidden bg-secondary sm:h-auto sm:aspect-auto sm:max-h-none sm:min-h-full">
+            <div className="relative h-[38dvh] overflow-hidden bg-secondary sm:h-auto sm:aspect-auto sm:max-h-none sm:min-h-full">
               {product.image || product.images?.length ? (
                 <ProductGallery
                   images={[product.image, ...(product.images ?? [])]}
                   alt={name}
+                  /* `contain`, not `cover`: this is the one surface where the
+                     shopper needs to see the WHOLE garment. Cover-cropping a
+                     tall product photo inside a short phone frame sliced it in
+                     half, hiding exactly the detail that sells the item. */
+                  fit="contain"
                 />
               ) : (
                 <div className="flex h-full min-h-64 items-center justify-center font-display text-5xl font-bold text-muted-foreground/50">

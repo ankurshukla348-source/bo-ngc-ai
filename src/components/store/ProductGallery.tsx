@@ -17,17 +17,29 @@ export function ProductGallery({
   alt,
   className,
   imgClassName,
+  fit = "cover",
   showThumbs = true,
 }: {
   images: (string | null | undefined)[];
   alt: string;
   className?: string;
   imgClassName?: string;
+  /**
+   * How the photo fills its frame.
+   *
+   * `cover` fills the frame and crops — right for a grid thumbnail, where every
+   * card must be the same shape. `contain` shows the WHOLE photo and letterboxes
+   * the remainder, which is what the quick-view modal needs: on a phone the
+   * frame is a short band, and `cover` sliced a tall product shot in half, so a
+   * shopper could not see the garment they were about to buy.
+   */
+  fit?: "cover" | "contain";
   showThumbs?: boolean;
 }) {
   const valid = images.filter((src): src is string => !!src);
   const [index, setIndex] = useState(0);
   const safeIndex = Math.min(index, Math.max(valid.length - 1, 0));
+  const fitClass = fit === "contain" ? "object-contain" : "object-cover";
 
   // Swipe tracking. `touchstart` records the origin; `touchend` decides whether
   // the gesture was a horizontal flick. On a phone the arrow buttons are easy to
@@ -45,7 +57,7 @@ export function ProductGallery({
         src={valid[0]}
         alt={alt}
         loading="lazy"
-        className={cn("h-full w-full object-cover", imgClassName, className)}
+        className={cn("h-full w-full", fitClass, imgClassName, className)}
       />
     );
   }
@@ -96,7 +108,7 @@ export function ProductGallery({
           src={valid[safeIndex]}
           alt={`${alt} — ${safeIndex + 1}/${valid.length}`}
           loading="lazy"
-          className={cn("h-full w-full object-cover", imgClassName)}
+          className={cn("h-full w-full", fitClass, imgClassName)}
         />
 
         <button
