@@ -84,7 +84,7 @@ export function Header({
         onClick={() => setAccountOpen((v) => !v)}
         aria-expanded={accountOpen}
         aria-haspopup="menu"
-        className="flex size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-secondary"
+        className="flex size-11 items-center justify-center rounded-full text-foreground transition-colors hover:bg-secondary md:size-10"
       >
         <UserRound className="size-[18px]" />
         <ChevronDown className="-ml-1 size-3 text-muted-foreground" />
@@ -161,17 +161,16 @@ export function Header({
       <div className="border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3.5 sm:gap-6">
           <Link to="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-            {/* Mobile: short brand so the bar stays on one line; Desktop: full.
-                The link is `min-w-0` WITHOUT `shrink-0` on purpose. With
-                `shrink-0` the wordmark refused to give up width, so on a narrow
-                phone (360px) it pushed the whole action cluster off the right
-                edge — and because the cart is the LAST item in that cluster, the
-                cart was the first thing to disappear. `truncate` lets the
-                brand ellipsize instead, so cart and account always survive. */}
-            <span className="truncate font-display text-lg font-bold leading-tight tracking-[0.04em] md:hidden">
+            {/* Mobile: short brand, Desktop: full.
+                NO truncation here — an ellipsised shop name looks broken. The
+                size steps down instead (14px → 16px → 18px → 24px) so the
+                wordmark shrinks to fit rather than losing its ending, and
+                `whitespace-nowrap` guarantees it never wraps onto a second line
+                and pushes the icon row down. */}
+            <span className="whitespace-nowrap font-display text-sm font-semibold leading-tight tracking-[0.02em] min-[380px]:text-base md:text-lg md:font-bold md:tracking-[0.04em] lg:text-xl">
               {TEXT.brandMobile}
             </span>
-            <span className="hidden truncate font-display text-xl font-bold leading-tight tracking-[0.08em] md:block lg:text-2xl">
+            <span className="hidden whitespace-nowrap font-display text-lg font-bold leading-tight tracking-[0.06em] md:block lg:text-2xl">
               {TEXT.brandFull}
             </span>
           </Link>            {showNav && (
@@ -197,7 +196,7 @@ export function Header({
           {/* `shrink-0` guarantees this cluster keeps its full width and is never the
               thing that gets squeezed — the cart and account controls are the
               one part of the header that must be visible on every device. */}
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1.5 md:gap-2">
             {showNav && (
               <div className="relative hidden w-44 md:block lg:w-60">
                 {searchInput}
@@ -209,14 +208,22 @@ export function Header({
                 type="button"
                 onClick={() => setMobileSearchOpen((v) => !v)}
                 aria-label={t("searchLabel")}
-                className="flex size-10 items-center justify-center rounded-full transition-colors hover:bg-secondary md:hidden"
+                /* 44px on touch (the iOS/Android minimum), 40px from md up where
+                   a mouse makes the difference imperceptible. */
+                className="flex size-11 items-center justify-center rounded-full transition-colors hover:bg-secondary md:hidden"
               >
                 <Search className="size-[18px]" />
               </button>
             )}
 
-            {/* Language toggle */}
-            <div className="flex rounded-full border border-input p-0.5">
+            {/* Language toggle.
+
+                Hidden below `md`: on a phone this pill plus its border was
+                roughly 60px of a 360px bar, and it was pure crowding — search,
+                account and cart are what a shopper actually reaches for. It is
+                not lost: the same control now sits in the mobile nav row
+                below, where there is room to make it a proper tap target. */}
+            <div className="hidden rounded-full border border-input p-0.5 md:flex">
               {(["vi", "en"] as const).map((code) => (
                 <button
                   key={code}
@@ -224,7 +231,7 @@ export function Header({
                   onClick={() => setLang(code)}
                   aria-pressed={lang === code}
                   className={cn(
-                    "rounded-full px-2 py-1 text-[10px] font-semibold uppercase transition-colors sm:px-2.5 sm:text-[11px]",
+                    "rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase transition-colors",
                     lang === code
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground",
@@ -241,7 +248,7 @@ export function Header({
             <Link
               to="/checkout"
               aria-label={t("cartLabel")}
-              className="relative flex size-10 items-center justify-center rounded-full transition-colors hover:bg-secondary"
+              className="relative flex size-11 items-center justify-center rounded-full transition-colors hover:bg-secondary md:size-10"
             >
               <ShoppingBag className="size-[18px]" />
               {count > 0 && (
@@ -260,9 +267,16 @@ export function Header({
           </div>
         )}
 
-        {/* Mobile nav chips */}
+        {/* Mobile nav row — the phone's "menu".
+
+            This scrollable chip row is where the language toggle moved so it
+            stops crowding the icon bar. Here it can be a comfortable tap
+            target instead of a 60px sliver, and it sits with the other
+            navigation rather than pretending to be a primary action.
+
+            `border-l` separates it from the nav chips without extra padding. */}
         {showNav && (
-          <div className="flex gap-2 overflow-x-auto border-t border-border px-4 py-2.5 lg:hidden">
+          <div className="flex items-center gap-2 overflow-x-auto border-t border-border px-4 py-2.5 lg:hidden">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -278,6 +292,27 @@ export function Header({
             >
               {t("policyLabel")}
             </Link>
+            <div className="ml-auto flex shrink-0 items-center gap-1 rounded-full border border-input p-0.5 pl-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("languageLabel")}
+              </span>
+              {(["vi", "en"] as const).map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setLang(code)}
+                  aria-pressed={lang === code}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase transition-colors",
+                    lang === code
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {code}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
