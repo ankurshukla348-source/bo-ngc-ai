@@ -1,0 +1,1 @@
+const t=new Intl.NumberFormat("vi-VN");function e(r){return typeof r!="number"||!Number.isFinite(r)?"0₫":`${t.format(Math.round(r))}₫`}function n(r){return r.replace(/[^\d]/g,"")}export{e as f,n as s};
