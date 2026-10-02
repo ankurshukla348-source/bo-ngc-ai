@@ -3,10 +3,10 @@ import { useMutation } from "convex/react";
 import { CATEGORIES, type Category } from "@/lib/catalog";
 import { HONEYPOT_FIELD } from "@/lib/antiSpam";
 import { useI18n } from "@/lib/i18n";
-import { CONTACT, TEXT } from "@/constants/text";
+import { TEXT } from "@/constants/text";
 import { useState } from "react";
 import { Link } from "react-router";
-import { ArrowRight, MapPin, Phone } from "lucide-react";
+import { ArrowRight, MapPin, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 /** Dark editorial footer: brand + link columns + newsletter, mockup-style. */
@@ -66,20 +66,19 @@ export function StoreFooter({
             <p className="max-w-xs text-sm leading-relaxed text-white/60">
               {t("footerTagline")}
             </p>
-            {/* Real ways to reach the shop. A COD customer deciding whether to
-                hand a courier money for lingerie will want a number, not just
-                a chat bubble. */}
+            {/* How to reach the shop: live chat, plus the area. No personal
+                phone number is published anywhere on the site. */}
             <div className="mt-1 flex flex-col gap-2 text-sm">
               <a
-                href={CONTACT.phoneHref}
+                href="#contact"
                 className="inline-flex w-fit items-center gap-2 text-white transition-colors hover:text-brand-rose"
               >
-                <Phone className="size-4 shrink-0 text-white/60" />
-                <span className="font-semibold">{CONTACT.phone}</span>
+                <MessageCircle className="size-4 shrink-0 text-white/60" />
+                <span className="font-semibold">{t("supportLiveChat")}</span>
               </a>
               <span className="inline-flex items-center gap-2 text-white/60">
                 <MapPin className="size-4 shrink-0" />
-                {CONTACT.address}
+                {TEXT.locationArea}
               </span>
             </div>
           </div>
@@ -138,7 +137,12 @@ export function StoreFooter({
                 </Link>
               </li>
               <li className="font-semibold text-white">
-                {t("supportLiveChat")}
+                <a
+                  href="#contact"
+                  className="transition-colors hover:text-brand-rose"
+                >
+                  {t("supportLiveChat")}
+                </a>
               </li>
             </ul>
           </div>

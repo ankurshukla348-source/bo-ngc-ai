@@ -6,6 +6,7 @@ import {
 } from "@/components/AppErrorBoundary";
 import { RequireAuth } from "@/components/RequireAuth";
 import { PolicyGate } from "@/components/store/PolicyGate";
+import { LiveChatWidget } from "@/components/store/LiveChatWidget";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
@@ -185,6 +186,13 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+              {/* Live chat is mounted here, once, for every route — not inside
+                  the landing page. It is the shop's ONLY published contact
+                  channel (no phone number appears anywhere on the site), so a
+                  customer standing on /checkout or /track with a question must
+                  still be able to open it. Fixed-position, so it never affects
+                  any page's layout. */}
+              <LiveChatWidget />
             </BrowserRouter>
           </CartProvider>
           </AppErrorBoundary>

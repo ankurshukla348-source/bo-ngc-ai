@@ -17,24 +17,19 @@ export const TEXT = {
   policy7Day: "Hỗ trợ đổi trả Size trong vòng 7 ngày.",
   /** Location subtitle (footer / story). */
   locationTagline: "Shop Thời Trang Nữ uy tín hàng đầu tại Diên Khánh.",
+  /** Shop area shown in the footer contact block. */
+  locationArea: "Diên Khánh, Khánh Hoà",
 } as const;
 
 /** Shop contact details.
  *
- *  Single source of truth so the header, the footer and the checkout can never
- *  disagree about how a customer reaches the shop. A COD shop selling lingerie
- *  really needs a number people can call: the customer will not hand money to
- *  a courier for an item they have not been able to ask a question about first.
+ *  The shop's own area — not a personal contact. There is deliberately NO
+ *  phone number in this file or anywhere else in the app: customers reach the
+ *  shop through the live-chat widget, which the seller answers from their own
+ *  account. Publishing a personal mobile number would put the owner's private
+ *  line in the page source and in every customer's browser for no benefit.
  *
- *  Replace `phone` with the shop's real Zalo/mobile number before launch. */
-export const CONTACT = {
-  /** Human-readable, exactly as it should be shown and dialled. */
-  phone: "0909 123 456",
-  /** Tel: target — spaces stripped so the link actually works on mobile. */
-  phoneHref: "tel:0909123456",
-  /** Shop address shown in the footer. */
-  address: "Diên Khánh, Khánh Hoà",
-} as const;
+ *  A shared shop landline or a business Facebook page would be fine here. */
 
 /** Vietnamese category labels — locked. */
 export const CATEGORY_LABELS_VI = {
