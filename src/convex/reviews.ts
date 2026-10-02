@@ -223,14 +223,29 @@ export const all = query({
   handler: async (ctx) => {
     await requireOwner(ctx);
     const rows = await ctx.db.query("reviews").order("desc").take(500);
-    return rows.map((row) => ({
-      _id: row._id,
-      productId: row.productId,
-      rating: row.rating,
-      text: row.text ?? "",
-      photoCount: (row.photos ?? []).length,
-      createdAt: row.createdAt,
-    }));
+    return await Promise.all(
+      rows.map(async (row) => {
+        const [product, author, order] = await Promise.all([
+          ctx.db.get(row.productId),
+          ctx.db.get(row.userId),
+          row.orderId ? ctx.db.get(row.orderId) : Promise.resolve(null),
+        ]);
+        return {
+          _id: row._id,
+          productId: row.productId,
+          // A moderation list is useless without these three: which product, who
+          // said it, and the order that made the review legitimate.
+          productName: product?.nameVi || product?.nameEn || "— đã xoá —",
+          authorName: (author?.name ?? "").trim() || "Khách hàng",
+          authorEmail: (author?.email ?? "").trim(),
+          orderCode: order?.orderCode ?? null,
+          rating: row.rating,
+          text: row.text ?? "",
+          photoCount: (row.photos ?? []).length,
+          createdAt: row.createdAt,
+        };
+      }),
+    );
   },
 });
 

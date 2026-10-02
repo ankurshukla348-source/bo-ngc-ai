@@ -219,3 +219,115 @@ export function orderStatusEmail(
     ),
   };
 }
+
+/** The bits of an order the seller needs in order to call and pack it.
+ *
+ *  Unlike a customer receipt this DOES carry the phone number and full
+ *  address: it is the shop's own notification to the owner, never sent to the
+ *  shopper, and a COD order is worthless to the seller without them. */
+export type SellerOrderAlert = {
+  orderCode: string;
+  createdAt: number;
+  customer: {
+    name: string;
+    phone: string;
+    street: string;
+    ward: string;
+    district: string;
+    province: string;
+  };
+  items: { name: string; size: string; qty: number; price: number }[];
+  subtotal: number;
+  shippingFee: number;
+  total: number;
+};
+
+const itemLine = (item: SellerOrderAlert["items"][number]) =>
+  `${item.qty}× ${escapeHtml(item.name)} — ${escapeHtml(item.size)} — ${escapeHtml(
+    money(item.price * item.qty),
+  )}`;
+
+/**
+ * "You have a new COD order" — the alert that makes the shop work without
+ * someone staring at /seller all day.
+ *
+ * Written in Vietnamese regardless of the customer's language: the person
+ * reading it is the shop owner in Diên Khánh, not the shopper.
+ */
+export function sellerOrderAlertEmail(order: SellerOrderAlert): {
+  subject: string;
+  html: string;
+} {
+  const title = `Đơn hàng mới ${order.orderCode} — ${order.total.toLocaleString(
+    "vi-VN",
+  )} đ`;
+  return {
+    subject: title,
+    html: shell(
+      title,
+      [
+        `<p style="font-size:15px;margin:0 0 16px">Có đơn hàng COD mới cần gọi xác nhận.</p>`,
+        `<p style="font-size:13px;color:#8a7a80;margin:0 0 16px">${escapeHtml(
+          stamp(order.createdAt, "vi"),
+        )}</p>`,
+        `<p style="font-size:14px;margin:0 0 4px"><strong>Khách:</strong> ${escapeHtml(
+          order.customer.name,
+        )}</p>`,
+        `<p style="font-size:14px;margin:0 0 4px"><strong>Điện thoại:</strong> ${escapeHtml(
+          order.customer.phone,
+        )}</p>`,
+        `<p style="font-size:14px;margin:0 0 16px"><strong>Địa chỉ:</strong> ${escapeHtml(
+          [
+            order.customer.street,
+            order.customer.ward,
+            order.customer.district,
+            order.customer.province,
+          ]
+            .filter(Boolean)
+            .join(", "),
+        )}</p>`,
+        `<ul style="font-size:14px;margin:0 0 16px;padding-left:18px">${order.items
+          .map((item) => `<li style="margin:0 0 4px">${itemLine(item)}</li>`)
+          .join("")}</ul>`,
+        `<p style="font-size:14px;margin:0 0 4px">Tạm tính: ${escapeHtml(
+          money(order.subtotal),
+        )}</p>`,
+        `<p style="font-size:14px;margin:0 0 4px">Phí ship: ${escapeHtml(
+          money(order.shippingFee),
+        )}</p>`,
+        `<p style="font-size:15px;margin:0"><strong>Tổng cần thu: ${escapeHtml(
+          money(order.total),
+        )}</strong></p>`,
+      ],
+      "vi",
+    ),
+  };
+}
+
+/** "A customer wrote to you in live chat." */
+export function sellerChatAlertEmail(input: {
+  name: string;
+  body: string;
+  createdAt: number;
+}): { subject: string; html: string } {
+  const title = `Tin nhắn mới từ ${input.name}`;
+  return {
+    subject: title,
+    html: shell(
+      title,
+      [
+        `<p style="font-size:15px;margin:0 0 4px">${escapeHtml(
+          input.name,
+        )} vừa nhắn tin trên website.</p>`,
+        `<p style="font-size:13px;color:#8a7a80;margin:0 0 16px">${escapeHtml(
+          stamp(input.createdAt, "vi"),
+        )}</p>`,
+        `<p style="font-size:14px;margin:0 0 16px;white-space:pre-line">${escapeHtml(
+          input.body,
+        )}</p>`,
+        `<p style="font-size:13px;color:#8a7a80;margin:0">Mở mục “Live Chat” trong trang quản lý để trả lời.</p>`,
+      ],
+      "vi",
+    ),
+  };
+}

@@ -40,6 +40,7 @@ import {
   Send,
   LogOut,
   Package,
+  Star,
   Store,
   Trash2,
   X,
@@ -2049,6 +2050,249 @@ function BroadcastPanel() {
 }
 
 /* ────────────────────────────────────────────────────────────────
+   Review moderation
+   ──────────────────────────────────────────────────────────────── */
+
+/** Stars, read-only. Reused for the average and for each review row. */
+function Stars({ value, className }: { value: number; className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-0.5", className)}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className={cn(
+            "size-3.5",
+            n <= value ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30",
+          )}
+        />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Every customer review, newest first, with a delete button.
+ *
+ * Without this the shop could not take down a bad or abusive review at all:
+ * the backend functions existed but there was no screen that called them, so
+ * the only options were to leave it live or edit the database by hand.
+ */
+function ReviewsPanel() {
+  const { t } = useI18n();
+  const reviews = useQuery(api.reviews.all);
+  const removeReview = useMutation(api.reviews.remove);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const del = async (id: Id<"reviews">) => {
+    setPendingId(id);
+    try {
+      const result = await removeReview({ id });
+      if (result.removed) {
+        toast.success(t("reviewRemoved"));
+        setConfirmId(null);
+      } else {
+        toast.error(t("reviewRemoveFailed"));
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(t("reviewRemoveFailed"));
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const average =
+    reviews && reviews.length > 0
+      ? Math.round(
+          (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length) * 10,
+        ) / 10
+      : 0;
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-primary px-5 py-3.5">
+        <h2 className="font-display text-lg font-bold text-primary-foreground">
+          {t("reviewsTitle")}
+        </h2>
+        <div className="flex items-center gap-3 text-xs text-primary-foreground">
+          {reviews && reviews.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 font-semibold">
+              <Stars value={Math.round(average)} />
+              {average.toFixed(1)} / 5
+            </span>
+          )}
+          <span className="rounded-full border border-primary-foreground/40 px-2.5 py-0.5 font-semibold tabular-nums">
+            {reviews?.length ?? "…"}
+          </span>
+        </div>
+      </div>
+
+      {reviews === undefined ? (
+        <div className="flex items-center justify-center gap-3 p-10 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          {t("loadingReviews")}
+        </div>
+      ) : reviews.length === 0 ? (
+        <p className="p-10 text-center text-sm text-muted-foreground">
+          {t("noReviews")}
+        </p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border">
+          {reviews.map((review) => (
+            <li key={review._id} className="flex gap-4 p-4 sm:p-5">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Stars value={review.rating} />
+                  <span className="text-sm font-semibold">{review.authorName}</span>
+                  {review.orderCode && (
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {review.orderCode}
+                    </span>
+                  )}
+                  {review.photoCount > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <ImagePlus className="size-2.5" />
+                      {review.photoCount}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-xs font-medium text-muted-foreground">
+                  {review.productName}
+                  {review.authorEmail && (
+                    <span className="ml-2 font-normal opacity-70">
+                      {review.authorEmail}
+                    </span>
+                  )}
+                </p>
+                {review.text && (
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-foreground/85">
+                    {review.text}
+                  </p>
+                )}
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  {new Date(review.createdAt).toLocaleString("vi-VN")}
+                </p>
+              </div>
+
+              {confirmId === review._id ? (
+                <div className="flex shrink-0 flex-col gap-1.5">
+                  <button
+                    type="button"
+                    disabled={pendingId === review._id}
+                    onClick={() => void del(review._id)}
+                    className="rounded-full bg-destructive px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                  >
+                    {pendingId === review._id ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      t("reviewConfirmDelete")
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmId(null)}
+                    className="rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold"
+                  >
+                    {t("cancel")}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmId(review._id)}
+                  aria-label={t("reviewDelete")}
+                  className="shrink-0 self-start rounded-full p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Newsletter subscribers collected by the footer form.
+ *
+ * Sits next to the broadcast composer because that is the only thing the list
+ * is for — without a screen showing who signed up, a list you cannot see or
+ * delete from is not really consent you are honouring.
+ */
+function SubscriberPanel() {
+  const { t } = useI18n();
+  const subscribers = useQuery(api.newsletter.list);
+  const removeSubscriber = useMutation(api.newsletter.remove);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  const del = async (id: Id<"subscribers">) => {
+    setPendingId(id);
+    try {
+      await removeSubscriber({ id });
+      toast.success(t("subscriberRemoved"));
+    } catch (error) {
+      console.error(error);
+      toast.error(t("subscriberRemoveFailed"));
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+      <div className="flex items-center justify-between border-b border-border bg-primary px-5 py-3.5">
+        <h2 className="font-display text-lg font-bold text-primary-foreground">
+          {t("subscribersTitle")}
+        </h2>
+        <span className="rounded-full border border-primary-foreground/40 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-primary-foreground">
+          {subscribers?.length ?? "…"}
+        </span>
+      </div>
+
+      {subscribers === undefined ? (
+        <div className="flex items-center justify-center gap-3 p-10 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+        </div>
+      ) : subscribers.length === 0 ? (
+        <p className="p-10 text-center text-sm text-muted-foreground">
+          {t("noSubscribers")}
+        </p>
+      ) : (
+        <ul className="max-h-96 divide-y divide-border overflow-y-auto">
+          {subscribers.map((row) => (
+            <li
+              key={row.id}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm"
+            >
+              <span className="min-w-0 flex-1 truncate">{row.email}</span>
+              <span className="shrink-0 text-[11px] text-muted-foreground">
+                {new Date(row.createdAt).toLocaleDateString("vi-VN")}
+              </span>
+              <button
+                type="button"
+                disabled={pendingId === row.id}
+                onClick={() => void del(row.id)}
+                aria-label={t("subscriberRemove")}
+                className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+              >
+                {pendingId === row.id ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="size-3.5" />
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
    Page
    ──────────────────────────────────────────────────────────────── */
 
@@ -2101,7 +2345,9 @@ export default function Admin() {
 
 function AdminPanel({ onLock }: { onLock: () => Promise<void> }) {
   const { t } = useI18n();
-  const [tab, setTab] = useState<"products" | "orders" | "chat" | "broadcast">("products");
+  const [tab, setTab] = useState<
+    "products" | "orders" | "chat" | "reviews" | "broadcast"
+  >("products");
   const products = useQuery(api.products.list);
   const unread = useQuery(api.messages.unreadTotal);
 
@@ -2109,6 +2355,7 @@ function AdminPanel({ onLock }: { onLock: () => Promise<void> }) {
     { id: "products", label: t("sellerTabProducts"), icon: Store },
     { id: "orders", label: t("sellerTabOrders"), icon: Package },
     { id: "chat", label: t("sellerTabChat"), icon: MessageCircle },
+    { id: "reviews", label: t("sellerTabReviews"), icon: Star },
     { id: "broadcast", label: t("sellerTabBroadcast"), icon: Send },
   ] as const;
 
@@ -2194,9 +2441,14 @@ function AdminPanel({ onLock }: { onLock: () => Promise<void> }) {
         <div className="mx-auto max-w-7xl px-4 py-8">
           <ChatInbox />
         </div>
+      ) : tab === "reviews" ? (
+        <div className="mx-auto max-w-4xl px-4 py-8">
+          <ReviewsPanel />
+        </div>
       ) : tab === "broadcast" ? (
-        <div className="mx-auto max-w-7xl px-4 py-8">
+        <div className="mx-auto grid max-w-5xl gap-6 px-4 py-8">
           <BroadcastPanel />
+          <SubscriberPanel />
         </div>
       ) : (
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[400px_1fr]">

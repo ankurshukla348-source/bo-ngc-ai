@@ -52,6 +52,16 @@ export const CHAT_THREAD_LIMIT: Limit = { max: 40, windowMs: 60 * 60 * 1000 };
 /** Max concurrent live-chat threads opened from one browser per hour. */
 export const CHAT_OPEN_LIMIT: Limit = { max: 3, windowMs: 60 * 60 * 1000 };
 
+/** Max newsletter sign-ups one address may make per hour.
+ *
+ *  The footer form is public and idempotent, so the only abuse worth stopping
+ *  is a script re-submitting one address to bloat the list. Keyed by address
+ *  rather than IP because Convex actions see no client IP. */
+export const NEWSLETTER_LIMIT: Limit = { max: 5, windowMs: 60 * 60 * 1000 };
+
+export const newsletterThrottleKey = (email: string) =>
+  `news:${email.trim().toLowerCase()}`;
+
 export const orderThrottleKey = (phone: string) => `order:${normalizePhone(phone)}`;
 export const chatThrottleKey = (conversationId: string) => `chat:c:${conversationId}`;
 export const chatSellerThrottleKey = (conversationId: string) => `chat:s:${conversationId}`;

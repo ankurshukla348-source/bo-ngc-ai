@@ -110,9 +110,14 @@ export const setMarketingOptIn = mutation({
 /**
  * Recipients for a promotional broadcast.
  *
- * Consent is opt-OUT: `marketingOptIn === false` is the only value that
- * excludes a customer, so anyone who registered before this field existed
+ * Consent is opt-OUT for accounts: `marketingOptIn === false` is the only value
+ * that excludes a customer, so anyone who registered before this field existed
  * (or never explicitly ticked the box) still receives the newsletter.
+ *
+ * Footer subscribers are merged in, because that form collects an address
+ * without an account and is the largest list the shop will have. Someone in
+ * both lists appears once — Resend would otherwise be handed the same address
+ * twice and could treat it as a duplicate-recipient error.
  *
  * Owner-only: this hands out customer email addresses, so it must never be
  * readable from the public endpoint — only the seller dashboard calls it.
@@ -122,11 +127,24 @@ export const marketingAudience = query({
   handler: async (ctx) => {
     await requireOwner(ctx);
     const users = await ctx.db.query("users").collect();
-    return users
-      .filter((user) => user.marketingOptIn !== false && !!user.email)
-      .map((user) => ({
-        email: user.email as string,
-        name: user.name ?? null,
-      }));
+    const subscribers = await ctx.db.query("subscribers").collect();
+
+    const seen = new Set<string>();
+    const recipients: { email: string; name: string | null }[] = [];
+    const add = (email: string | undefined | null, name: string | null) => {
+      const key = (email ?? "").trim().toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      recipients.push({ email: key, name });
+    };
+
+    // Accounts first: they carry a name, which makes the greeting land.
+    for (const user of users) {
+      if (user.marketingOptIn === false) continue;
+      add(user.email, user.name ?? null);
+    }
+    for (const row of subscribers) add(row.email, null);
+
+    return recipients;
   },
 });

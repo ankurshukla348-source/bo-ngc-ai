@@ -32,6 +32,10 @@ import { makeFunctionReference } from "convex/server";
  */
 const ORDER_MAIL_TOKEN = "b7n-order-mail-2f9c41";
 const orderMailRef = makeFunctionReference<"action">("notifications:sendOrderEmail");
+
+const sellerAlertRef = makeFunctionReference<"action">(
+  "notifications:sendSellerOrderAlert",
+);
 const mailPayloadRef = makeFunctionReference<"query">("orders:mailPayload");
 const recordMailRef = makeFunctionReference<"mutation">(
   "orders:recordMailResult",
@@ -209,6 +213,18 @@ export const create = mutation({
       /* mail is best-effort — the confirmation screen already shows the order */
     }
 
+    // Tell the SELLER. This is the one that matters commercially: without it a
+    // COD order exists only inside a dashboard the owner would have to be
+    // watching, and a new order would go unnoticed until the customer chased.
+    try {
+      await ctx.scheduler.runAfter(0, sellerAlertRef, {
+        token: ORDER_MAIL_TOKEN,
+        orderId,
+      });
+    } catch {
+      /* never fail checkout over the notification */
+    }
+
     return { orderCode, subtotal, shippingFee, total, createdAt };
   },
 });
@@ -292,6 +308,49 @@ export const mailPayload = query({
       items: row.items.map((item) => ({
         nameVi: item.nameVi,
         nameEn: item.nameEn,
+        size: item.size,
+        qty: item.qty,
+        price: item.price,
+      })),
+      subtotal: row.subtotal,
+      shippingFee: row.shippingFee,
+      total: row.total,
+    };
+  },
+});
+
+/**
+ * The seller's own copy of a new order, for the alert email.
+ *
+ * Token-guarded rather than owner-guarded because it is read from an *action*
+ * (which has no session), exactly like `mailPayload`. It carries the phone
+ * number and street, so it must never be reachable without the secret; the
+ * recipient is hardcoded to the owner, so a leak is not a customer-data
+ * exposure to a third party.
+ */
+export const sellerAlertPayload = query({
+  args: { token: v.string(), id: v.id("orders") },
+  handler: async (ctx, args) => {
+    if (args.token !== ORDER_MAIL_TOKEN) throw new Error("Not authorized");
+    const order = await ctx.db.get(args.id);
+    if (!order) return null;
+    const row = normalizeOrder(order);
+    return {
+      orderCode: row.orderCode,
+      createdAt: row.createdAt,
+      lang: order.lang ?? "vi",
+      customer: {
+        name: row.customer.name,
+        phone: row.customer.phone,
+        street: row.customer.street,
+        ward: row.customer.ward,
+        district: row.customer.district,
+        province: row.customer.province,
+      },
+      items: row.items.map((item) => ({
+        // The owner reads one language, so prefer the Vietnamese name and fall
+        // back to the English one rather than sending a blank line.
+        name: item.nameVi || item.nameEn,
         size: item.size,
         qty: item.qty,
         price: item.price,

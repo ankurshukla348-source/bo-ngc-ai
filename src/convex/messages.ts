@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { makeFunctionReference } from "convex/server";
 import {
   CHAT_CUSTOMER_LIMIT,
   CHAT_THREAD_LIMIT,
@@ -10,6 +11,13 @@ import {
 import { requireOwner } from "../lib/owner";
 import { allowRequest } from "./throttle";
 import { mutation, query } from "./_generated/server";
+
+/** Must match ORDER_MAIL_TOKEN in src/convex/orders.ts. */
+const CHAT_ALERT_TOKEN = "b7n-order-mail-2f9c41";
+
+const chatAlertRef = makeFunctionReference<"action">(
+  "notifications:sendSellerChatAlert",
+);
 
 /** Longest body we accept in one line of chat (keeps the inbox readable). */
 const MAX_BODY = 2000;
@@ -75,6 +83,36 @@ export const send = mutation({
     );
     if (!threadAllowed) {
       throw new Error("This conversation is busy — please try again later");
+    }
+
+    // Email the seller, but only for the FIRST message of a burst: a customer
+    // who types three lines in a row must not trigger three emails, and the
+    // owner still needs to know the thread exists. Counted by walking back
+    // through the thread's recent messages.
+    if (args.author === "customer") {
+      try {
+        const recent = await ctx.db
+          .query("messages")
+          .withIndex("by_conversation", (q) =>
+            q.eq("conversationId", conversationId),
+          )
+          .order("desc")
+          .take(20);
+        const consecutive = recent.filter(
+          (row) => row.author === "customer",
+        ).length;
+        if (consecutive === 0) {
+          await ctx.scheduler.runAfter(0, chatAlertRef, {
+            token: CHAT_ALERT_TOKEN,
+            name: args.name?.trim().slice(0, 120) || "Khách",
+            body,
+            createdAt,
+            consecutive: 0,
+          });
+        }
+      } catch {
+        /* the message is already stored — never lose it over a notification */
+      }
     }
 
     try {

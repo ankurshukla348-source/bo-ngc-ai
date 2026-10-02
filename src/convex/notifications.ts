@@ -22,10 +22,13 @@ import { action } from "./_generated/server";
 import {
   orderReceiptEmail,
   orderStatusEmail,
+  sellerChatAlertEmail,
+  sellerOrderAlertEmail,
   type EmailLang,
   type EmailOrder,
 } from "../lib/email";
 import { normalizeStatus } from "../lib/orders";
+import { OWNER_EMAIL } from "../lib/owner";
 
 /** Must match ORDER_MAIL_TOKEN in src/convex/orders.ts. */
 const ORDER_MAIL_TOKEN = "b7n-order-mail-2f9c41";
@@ -37,6 +40,110 @@ const recordMailRef = makeFunctionReference<"mutation">(
 );
 
 const DEFAULT_FROM = "Shop Bảo Ngọc <onboarding@resend.dev>";
+
+/** Must match ORDER_MAIL_TOKEN in src/convex/orders.ts. */
+const ALERT_TOKEN = "b7n-order-mail-2f9c41";
+
+/** An action has no `db`, so a new order is re-read through this guarded query. */
+const sellerAlertRef = makeFunctionReference<"query">(
+  "orders:sellerAlertPayload",
+);
+
+/**
+ * Send one email to the shop owner with everything needed to call the customer.
+ *
+ * The seller alert is the difference between a working COD shop and one where
+ * an order only exists if somebody happens to have /seller open, so it goes to
+ * the owner's hardcoded address rather than being configurable — there is
+ * exactly one shop.
+ *
+ * Best effort by construction: the order row already exists, so a provider
+ * failure here must never propagate back into checkout. Unlike the customer
+ * receipt there is no `emailStatus` to record, because this mail is not about
+ * the order's lifecycle — a failure is logged and dropped.
+ */
+export const sendSellerOrderAlert = action({
+  args: { token: v.string(), orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    if (args.token !== ALERT_TOKEN) throw new Error("Not authorized");
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) return { ok: false as const, reason: "missing_key" as const };
+
+    const order = await ctx.runQuery(sellerAlertRef, {
+      token: args.token,
+      id: args.orderId,
+    });
+    if (!order) return { ok: false as const, reason: "not_found" as const };
+
+    const { subject, html } = sellerOrderAlertEmail({
+      orderCode: order.orderCode,
+      createdAt: order.createdAt,
+      customer: order.customer,
+      items: order.items,
+      subtotal: order.subtotal,
+      shippingFee: order.shippingFee,
+      total: order.total,
+    });
+
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: (process.env.RESEND_FROM || DEFAULT_FROM).trim(),
+      to: OWNER_EMAIL,
+      subject,
+      html,
+    });
+    if (error) {
+      console.error(`[seller-alert] ${error.message ?? "send failed"}`);
+      return { ok: false as const, reason: "send_failed" as const };
+    }
+    return { ok: true as const };
+  },
+});
+
+/**
+ * Email the owner when a customer writes in live chat.
+ *
+ * Only fires on the *first* message of a burst, decided by the caller: a
+ * customer typing three lines in a row must not produce three emails, but the
+ * seller still needs to know the thread exists. `consecutive` counts how many
+ * customer messages are already unanswered in the thread.
+ */
+export const sendSellerChatAlert = action({
+  args: {
+    token: v.string(),
+    name: v.string(),
+    body: v.string(),
+    createdAt: v.number(),
+    /** Customer messages already sent in this burst; alert only when 0. */
+    consecutive: v.number(),
+  },
+  handler: async (ctx, args) => {
+    if (args.token !== ALERT_TOKEN) throw new Error("Not authorized");
+    if (args.consecutive > 0) return { ok: true as const, skipped: true as const };
+
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) return { ok: false as const, reason: "missing_key" as const };
+
+    const { subject, html } = sellerChatAlertEmail({
+      name: args.name.trim().slice(0, 120) || "Khách",
+      body: args.body.trim().slice(0, 2000),
+      createdAt: args.createdAt,
+    });
+
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: (process.env.RESEND_FROM || DEFAULT_FROM).trim(),
+      to: OWNER_EMAIL,
+      subject,
+      html,
+    });
+    if (error) {
+      console.error(`[chat-alert] ${error.message ?? "send failed"}`);
+      return { ok: false as const, reason: "send_failed" as const };
+    }
+    return { ok: true as const };
+  },
+});
 
 /**
  * Is this failure caused by having no verified sending domain?

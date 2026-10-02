@@ -1,6 +1,7 @@
 import { Header } from "@/components/store/Header";
 import { MarketingOptIn } from "@/components/store/MarketingOptIn";
 import { api } from "@/convex/_generated/api";
+import { CONTACT } from "@/constants/text";
 import { HONEYPOT_FIELD } from "@/lib/antiSpam";
 import { useCart, type CartItem } from "@/lib/cart";
 import { shippingFeeFor, shippingZoneFor } from "@/lib/catalog";
@@ -19,6 +20,7 @@ import {
   Loader2,
   Minus,
   Pencil,
+  Phone,
   Plus,
   QrCode,
   ShoppingBag,
@@ -463,11 +465,28 @@ function Confirmation({ order }: { order: ConfirmedOrder }) {
               <p className="text-sm leading-relaxed text-muted-foreground">
                 {t("codInstructions")}
               </p>
+              {/* Last chance to ask a question before the parcel is on its way. */}
+              <a
+                href={CONTACT.phoneHref}
+                className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-brand-ink transition-colors hover:opacity-80"
+              >
+                <Phone className="size-4" />
+                {t("checkoutHelpPhone").replace("{n}", CONTACT.phone)}
+              </a>
             </div>
           ) : (
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {t("codInstructions")}
-            </p>
+            <>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {t("codInstructions")}
+              </p>
+              <a
+                href={CONTACT.phoneHref}
+                className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-brand-ink transition-colors hover:opacity-80"
+              >
+                <Phone className="size-4" />
+                {t("checkoutHelpPhone").replace("{n}", CONTACT.phone)}
+              </a>
+            </>
           )}
         </div>
       </div>

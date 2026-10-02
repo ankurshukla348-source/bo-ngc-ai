@@ -1,9 +1,13 @@
+import { api } from "@/convex/_generated/api";
+import { useMutation } from "convex/react";
 import { CATEGORIES, type Category } from "@/lib/catalog";
+import { HONEYPOT_FIELD } from "@/lib/antiSpam";
 import { useI18n } from "@/lib/i18n";
-import { TEXT } from "@/constants/text";
+import { CONTACT, TEXT } from "@/constants/text";
 import { useState } from "react";
 import { Link } from "react-router";
-import { ArrowRight, Facebook, Instagram, Music2, Twitter } from "lucide-react";
+import { ArrowRight, MapPin, Phone } from "lucide-react";
+import { toast } from "sonner";
 
 /** Dark editorial footer: brand + link columns + newsletter, mockup-style. */
 export function StoreFooter({
@@ -13,15 +17,39 @@ export function StoreFooter({
 }) {
   const { t, categoryLabel } = useI18n();
   const [email, setEmail] = useState("");
+  const [honeypot, setHoneypot] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [pending, setPending] = useState(false);
+  const joinNewsletter = useMutation(api.newsletter.subscribe);
 
-  const subscribe = (e: React.FormEvent) => {
+  const subscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    setSubscribed(true);
+    if (pending) return;
+    setPending(true);
+    try {
+      const result = await joinNewsletter({
+        email,
+        website: honeypot,
+        source: "footer",
+      });
+      if (!result.ok) {
+        toast.error(
+          result.reason === "rate_limited"
+            ? t("newsRateLimited")
+            : t("newsBadEmail"),
+        );
+        return;
+      }
+      // A repeat signup gets the same thank-you as a new one — it worked, and
+      // telling the shopper otherwise would only invite another attempt.
+      setSubscribed(true);
+      setEmail("");
+    } catch {
+      toast.error(t("newsFailed"));
+    } finally {
+      setPending(false);
+    }
   };
-
-  const socials = [Instagram, Facebook, Twitter, Music2];
 
   return (
     <footer
@@ -38,17 +66,21 @@ export function StoreFooter({
             <p className="max-w-xs text-sm leading-relaxed text-white/60">
               {t("footerTagline")}
             </p>
-            <div className="mt-1 flex gap-2">
-              {socials.map((Icon, i) => (
-                <a
-                  key={i}
-                  href="#contact"
-                  aria-label="social"
-                  className="flex size-9 items-center justify-center rounded-full border border-white/15 text-white/70 transition-colors hover:border-white/40 hover:text-white"
-                >
-                  <Icon className="size-4" />
-                </a>
-              ))}
+            {/* Real ways to reach the shop. A COD customer deciding whether to
+                hand a courier money for lingerie will want a number, not just
+                a chat bubble. */}
+            <div className="mt-1 flex flex-col gap-2 text-sm">
+              <a
+                href={CONTACT.phoneHref}
+                className="inline-flex w-fit items-center gap-2 text-white transition-colors hover:text-brand-rose"
+              >
+                <Phone className="size-4 shrink-0 text-white/60" />
+                <span className="font-semibold">{CONTACT.phone}</span>
+              </a>
+              <span className="inline-flex items-center gap-2 text-white/60">
+                <MapPin className="size-4 shrink-0" />
+                {CONTACT.address}
+              </span>
             </div>
           </div>
 
@@ -126,7 +158,7 @@ export function StoreFooter({
             ) : (
               <form
                 onSubmit={subscribe}
-                className="mt-4 flex items-center gap-2 rounded-full border border-white/20 bg-white/5 p-1.5 pl-4"
+                className="relative mt-4 flex items-center gap-2 rounded-full border border-white/20 bg-white/5 p-1.5 pl-4"
               >
                 <input
                   type="email"
@@ -137,10 +169,22 @@ export function StoreFooter({
                   aria-label={t("newsPlaceholder")}
                   className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/40"
                 />
+                {/* Honeypot: hidden from people, tempting to bots. */}
+                <input
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  name={HONEYPOT_FIELD}
+                  className="absolute -left-[9999px] h-px w-px opacity-0"
+                />
                 <button
                   type="submit"
+                  disabled={pending}
                   aria-label={t("newsCta")}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[#2c1622] transition-colors hover:bg-brand-rose"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-[#2c1622] transition-colors hover:bg-brand-rose disabled:opacity-60"
                 >
                   <ArrowRight className="size-4" />
                 </button>

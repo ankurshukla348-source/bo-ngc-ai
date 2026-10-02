@@ -2,12 +2,13 @@ import { cn } from "@/lib/utils";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
-import { TEXT } from "@/constants/text";
+import { CONTACT, TEXT } from "@/constants/text";
 import {
   ChevronDown,
   Heart,
   LogIn,
   LogOut,
+  Phone,
   Search,
   ShoppingBag,
   UserRound,
@@ -144,6 +145,16 @@ export function Header({
           <p className="truncate text-[10px] font-medium uppercase tracking-[0.16em] sm:text-[11px]">
             {t("announce")}
           </p>
+          {/* A COD customer will ask a question before paying a courier. Giving
+              them the shop's number in the first thing they read is the
+              difference between a call and an abandoned order. */}
+          <a
+            href={CONTACT.phoneHref}
+            className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] transition-opacity hover:opacity-75 sm:text-[11px]"
+          >
+            <Phone className="size-3" />
+            {CONTACT.phone}
+          </a>
         </div>
       </div>
 

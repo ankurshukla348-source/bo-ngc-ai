@@ -191,6 +191,18 @@ const schema = defineSchema(
       .index("by_product", ["productId"])
       .index("by_user", ["userId"]),
 
+    // ── Newsletter subscribers ─────────────────────────────────
+    // Addresses collected by the footer form. Separate from `users` because
+    // most newsletter sign-ups never create an account, and because consent
+    // here is given by typing an address, not by ticking a checkbox.
+    subscribers: defineTable({
+      email: v.string(), // lower-cased, trimmed
+      createdAt: v.number(),
+      // Where the address came from, so the seller can tell a footer signup
+      // from one written by hand.
+      source: v.optional(v.string()),
+    }).index("by_email", ["email"]),
+
     // ── Spam throttle ──────────────────────────────────────────
     // One row per recent request from a phone number or chat thread. Rows are
     // pruned on write, so the table stays small and needs no sweeper.
