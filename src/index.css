@@ -1,0 +1,247 @@
+/* DO NOT CHANGE */
+@import "tailwindcss";
+@import "tw-animate-css";
+@custom-variant dark (&:is(.dark *));
+
+/* DO NOT CHANGE */
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* Fonts for the Soft Minimal theme: Inter for UI, Playfair Display
+   for the editorial serif headlines.
+
+   Brand pinks. `--accent` is a *light* pink surface, so anything that needs a
+   saturated pink uses these instead:
+     brand-rose → icons, fills, hearts, large accents (#fe87b7)
+     brand-ink  → small text/eyebrows, high-contrast accent (#e0528b) */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --color-brand-rose: #fe87b7;
+  --color-brand-ink: #e0528b;
+}
+
+/* CHANGE VALUES FOR THEME — Vibrant Feminine Pink:
+   airy blush canvas #fef8fa, pure white cards, rose hairline borders,
+   deep plum ink for text, vibrant #fe87b7 primary surfaces with the
+   #e0528b accent for focus rings and small text, soft #fff0f5 tints,
+   rounded corners (radius 1rem) and soft diffuse shadows instead of hard
+   offsets. Contrast on every text pair below is >= 4.5:1 (plum #3b2a32 on
+   #fe87b7 = 5.9:1). */
+:root {
+  /* The store is a light-only design. This single declaration stops Chrome,
+     Edge and Safari auto-inverting the page (and native widgets — scrollbars,
+     date pickers, autofill) when the visitor's OS is in dark mode. It is the
+     CSS counterpart of <meta name="color-scheme" content="light"> in index.html;
+     both are needed because the meta tag covers the browser UI and this covers
+     the rendered document. */
+  color-scheme: light;
+
+  --radius: 1rem;
+  --background: #fef8fa;
+  --foreground: #3b2a32;
+  --card: #ffffff;
+  --card-foreground: #3b2a32;
+  --popover: #ffffff;
+  --popover-foreground: #3b2a32;
+  --primary: #fe87b7;
+  --primary-foreground: #3b2a32;
+  --secondary: rgb(254 135 183 / 0.12);
+  --secondary-foreground: #3b2a32;
+  --muted: #fdf2f6;
+  --muted-foreground: #7d6470;
+  --accent: #fff0f5;
+  --accent-foreground: #4a2b39;
+  --destructive: #b23a48;
+  --border: #f6dfe8;
+  --input: #f2d8e3;
+  --ring: #e0528b;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+
+  /* The brand pink, re-declared here.
+     *
+     * The block above is the stock shadcn greyscale theme, and it overwrites
+     * the store's pink with `--primary: oklch(0.922 0 0)` — a near-white grey.
+     * The brand does not exist at all in that palette: buttons, links and the
+     * announcement bar all lose their colour and the shop looks broken rather
+     * than "in dark mode".
+     *
+     * Nothing in the app adds `.dark` to <html> (there is no theme toggle), so
+     * this block is currently inert — but it is a trap. Anything that ever sets
+     * `.dark`, or a future dark-mode toggle, would silently erase the brand.
+     * Keeping the pink means that if dark mode is ever turned on it looks
+     * deliberate instead of broken. */
+  --primary: #fe87b7;
+  --primary-foreground: #3b2a32;
+  --ring: #e0528b;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  html,
+  body {
+    /* Kill every horizontal scrollbar across all breakpoints — wide fixed
+       elements (banners, overlays) clip instead of stretching the page. */
+    overflow-x: hidden;
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  button:not([disabled]),
+  [role="button"]:not([disabled]) {
+    cursor: pointer;
+  }
+  ::selection {
+    background: #fe87b7;
+    color: #3b2a32;
+  }
+}
+
+/* ── Soft Minimal helpers ──────────────────────────────────────
+   Declared as @utility so variants (hover:shadow-soft) compile. */
+@utility shadow-soft {
+  box-shadow:
+    0 1px 2px rgb(47 29 38 / 0.04),
+    0 8px 24px rgb(47 29 38 / 0.07);
+}
+@utility shadow-soft-lg {
+  box-shadow:
+    0 2px 4px rgb(47 29 38 / 0.05),
+    0 16px 40px rgb(47 29 38 / 0.12);
+}
+/* `card-lift` is only ever used as a static class, so plain CSS is correct
+   here (@utility silently drops the nested hover). */
+.card-lift {
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 2px 4px rgb(47 29 38 / 0.05),
+    0 16px 40px rgb(47 29 38 / 0.12);
+}
+
+/* Legacy neobrutalist class names — softened so any straggler
+   still matches the Soft Minimal Pink theme. */
+.nb-shadow {
+  box-shadow:
+    0 1px 2px rgb(47 29 38 / 0.04),
+    0 8px 24px rgb(47 29 38 / 0.07);
+}
+.nb-shadow-sm {
+  box-shadow: 0 1px 2px rgb(47 29 38 / 0.05);
+}
+.nb-press {
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+.nb-press:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 4px rgb(47 29 38 / 0.05),
+    0 12px 28px rgb(47 29 38 / 0.09);
+}
+.nb-press:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgb(47 29 38 / 0.05);
+}
+.nb-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.nb-focus:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
