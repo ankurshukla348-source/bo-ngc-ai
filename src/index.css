@@ -64,6 +64,14 @@
    offsets. Contrast on every text pair below is >= 4.5:1 (plum #3b2a32 on
    #fe87b7 = 5.9:1). */
 :root {
+  /* The store is a light-only design. This single declaration stops Chrome,
+     Edge and Safari auto-inverting the page (and native widgets — scrollbars,
+     date pickers, autofill) when the visitor's OS is in dark mode. It is the
+     CSS counterpart of <meta name="color-scheme" content="light"> in index.html;
+     both are needed because the meta tag covers the browser UI and this covers
+     the rendered document. */
+  color-scheme: light;
+
   --radius: 1rem;
   --background: #fef8fa;
   --foreground: #3b2a32;
@@ -130,6 +138,23 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* The brand pink, re-declared here.
+     *
+     * The block above is the stock shadcn greyscale theme, and it overwrites
+     * the store's pink with `--primary: oklch(0.922 0 0)` — a near-white grey.
+     * The brand does not exist at all in that palette: buttons, links and the
+     * announcement bar all lose their colour and the shop looks broken rather
+     * than "in dark mode".
+     *
+     * Nothing in the app adds `.dark` to <html> (there is no theme toggle), so
+     * this block is currently inert — but it is a trap. Anything that ever sets
+     * `.dark`, or a future dark-mode toggle, would silently erase the brand.
+     * Keeping the pink means that if dark mode is ever turned on it looks
+     * deliberate instead of broken. */
+  --primary: #fe87b7;
+  --primary-foreground: #3b2a32;
+  --ring: #e0528b;
 }
 
 @layer base {
