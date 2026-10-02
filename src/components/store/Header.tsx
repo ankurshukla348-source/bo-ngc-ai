@@ -160,12 +160,18 @@ export function Header({
       {/* Main bar */}
       <div className="border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3.5 sm:gap-6">
-          <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-            {/* Mobile: short brand so the bar stays on one line; Desktop: full */}
-            <span className="font-display text-lg font-bold leading-tight tracking-[0.04em] md:hidden">
+          <Link to="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
+            {/* Mobile: short brand so the bar stays on one line; Desktop: full.
+                The link is `min-w-0` WITHOUT `shrink-0` on purpose. With
+                `shrink-0` the wordmark refused to give up width, so on a narrow
+                phone (360px) it pushed the whole action cluster off the right
+                edge — and because the cart is the LAST item in that cluster, the
+                cart was the first thing to disappear. `truncate` lets the
+                brand ellipsize instead, so cart and account always survive. */}
+            <span className="truncate font-display text-lg font-bold leading-tight tracking-[0.04em] md:hidden">
               {TEXT.brandMobile}
             </span>
-            <span className="hidden font-display text-xl font-bold leading-tight tracking-[0.08em] md:block lg:text-2xl">
+            <span className="hidden truncate font-display text-xl font-bold leading-tight tracking-[0.08em] md:block lg:text-2xl">
               {TEXT.brandFull}
             </span>
           </Link>            {showNav && (
@@ -188,7 +194,10 @@ export function Header({
               </nav>
             )}
 
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          {/* `shrink-0` guarantees this cluster keeps its full width and is never the
+              thing that gets squeezed — the cart and account controls are the
+              one part of the header that must be visible on every device. */}
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             {showNav && (
               <div className="relative hidden w-44 md:block lg:w-60">
                 {searchInput}
@@ -215,7 +224,7 @@ export function Header({
                   onClick={() => setLang(code)}
                   aria-pressed={lang === code}
                   className={cn(
-                    "rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase transition-colors",
+                    "rounded-full px-2 py-1 text-[10px] font-semibold uppercase transition-colors sm:px-2.5 sm:text-[11px]",
                     lang === code
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground",
