@@ -2,13 +2,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { placeholderArt } from "@/lib/art";
 import { CATEGORIES, SIZE_OPTIONS, type Category } from "@/lib/catalog";
-import {
-  ADMIN_EMAIL,
-  checkSellerPin,
-  grantSellerPin,
-  hasSellerPin,
-  revokeSellerPin,
-} from "@/lib/admin";
+import { ADMIN_EMAIL } from "@/lib/admin";
 import { useAuth } from "@/hooks/use-auth";
 import { formatVnd, sanitizePriceInput } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -40,7 +34,6 @@ import {
   Download,
   ImagePlus,
   Loader2,
-  Lock,
   MailWarning,
   MessageCircle,
   Pencil,
@@ -2056,87 +2049,6 @@ function BroadcastPanel() {
 }
 
 /* ────────────────────────────────────────────────────────────────
-   Seller PIN gate — the owner's second check before /seller opens
-   ──────────────────────────────────────────────────────────────── */
-
-function SellerPinGate({ onUnlock }: { onUnlock: () => void }) {
-  const { t } = useI18n();
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState(false);
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (checkSellerPin(pin)) {
-      grantSellerPin();
-      setError(false);
-      onUnlock();
-    } else {
-      setError(true);
-      setPin("");
-    }
-  };
-
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-4">
-      <form
-        onSubmit={submit}
-        className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 shadow-soft-lg"
-      >
-        <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-2xl bg-primary font-display text-2xl font-bold text-primary-foreground">
-            B
-          </span>
-          <span>
-            <span className="block font-display text-xl font-bold tracking-tight">
-              {t("sellerPinTitle")}
-            </span>
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-              {t("adminSub")}
-            </span>
-          </span>
-        </div>
-
-        <p className="mt-6 text-sm text-muted-foreground">
-          {t("sellerPinBody")}
-        </p>
-
-        <label className="mt-5 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {t("pinPlaceholder")}
-          <input
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            autoFocus
-            maxLength={12}
-            value={pin}
-            onChange={(e) => {
-              setPin(e.target.value);
-              setError(false);
-            }}
-            placeholder="••••••••"
-            className="mt-2 h-12 w-full rounded-2xl border border-border bg-background px-4 text-center font-mono text-2xl tracking-[0.4em] outline-none focus:border-ring focus:bg-card"
-          />
-        </label>
-
-        {error && (
-          <p className="mt-3 rounded-full bg-accent px-3 py-2 text-center text-xs font-semibold text-accent-foreground">
-            {t("pinError")}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
-        >
-          <Lock className="size-4" />
-          {t("unlock")}
-        </button>
-      </form>
-    </main>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────
    Page
    ──────────────────────────────────────────────────────────────── */
 
@@ -2144,9 +2056,15 @@ export default function Admin() {
   const { isLoading, isProfileLoading, isAuthenticated, user, signOut } =
     useAuth();
   const navigate = useNavigate();
-  const [pinOk, setPinOk] = useState(() => hasSellerPin());
 
-  // Check 1 — identity. Only the store owner's Google account may proceed;
+  // Identity is the ONLY gate. There used to be a client-side PIN here as a
+  // "second factor", but it was not one: the code shipped in the JS bundle, so
+  // anyone could read it, and it protected nothing the server did not already
+  // protect. Every seller-only Convex function calls `requireOwner`
+  // (src/lib/owner.ts), which checks the real Google session — that is the
+  // access control. Removing the PIN removes a false sense of security without
+  // weakening anything.
+  // Only the store owner's Google account may proceed;
   // anyone else (signed out, or a customer) goes straight back to the store.
   const isOwner =
     isAuthenticated &&
@@ -2164,9 +2082,8 @@ export default function Admin() {
     if (!deciding && !isOwner) navigate("/", { replace: true });
   }, [deciding, isOwner, navigate]);
 
-  // Check 2 — the seller PIN, re-asked whenever the tab is locked.
+  // Signs the owner out — the only way out of /seller.
   const lock = async () => {
-    revokeSellerPin();
     await signOut();
     navigate("/", { replace: true });
   };
@@ -2177,10 +2094,6 @@ export default function Admin() {
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </main>
     );
-  }
-
-  if (!pinOk) {
-    return <SellerPinGate onUnlock={() => setPinOk(true)} />;
   }
 
   return <AdminPanel onLock={lock} />;

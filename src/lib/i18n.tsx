@@ -385,11 +385,7 @@ const vi = {
   wishlistEmpty: "Chưa lưu món nào — chạm vào trái tim trên sản phẩm để lưu lại.",
   wishlistCount: "món đã lưu",
   // ── Seller PIN / orders / moderation ────────────────────────
-  sellerPinTitle: "Mã truy cập chủ shop",
-  sellerPinBody: "Nhập mã truy cập của chủ shop để mở khu bán hàng.",
-  pinPlaceholder: "Nhập mã PIN",
-  unlock: "Mở khoá",
-  pinError: "Mã không đúng. Thử lại.",
+  
   sellerTabOrders: "Đơn hàng",
   orderCustomer: "Khách hàng",
   shippingZoneLabel: "Khu vực giao hàng",
@@ -431,7 +427,7 @@ const vi = {
   stockCountLabel: "Số lượng tồn kho",
   stockCountPlaceholder: "Để trống nếu không quản lý tồn kho",
   stockCountShort: "Tồn:",
-  lockSellerSession: "Khoá phiên",
+  lockSellerSession: "Đăng xuất",
   replaceImageLabel: "Ảnh sản phẩm",
   replaceImageCta: "Đổi ảnh",
   replaceImageAgain: "Đổi ảnh khác",
@@ -886,13 +882,7 @@ const en: Record<TKey, string> = {
   wishlistCount: "items saved",
 
 
-  // Seller PIN / orders / moderation
-  sellerPinTitle: "Store owner access code",
-  sellerPinBody:
-    "Enter the store owner access code to open the seller dashboard.",
-  pinPlaceholder: "Enter PIN",
-  unlock: "Unlock",
-  pinError: "Incorrect code. Try again.",
+  // Seller orders / moderation
   sellerTabOrders: "Orders",
   orderCustomer: "Customer",
   shippingZoneLabel: "Delivery area",
@@ -934,7 +924,7 @@ const en: Record<TKey, string> = {
   stockCountLabel: "Units in stock",
   stockCountPlaceholder: "Leave blank if not tracked",
   stockCountShort: "Stock:",
-  lockSellerSession: "Lock session",
+  lockSellerSession: "Sign out",
   replaceImageLabel: "Product photo",
   replaceImageCta: "Replace photo",
   replaceImageAgain: "Choose another",
