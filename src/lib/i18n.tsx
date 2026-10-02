@@ -464,6 +464,8 @@ const vi = {
   inCartBadge: "ở trong giỏ",
   categoryLabel: "Danh mục",
   categoryFallback: "Khác",
+  productNoDescription:
+    "Sản phẩm chưa có mô tả chi tiết. Bạn nhắn tin qua Live Chat để shop gửi thêm thông tin về chất liệu và cách dùng nhé.",
 
   // ── Live chat (storefront widget) ───────────────────────────
   chatWidgetLabel: "Hỗ trợ trực tuyến qua Live Chat",
@@ -982,6 +984,8 @@ const en: Record<TKey, string> = {
   inCartBadge: "in cart",
   categoryLabel: "Category",
   categoryFallback: "Other",
+  productNoDescription:
+    "No detailed description for this product yet. Message us on Live Chat and we'll happily send you the fabric and care details.",
 
   // Live chat
   chatWidgetLabel: "Live chat support",

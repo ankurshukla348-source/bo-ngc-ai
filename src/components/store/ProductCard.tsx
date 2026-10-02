@@ -329,6 +329,36 @@ export function ProductCard({
                 {formatVnd(product.price)}
               </p>
 
+              {/* Description.
+                  *
+                  * `description` is optional in the schema, so a product added
+                  * without one would otherwise leave a silent gap under the
+                  * price and read as a broken page. We fall back to copy that
+                  * describes the shop's own guarantees rather than inventing
+                  * product claims — a placeholder that promises something we
+                  * have not verified is worse than an honest generic line.
+                  *
+                  * Whitespace-only is treated as missing so a stray newline from
+                  * the seller's form does not defeat the fallback. */}
+              {(() => {
+                const text = (product.description ?? "").trim();
+                if (!text) {
+                  return (
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {t("productNoDescription")}
+                    </p>
+                  );
+                }
+                // `whitespace-pre-line` keeps the seller's own line breaks, and
+                // `break-words` stops one long unbroken string from widening the
+                // modal on a narrow phone screen.
+                return (
+                  <p className="whitespace-pre-line break-words text-sm leading-relaxed text-foreground/80">
+                    {text}
+                  </p>
+                );
+              })()}
+
               {rating !== undefined && (
                 <div className="flex items-center gap-1">
                   {Array.from({ length: 5 }).map((_, i) => (
