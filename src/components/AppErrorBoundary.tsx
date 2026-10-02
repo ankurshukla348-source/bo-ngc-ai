@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, useState, type ErrorInfo, type ReactNode } from "react";
 
 /**
  * App-level error boundary.
@@ -40,10 +40,25 @@ export class AppErrorBoundary extends Component<
   }
 }
 
+/** Is the backend simply not running, rather than the app being broken?
+ *
+ *  Convex pauses an idle deployment automatically, and a paused deployment
+ *  rejects every query with this exact wording. It is an outage on our side, not
+ *  a bug in anything the shopper did, so it gets its own calm copy ("shop tạm
+ *  bảo trì") instead of "đã xảy ra lỗi nhỏ" — and, more importantly, the raw
+ *  Convex text is hidden, because a shopper has no use for a request id. */
+function isBackendUnavailable(message: string | undefined): boolean {
+  if (!message) return false;
+  return /deployment is paused|while this deployment is paused/i.test(message);
+}
+
 /** Localized crash screen. Must stay defensive: it renders *because* something
  *  else already failed. */
 function AppErrorFallback({ message }: { message?: string }) {
   const { t } = useI18n();
+  const backendDown = isBackendUnavailable(message);
+  const [showDetail, setShowDetail] = useState(false);
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-5 py-16">
       <div className="w-full max-w-md text-center">
@@ -51,10 +66,10 @@ function AppErrorFallback({ message }: { message?: string }) {
           <span className="font-display text-2xl font-bold">!</span>
         </span>
         <h1 className="mt-6 font-display text-2xl font-bold">
-          {t("errorBoundaryTitle")}
+          {t(backendDown ? "errorBoundaryDownTitle" : "errorBoundaryTitle")}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {t("errorBoundaryBody")}
+          {t(backendDown ? "errorBoundaryDownBody" : "errorBoundaryBody")}
         </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Button onClick={() => window.location.reload()}>
@@ -69,10 +84,24 @@ function AppErrorFallback({ message }: { message?: string }) {
             {t("errorBoundaryHome")}
           </Button>
         </div>
+        {/* The technical detail stays available — the shop owner needs it to
+            report a problem — but behind a disclosure instead of shouted at
+            every customer. It is always logged to the console regardless. */}
         {message && (
-          <p className="mt-6 break-words rounded-2xl border border-border bg-card px-4 py-3 text-left text-[11px] leading-relaxed text-muted-foreground">
-            {message}
-          </p>
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => setShowDetail((prev) => !prev)}
+              className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground/70 underline-offset-4 transition-colors hover:text-muted-foreground hover:underline"
+            >
+              {showDetail ? t("errorBoundaryHideDetail") : t("errorBoundaryShowDetail")}
+            </button>
+            {showDetail && (
+              <p className="mt-2 break-words rounded-2xl border border-border bg-card px-4 py-3 text-left text-[11px] leading-relaxed text-muted-foreground">
+                {message}
+              </p>
+            )}
+          </div>
         )}
       </div>
     </main>

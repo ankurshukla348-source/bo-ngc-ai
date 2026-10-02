@@ -306,6 +306,11 @@ const vi = {
     "Vui lòng thử lại. Đơn hàng và sản phẩm bạn đã lưu vẫn còn nguyên.",
   errorBoundaryRetry: "Thử lại",
   errorBoundaryHome: "Về trang chủ",
+  errorBoundaryDownTitle: "Shop tạm thời bảo trì",
+  errorBoundaryDownBody:
+    "Hệ thống đang được bảo trì trong chốc lát. Bạn vui lòng tải lại trang sau ít phút, hoặc nhắn tin cho shop qua Live Chat.",
+  errorBoundaryShowDetail: "Chi tiết kỹ thuật",
+  errorBoundaryHideDetail: "Ẩn chi tiết",
   orderUnknownCustomer: "Khách hàng",
   ordersItemsUnavailable: "Chi tiết sản phẩm không khả dụng",
   sellerSaveFailed: "Không lưu được thay đổi. Vui lòng thử lại.",
@@ -820,6 +825,11 @@ const en: Record<TKey, string> = {
     "Please try again — your saved orders and products are untouched.",
   errorBoundaryRetry: "Try again",
   errorBoundaryHome: "Back to home",
+  errorBoundaryDownTitle: "The shop is briefly down for maintenance",
+  errorBoundaryDownBody:
+    "We are doing a quick bit of maintenance. Please reload the page in a moment, or message us on Live Chat.",
+  errorBoundaryShowDetail: "Technical details",
+  errorBoundaryHideDetail: "Hide details",
   orderUnknownCustomer: "Customer",
   ordersItemsUnavailable: "Product details unavailable",
   sellerSaveFailed: "Could not save that change. Please try again.",
