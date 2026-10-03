@@ -19,6 +19,58 @@ const MAX_PHOTOS = 4;
  * confirmation rather than an error. Photo upload is capped and each file is
  * validated as an image before it ever reaches the network.
  */
+/** Attempts per photo, and the pause before attempts 2 and 3. */
+const PHOTO_ATTEMPTS = 3;
+const PHOTO_BACKOFF_MS = [0, 900, 2500];
+/** A stalled mobile connection otherwise hangs on the spinner forever. */
+const PHOTO_TIMEOUT_MS = 60_000;
+
+/**
+ * Upload one review photo, retrying the way the seller's dropzone does.
+ *
+ * A single dropped POST — common on a phone, and `fetch` reports it only as
+ * "Failed to fetch" — used to cost the customer their whole photo. The signed
+ * URL is minted again per attempt because it expires, and the radio being off
+ * fails fast instead of burning the backoff.
+ */
+async function uploadReviewPhoto(
+  getUploadUrl: () => Promise<string>,
+  file: File,
+): Promise<string> {
+  let last: unknown;
+  for (let attempt = 1; attempt <= PHOTO_ATTEMPTS; attempt++) {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) break;
+    try {
+      const url = await getUploadUrl();
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+        signal:
+          typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+            ? AbortSignal.timeout(PHOTO_TIMEOUT_MS)
+            : undefined,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      const { storageId } = (await res.json()) as { storageId?: string };
+      if (!storageId) throw new Error("upload returned no storageId");
+      return storageId;
+    } catch (error) {
+      last = error;
+      console.warn(
+        `[review upload] ${file.name} attempt ${attempt}/${PHOTO_ATTEMPTS} failed`,
+        error,
+      );
+      if (attempt < PHOTO_ATTEMPTS) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, PHOTO_BACKOFF_MS[attempt] ?? 2500),
+        );
+      }
+    }
+  }
+  throw last instanceof Error ? last : new Error("photo upload failed");
+}
+
 export function ReviewSection({
   productId,
   canReview,
@@ -55,14 +107,7 @@ export function ReviewSection({
 
     for (const file of images) {
       try {
-        const url = await uploadUrl({});
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": file.type },
-          body: file,
-        });
-        if (!res.ok) throw new Error(String(res.status));
-        const { storageId } = (await res.json()) as { storageId: string };
+        const storageId = await uploadReviewPhoto(() => uploadUrl({}), file);
         const preview = URL.createObjectURL(file);
         setPhotos((prev) =>
           prev.length < MAX_PHOTOS ? [...prev, { id: storageId, url: preview }] : prev,

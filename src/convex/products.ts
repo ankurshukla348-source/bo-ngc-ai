@@ -7,9 +7,22 @@ import type { Id } from "./_generated/dataModel";
 /** Gallery entries are plain strings; storage helpers want a typed id. */
 const asStorageId = (value: string) => value as Id<"_storage">;
 
-/** Is this plausibly a Convex storage id rather than a stray URL or empty value? */
+/** Is this plausibly a Convex storage id rather than a stray URL or empty value?
+ *
+ *  Deliberately a structural screen, NOT a pattern that guesses the id format.
+ *  `Id<"_storage">` values are table-encoded strings, while the pre-1.6
+ *  format Convex still serves in file URLs is a UUID — so a guess that is
+ *  wrong for this deployment's ids rejects every real photo: `list` then
+ *  renders none, and `update` reads the rejection as "removed from the set"
+ *  and DELETES those blobs. All this screen must catch is what actually
+ *  reaches these fields — full storage URLs from the era when one was stored
+ *  inline, and empty strings. Candidates are confirmed by `storage.getUrl`,
+ *  which resolves to null for anything that is not a real file. */
 const isStorageId = (value: unknown): value is string =>
-  typeof value === "string" && /^kg[a-z0-9]{20,}$/.test(value.trim());
+  typeof value === "string" &&
+  value.length >= 16 &&
+  value.length <= 128 &&
+  /^[A-Za-z0-9_-]+$/.test(value);
 import { mutation, query } from "./_generated/server";
 
 export const categoryValidator = v.union(

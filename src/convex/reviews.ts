@@ -2,8 +2,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { normalizeStatus } from "../lib/orders";
 import { requireOwner } from "../lib/owner";
-import { mutation, query } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import { mutation, query, type QueryCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
 
 /** Photo ids are stored as plain strings; storage helpers want a typed id. */
 const asStorageId = (value: string) => value as Id<"_storage">;
@@ -32,6 +32,30 @@ function cleanText(value: string | undefined): string | undefined {
 }
 
 export const MAX_REVIEW_PHOTOS = MAX_PHOTOS;
+
+/** Best picture for a product row: live file storage first, the legacy inline
+ *  `imageSrc` last. `products:list` resolves storage ids on every read, but
+ *  this query used to read `imageSrc` alone — so a product the seller actually
+ *  photographed (which stores no inline art) came back photo-less in the
+ *  customer's "review your purchase" list. A blob deleted out from under us
+ *  falls through to the next candidate instead of throwing. */
+async function resolveProductImage(
+  ctx: QueryCtx,
+  product: Doc<"products">,
+): Promise<string | null> {
+  const candidates = [product.imageStorageId, ...(product.images ?? [])];
+  for (const candidate of candidates) {
+    // Stray URLs and empty strings never reach `getUrl`.
+    if (typeof candidate !== "string" || candidate.length < 16) continue;
+    try {
+      const url = await ctx.storage.getUrl(asStorageId(candidate));
+      if (url) return url;
+    } catch {
+      // Not a usable id, or the file is gone — try the next one.
+    }
+  }
+  return product.imageSrc ?? null;
+}
 
 /** Reviews for a product, newest first, each with resolved photo URLs. */
 export const forProduct = query({
@@ -137,7 +161,7 @@ export const reviewable = query({
           productId,
           nameVi: product.nameVi ?? item.nameVi ?? "Sản phẩm",
           nameEn: product.nameEn ?? item.nameEn ?? "Product",
-          image: product.imageSrc ?? null,
+          image: await resolveProductImage(ctx, product),
           deliveredAt: order.createdAt,
           orderId: order._id,
           reviewed: !!existing,
