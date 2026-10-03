@@ -20,12 +20,12 @@ import { useEffect, useMemo, useState } from "react";
 
 /** Warm tints used when a category/card has no product photo yet. */
 const TINTS = [
-  "#fdf2f6",
-  "#fbeaf1",
-  "#f9e0ea",
-  "#f7dfe9",
-  "#f5dbe6",
-  "#f3d6e2",
+  "#f4f0ff",
+  "#efe9fe",
+  "#eae2fd",
+  "#e5dcfc",
+  "#e0d5fb",
+  "#dbcef9",
 ];
 
 const HERO_TRUST = [
@@ -449,7 +449,7 @@ export default function Landing() {
                       className="absolute inset-0 h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#fff0f5] to-brand-rose/45" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#f3eeff] to-brand-rose/45" />
                   )}
                 </div>
               </div>
@@ -611,7 +611,7 @@ export default function Landing() {
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#fff0f5] to-brand-rose/40" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#f3eeff] to-brand-rose/40" />
               )}
             </div>
             <div className="flex flex-col justify-center gap-4 p-8 sm:p-12">
