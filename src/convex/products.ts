@@ -130,7 +130,14 @@ export const add = mutation({
     );
     // The first uploaded photo is the thumbnail, so `imageStorageId` and the
     // gallery can never disagree about what the shopfront shows.
-    const primary = args.imageStorageId ?? (images[0] as Id<"_storage"> | undefined);
+    const primary =
+      args.imageStorageId ?? (images[0] as Id<"_storage"> | undefined);
+    // A photo-less product is NEVER given an inline image URL. `imageSrc` is
+    // only meaningful for the one-time legacy seed; letting a create call set
+    // it is what let a stock photo (the black lace bra) get stored against a
+    // product whose own photo had failed to upload. With `primary` absent the
+    // storefront falls back to its own tint/monogram placeholder instead.
+    const imageSrc = primary ? args.imageSrc : undefined;
 
     await ctx.db.insert("products", {
       nameVi: args.nameVi.trim(),
@@ -143,7 +150,7 @@ export const add = mutation({
       ...(stock === undefined ? {} : { stock }),
       ...(primary ? { imageStorageId: primary } : {}),
       ...(images.length ? { images } : {}),
-      ...(args.imageSrc ? { imageSrc: args.imageSrc } : {}),
+      ...(imageSrc ? { imageSrc } : {}),
       createdAt: Date.now(),
     });
   },

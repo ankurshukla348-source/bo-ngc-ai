@@ -5,125 +5,176 @@
  * `/policy` page and anything else that quotes the policy can never drift
  * apart. Both languages live here as parallel documents, so switching the site
  * to English switches the policy too.
+ *
+ * The Vietnamese text is the seller's official wording, reproduced verbatim.
+ * Section numbering, the 50% deposit rule, the shipping table and the contact
+ * block are all part of that text — do not paraphrase or renumber it.
  */
 
 export type PolicySection = {
   heading: string;
+  /** Short lead-in shown under the heading. */
   lead: string | null;
+  /** Free prose paragraphs (no bullet marker). */
+  paragraphs: readonly string[];
+  /** Bulleted points. A "\n" inside one renders as a line break. */
   bullets: readonly string[];
 };
 
 export type PolicyCopy = {
   title: string;
-  greeting: string;
-  story: string;
-  bridge: string;
+  /** Opening paragraphs, before any numbered section. */
+  intro: readonly string[];
   sections: readonly PolicySection[];
+  /** Contact details / sign-off shown after the last section. */
+  closing: readonly string[];
 };
 
-/** Vietnamese — the store's original, legally-loaded wording. */
+/** Vietnamese — the store's official policy wording, verbatim. */
 export const POLICY: PolicyCopy = {
-  title: "GIỚI THIỆU VỀ SHOP & CHÍNH SÁCH MUA SẮM TOÀN DIỆN",
-  greeting:
-    "Chào mừng bạn đến với Shop Bảo Ngọc – Điểm đến mua sắm uy tín tại Diên Khánh.",
-  story:
-    "Khởi nguồn từ một sạp hàng nhỏ quen thuộc tại Diên Khánh, Khánh Hoà. Chúng tôi luôn tự hào là người bạn đồng hành, thấu hiểu và nâng niu vẻ đẹp tự nhiên của phái đẹp. Với mong muốn mang lại sự tự tin từ sâu bên trong và diện mạo rạng rỡ bên ngoài, shop chuyên cung cấp các dòng sản phẩm nội y giá tốt, áo bra nâng dáng, váy ngủ lụa mềm mại cùng các dòng mỹ phẩm chăm sóc da chính hãng. Mỗi một sản phẩm có mặt tại shop đều được chính tay shop tuyển chọn vô cùng kỹ lưỡng từ chất liệu vải, đường kim mũi chỉ cho đến nguồn gốc xuất xứ an toàn, lành tính cho làn da. Sự hài lòng và an tâm của quý khách chính là niềm hạnh phúc lớn nhất của chúng tôi.",
-  bridge:
-    "Để mang lại trải nghiệm mua sắm trực tuyến tuyệt vời và an tâm nhất như khi mua trực tiếp tại sạp hàng, shop xin gửi đến quý khách hàng các chính sách mua hàng, đổi trả và khuyến mãi chi tiết như sau:",
+  title: "CHÍNH SÁCH MUA SẮM & ĐIỀU KHOẢN",
+  intro: [
+    "Chào mừng quý khách hàng đến với hệ thống mua sắm trực tuyến của Shop Bảo Ngọc. Website này được vận hành nhằm số hóa và mở rộng dịch vụ từ cửa hàng truyền thống tại Chợ Thành, Diên Khánh, Khánh Hoà. Chúng tôi chuyên cung cấp các sản phẩm thời trang nữ (đồ lót, áo bra, váy ngủ) chất lượng & giá cả tốt, đồng thời mang đến các dòng mỹ phẩm chính hãng được nhập và phân phối trực tiếp từ các nguồn hàng uy tín.",
+    "Để bảo vệ quyền lợi hợp pháp của cả hai bên, xin quý khách vui lòng đọc kỹ các điều khoản và chính sách mua bán được quy định rõ ràng dưới đây trước khi tiến hành giao dịch.",
+  ],
   sections: [
     {
-      heading: "Chính sách mua hàng & Giao vận an toàn.",
+      heading: "1. Chính sách về sản phẩm và nguồn gốc hàng hóa.",
       lead: null,
-      bullets: [
-        "Quy định giao nhận (Không xem hàng trước): Để đảm bảo tính bảo mật và giữ cho các sản phẩm mỹ phẩm luôn nguyên màng co, hộp giấy không bị móp méo, cũng như giữ vệ sinh tuyệt đối cho các sản phẩm nội y, shop áp dụng chính sách KHÔNG XEM HÀNG TRƯỚC khi thanh toán. Quý khách vui lòng thanh toán đầy đủ cho Shipper khi nhận hàng. Shop cam kết đóng gói đúng và đủ theo đơn đặt hàng của bạn.",
-        "Đảm bảo quyền lợi sau nhận hàng: Quý khách hoàn toàn có thể yên tâm, ngay sau khi nhận hàng và thanh toán, nếu mở ra phát hiện sản phẩm bị lỗi, hư hỏng do vận chuyển hoặc sai mẫu mã, shop sẽ hỗ trợ đổi trả hoặc hoàn tiền ngay lập tức theo đúng chính sách đổi trả của shop.",
-        "Bảo mật đơn hàng: Toàn bộ đơn hàng nội y của quý khách đều được đóng gói kín đáo, tinh tế và che tên sản phẩm 100% trên phiếu giao hàng để bảo vệ sự riêng tư tuyệt đối cho khách hàng.",
-        "Thời gian giao hàng: Khách hàng tại khu vực Diên Khánh, Nha Trang sẽ nhận được hàng nhanh chóng trong vòng 1 - 2 ngày. Các tỉnh thành khác thời gian nhận hàng dao động từ 3 - 5 ngày làm việc.",
+      paragraphs: [
+        "Nhóm hàng thời trang nữ (Đồ lót, Bra, Váy ngủ): Toàn bộ sản phẩm được tuyển chọn kỹ lưỡng, đảm bảo chất liệu an toàn cho làn da, kiểu dáng đa dạng và đúng như hình ảnh hiển thị trên Website. Khách hàng tại khu vực Khánh Hòa có thể đến trực tiếp cửa hàng để xem & cảm nhận chất lượng sản phẩm.",
+        "Nhóm hàng Mỹ phẩm: Shop Bảo Ngọc cam kết các sản phẩm mỹ phẩm được đăng tải trên hệ thống đều là hàng chính hãng 100%, có nguồn gốc xuất xứ rõ ràng, đầy đủ tem mác. Nói không với hàng giả, hàng nhái.",
       ],
+      bullets: [],
     },
     {
-      heading: "Chính sách đổi trả linh hoạt trong 7 ngày.",
-      lead: "Shop luôn mong muốn bạn nhận được những sản phẩm vừa vặn và ưng ý nhất. Nếu sản phẩm chưa vừa size hoặc có bất kỳ lỗi nào từ nhà sản xuất, shop hỗ trợ đổi trả với quy định như sau:",
-      bullets: [
-        "Thời gian áp dụng: Trong vòng 7 ngày kể từ ngày quý khách nhận được hàng thành công.",
-        "Điều kiện sản phẩm: Sản phẩm đổi trả phải còn mới nguyên vẹn, chưa qua sử dụng, chưa qua giặt tẩy, còn đầy đủ tem mác và hóa đơn mua hàng (nếu có).",
-        "Phân loại sản phẩm được đổi: Shop hỗ trợ đổi size hoặc đổi mẫu đối với các sản phẩm: Áo ngực (Bra), váy ngủ, đồ bộ mặc nhà và mỹ phẩm (Mỹ phẩm phải còn nguyên màng co, chưa mở nắp).",
-        "Lưu ý đặc biệt: Để đảm bảo vệ sinh cá nhân tuyệt đối cho mọi khách hàng, shop KHÔNG áp dụng đổi trả đối với sản phẩm Quần lót (trừ trường hợp giao sai mẫu hoặc hàng bị lỗi từ phía shop).",
-        "Chi phí đổi trả: Nếu lỗi do shop giao sai hoặc hàng lỗi, shop sẽ chịu 100% chi phí vận chuyển. Nếu quý khách muốn đổi size, đổi mẫu theo nhu cầu cá nhân, quý khách vui lòng thanh toán phí ship 2 chiều.",
-      ],
-    },
-    {
-      heading: "Chương trình ưu đãi & chính sách khuyến mãi.",
-      lead: "Để tri ân sự ủng hộ của quý khách, shop thường xuyên mang đến những ưu đãi hấp dẫn giúp bạn mua sắm thả ga không lo về giá:",
-      bullets: [
-        "Ưu đãi Miễn phí vận chuyển (Freeship): Miễn phí giao hàng toàn quốc cho tất cả các đơn hàng có giá trị từ 400.000đ trở lên. Khách hàng tại nội thành Diên Khánh sẽ được hỗ trợ phí ship ưu đãi nhất.",
-        "Chương trình Khách hàng thân thiết: Mọi đơn hàng của bạn trên website đều được tích điểm tự động qua số điện thoại mua hàng. Số điểm này sẽ được quy đổi thành các voucher giảm giá trực tiếp 5%, 10% hoặc các phần quà mỹ phẩm/nội y xinh xắn vào tháng sinh nhật của bạn.",
-        "Săn sale các ngày lễ hoặc Lễ Tết: Vào các ngày lễ dành cho phái đẹp (8/3, 20/10), shop sẽ có các chương trình \"Mua 1 tặng 1\", \"Combo nội y giá hời\" hoặc \"Giảm giá mỹ phẩm lên đến 30%\". Quý khách đừng quên theo dõi mục \"Bán chạy/Khuyến mãi\" trên website để không bỏ lỡ nhé!",
-      ],
-    },
-    {
-      heading: "Biểu phí vận chuyển (Tiền Ship)",
+      heading: "2. Quy trình đặt hàng và xác nhận đơn hàng.",
       lead: null,
+      paragraphs: [
+        "Khách hàng lựa chọn sản phẩm, kích cỡ, màu sắc hoặc chủng loại phù hợp trên hệ thống Website của Shop Bảo Ngọc và tiến hành nhập đầy đủ thông tin giao hàng bao gồm: Họ tên, số điện thoại, địa chỉ nhận hàng cụ thể.",
+        "Sau khi nhận được yêu cầu đặt hàng của Quý khách, bộ phận chăm sóc khách hàng của chúng tôi sẽ liên hệ qua điện thoại hoặc Zalo để xác nhận lại thông tin đơn hàng, số lượng, hướng dẫn đặt cọc (nếu có) và tổng chi phí thanh toán trước khi tiến hành đóng gói, gửi hàng.",
+      ],
+      bullets: [],
+    },
+    {
+      heading: "3. Phương thức thanh toán và quy định đi đơn (Giao nhận hàng hóa).",
+      lead: "Để đảm bảo tính nghiêm túc trong việc giao nhận, tránh tình trạng hủy đơn ảo (bom hàng) gây thiệt hại cho cửa hàng, Shop Bảo Ngọc áp dụng quy trình thanh toán riêng biệt cho từng nhóm hàng với lý do cụ thể như sau:",
+      paragraphs: [],
       bullets: [
-        "Toàn huyện Diên Khánh (gồm khu vực nội thành gần Chợ Thành): Đồng giá 15.000đ / đơn hàng (Giao hàng hỏa tốc trong ngày).",
+        "Đối với các sản phẩm Thời trang (Đồ lót, Áo Bra, Váy ngủ): Quý khách vui lòng chuyển khoản trước 50% giá trị đơn hàng làm tiền cọc để hệ thống xác nhận đi đơn. Số tiền 50% còn lại cộng với phí vận chuyển (nếu có) sẽ được thanh toán bằng tiền mặt khi nhận hàng (COD).\nLý do áp dụng: Các sản phẩm nội y và váy ngủ mang tính chất cá nhân cao, đòi hỏi quy trình đóng gói và bảo quản nghiêm ngặt để đảm bảo vệ sinh khi đến tay khách hàng. Nếu đơn hàng bị từ chối nhận (bom hàng) và phải quay vòng vận chuyển nhiều ngày trên đường, sản phẩm rất dễ bị bám bẩn, mất phom dáng, hư hỏng mác và không thể bán lại cho khách hàng khác. Vì vậy, khoản cọc 50% là sự cam kết trách nhiệm giữa hai bên, giúp shop yên tâm chuẩn bị những sản phẩm hoàn hảo nhất đến bạn.",
+        "Đối với các sản phẩm Mỹ phẩm: Khách hàng không cần đặt cọc trước, có thể lựa chọn thanh toán bằng tiền mặt 100% khi nhận hàng (COD) hoặc chuyển khoản trước tùy theo nhu cầu.\nLý do áp dụng: Các mặt hàng mỹ phẩm đều được đóng gói sẵn trong chai, lọ, hộp giấy của nhà sản xuất và có màng co bảo vệ rất chắc chắn. Trong trường hợp rủi ro bị hoàn hàng, sản phẩm bên trong vẫn được bảo vệ an toàn bởi lớp bao bì tiêu chuẩn, ít bị ảnh hưởng đến chất lượng và phom dáng như đồ vải vóc, thời trang. Do đó, shop hỗ trợ tối đa để khách hàng thoải mái mua sắm mà không cần thủ tục chuyển khoản trước.",
+      ],
+    },
+    {
+      heading: "Biểu phí vận chuyển (Tiền Ship):",
+      lead: null,
+      paragraphs: [],
+      bullets: [
+        "Toàn huyện Diên Khánh (gồm khu vực nội thành gần Chợ Thành): Đồng giá 15.000đ/đơn hàng (Giao hàng hỏa tốc trong ngày).",
         "Khu vực Thành phố Nha Trang và các huyện lân cận (Diên Lạc, Cam Lâm, Ninh Hoà): Đồng giá 20.000đ / đơn hàng (1 - 2 ngày).",
         "Các tỉnh thành khác trên toàn quốc: Đồng giá 30.000đ / đơn hàng (3 - 5 ngày).",
         "FREESHIP: Miễn phí 100% tiền ship toàn quốc cho đơn hàng từ 400.000đ trở lên.",
       ],
     },
+    {
+      heading: "4. Chính sách đổi trả và hoàn tiền.",
+      lead: "Nhằm bảo đảm vệ sinh an toàn sức khỏe cũng như đặc thù của các nhóm hàng kinh doanh, chính sách đổi trả tại Shop Bảo Ngọc được quy định chi tiết như sau:",
+      paragraphs: [],
+      bullets: [
+        "Đối với đồ lót (Quần lót, quần nâng mông...): Nhằm bảo vệ sức khỏe cộng đồng và vệ sinh cá nhân, chúng tôi không áp dụng chính sách đổi trả đối với mặt hàng quần lót dưới mọi hình thức, trừ trường hợp lỗi kỹ thuật nghiêm trọng từ phía nhà sản xuất hoặc giao sai mẫu, sai kích thước so với đơn đặt hàng.",
+        "Đối với áo Bra, váy ngủ: Hỗ trợ đổi size hoặc đổi mẫu trong vòng 2 ngày kể từ ngày nhận hàng. Điều kiện sản phẩm phải còn nguyên nhãn mác, chưa qua sử dụng, chưa qua giặt là và không có mùi lạ.",
+        "Đối với mỹ phẩm: Chỉ chấp nhận đổi trả trong trường hợp sản phẩm bị lỗi do vận chuyển (móp méo, bể vỡ, chảy đổ dung dịch) hoặc sản phẩm bị giao sai chủng loại so với đơn đặt hàng. Quý khách vui lòng quay video mở hộp sản phẩm (unboxing) để làm bằng chứng đối chiếu khi có khiếu nại xảy ra. Khách hàng sẽ được đổi sản phẩm mới hoặc hoàn lại 100% số tiền đã thanh toán nếu lỗi thuộc về chúng tôi hoặc phía đối tác vận chuyển.",
+      ],
+    },
+    {
+      heading: "5. Chương trình ưu đãi & chính sách khuyến mãi.",
+      lead: null,
+      paragraphs: [],
+      bullets: [
+        "Ưu đãi miễn phí vận chuyển (Freeship): Miễn phí giao hàng toàn quốc cho tất cả các đơn hàng có giá trị từ 400.000đ trở lên. Khách hàng tại nội thành Diên Khánh sẽ được hỗ trợ phí ship ưu đãi nhất.",
+        "Chương trình Khách hàng thân thiết: Mọi đơn hàng của bạn trên website đều được tích điểm tự động qua số điện thoại mua hàng. Số điểm này sẽ được quy đổi thành các voucher giảm giá trực tiếp 5%, 10% hoặc các phần quà mỹ phẩm/nội y xinh xắn vào tháng sinh nhật của bạn.",
+        "Săn sale các ngày lễ hoặc Lễ Tết: Vào các ngày lễ dành cho phái đẹp (8/3, 20/10), shop sẽ có các chương trình \"Mua 1 tặng 1\", \"Combo nội y giá hời\" hoặc \"Giảm giá mỹ phẩm lên đến 30%\". Quý khách đừng quên theo dõi mục \"Bán chạy/Khuyến mãi\" trên Website để không bỏ lỡ nhé.",
+      ],
+    },
+  ],
+  closing: [
+    "SĐT liên hệ: 0793578058 - 0702307948",
+    "ĐC cửa hàng: Chung Cư Chợ Thành, Xã Diên Khánh, Tỉnh Khánh Hoà.",
+    "Shop Bảo Ngọc Xin Chân Thành Cảm Ơn Quý Khách.",
   ],
 };
 
-/** English — section order and terms mirror the Vietnamese document 1:1. */
+/** English — section order, numbering and terms mirror the Vietnamese 1:1. */
 export const POLICY_EN: PolicyCopy = {
-  title: "ABOUT OUR SHOP & COMPLETE PURCHASING POLICY",
-  greeting:
-    "Welcome to Shop Bảo Ngọc – your trusted shopping destination in Diên Khánh.",
-  story:
-    "We started out as a small, familiar stall in Diên Khánh, Khánh Hoà. We have always been proud to be a companion who understands and cherishes women’s natural beauty. With the wish to bring you confidence from within and a radiant look from without, the shop specialises in affordable lingerie, lifting bras, soft silk sleepwear and authentic skincare products. Every product we stock is hand-picked with great care — from the fabric and stitching to its safe, gentle origin. Your satisfaction and peace of mind are our greatest joy.",
-  bridge:
-    "To make online shopping as pleasant and reassuring as shopping in person at the stall, we set out our purchasing, returns and promotion policies in detail below:",
+  title: "PURCHASING POLICY & TERMS",
+  intro: [
+    "Welcome to Shop Bảo Ngọc's online shopping system. This website exists to digitise and expand the services of our traditional store at Chợ Thành, Diên Khánh, Khánh Hoà. We specialise in women's clothing (underwear, bras, nightdresses) of good quality and price, and we also bring you authentic cosmetics imported and distributed directly from reputable sources.",
+    "To protect the legitimate rights of both sides, please read the terms and purchasing policies set out below carefully before proceeding with a transaction.",
+  ],
   sections: [
     {
-      heading: "Purchasing & Safe Delivery Policy.",
+      heading: "1. Product and origin policy.",
       lead: null,
-      bullets: [
-        "Delivery rules (no opening before payment): To keep beauty products fully sealed, their boxes from being crushed, and to guarantee absolute hygiene for lingerie items, the shop applies a NO OPENING BEFORE PAYMENT policy. Please pay the courier in full on delivery. We commit to packing every order exactly and completely as ordered.",
-        "Your rights after delivery: Please rest assured — if, after receiving and paying for your order, you find an item defective, damaged in transit or not matching the sample, the shop will exchange it or refund you immediately under our returns policy.",
-        "Order privacy: All of your lingerie orders are packed discreetly and tastefully, with 100% of the product names hidden on the delivery slip, so your privacy is fully protected.",
-        "Delivery times: Customers in the Diên Khánh and Nha Trang areas receive their order quickly, within 1 – 2 days. Other provinces take 3 – 5 business days.",
+      paragraphs: [
+        "Women's clothing group (underwear, bras, nightdresses): All products are carefully selected to ensure the fabric is safe for your skin, with varied styles that match the images shown on the website. Customers in the Khánh Hòa area are welcome to visit the store in person to see and feel the product quality.",
+        "Cosmetics group: Shop Bảo Ngọc commits that every cosmetic product listed on the system is 100% authentic, with a clear origin and complete labelling. We say no to fakes and counterfeits.",
       ],
+      bullets: [],
     },
     {
-      heading: "Flexible Returns Within 7 Days.",
-      lead: "We always want you to receive products that fit and that you love. If an item does not fit or has any manufacturing fault, the shop supports exchanges under the following terms:",
-      bullets: [
-        "Timeframe: Within 7 days of the day you successfully received your order.",
-        "Item condition: Items for exchange must be new and intact, unused and unwashed, with all tags and the purchase invoice (where issued) still attached.",
-        "Eligible items: The shop can exchange sizes or samples for these products: bras, sleepwear, loungewear sets and skincare (skincare must still be sealed and unopened).",
-        "Important note: To guarantee absolute personal hygiene for every customer, the shop does NOT accept exchanges or returns on underwear (except where the wrong item was sent or the goods are faulty on our side).",
-        "Exchange costs: If we sent the wrong item or the goods are faulty, the shop covers 100% of the shipping cost. If you would like a different size or sample for personal reasons, please pay the return shipping both ways.",
-      ],
-    },
-    {
-      heading: "Offers & Promotions.",
-      lead: "To thank you for your support, the shop regularly brings attractive offers so you can shop freely without worrying about price:",
-      bullets: [
-        "Free shipping offer (Freeship): Free delivery nationwide on every order worth 400,000 VND or more. Customers inside Diên Khánh receive our best possible shipping rate.",
-        "Loyalty programme: Every order you place on the website is automatically credited with points using the phone number used to order. Those points are converted into direct discount vouchers of 5% or 10%, or into lovely skincare and lingerie gifts during your birthday month.",
-        "Seasonal sales and holidays: On celebratory days for women (8 March, 20 October), the shop runs programmes such as “Buy 1 Get 1”, “Value lingerie combos” or “Up to 30% off skincare”. Do keep an eye on the “Bestsellers / Promotions” section of the website so you don’t miss out!",
-      ],
-    },
-    {
-      heading: "Shipping Rates",
+      heading: "2. Ordering and order confirmation.",
       lead: null,
+      paragraphs: [
+        "The customer selects the product, size, colour or type that suits them on the Shop Bảo Ngọc website and enters their full delivery details: full name, phone number and specific delivery address.",
+        "After receiving your order, our customer care team will contact you by phone or Zalo to confirm the order details and quantity, guide you through the deposit (if any) and the total payment, before packing and dispatching your order.",
+      ],
+      bullets: [],
+    },
+    {
+      heading: "3. Payment methods and dispatch rules (goods handover).",
+      lead: "To ensure the seriousness of every handover and avoid fake orders (bom hàng) causing losses to the store, Shop Bảo Ngọc applies a separate payment process for each product group, for the specific reasons below:",
+      paragraphs: [],
       bullets: [
-        "Diên Khánh district (including the inner city near Chợ Thành): Flat 15,000 VND per order (same-day express delivery).",
-        "Nha Trang city and neighbouring districts (Diên Lạc, Cam Lâm, Ninh Hoà): Flat 20,000 VND per order (1 – 2 days).",
-        "All other provinces nationwide: Flat 30,000 VND per order (3 – 5 days).",
-        "FREESHIP: 100% free shipping nationwide on orders from 400,000 VND or more.",
+        "For clothing products (underwear, bras, nightdresses): Please transfer 50% of the order value in advance as a deposit so the system can confirm dispatch. The remaining 50%, plus shipping (if any), is paid in cash on delivery (COD).\nReason: Underwear and nightdresses are highly personal items that require strict packing and handling to ensure hygiene when they reach you. If an order is refused on delivery (bom hàng) and has to travel back for days in transit, the product easily gets soiled, loses its shape, has its labels damaged and can no longer be sold to another customer. The 50% deposit is therefore a commitment from both sides that lets the shop confidently prepare the finest products for you.",
+        "For cosmetics: No deposit is needed. You may pay 100% in cash on delivery (COD) or transfer in advance, whichever you prefer.\nReason: Cosmetics are all pre-packed by the manufacturer in bottles, jars and cardboard boxes with strong shrink-wrap film. In the event of a returned order, the product inside is still safely protected by standard packaging and is far less affected in quality and shape than fabric and clothing items. The shop therefore supports you as much as possible so you can shop comfortably with no advance transfer procedure.",
       ],
     },
+    {
+      heading: "Shipping rates:",
+      lead: null,
+      paragraphs: [],
+      bullets: [
+        "All of Diên Khánh district (including the inner city near Chợ Thành): Flat 15,000đ per order (same-day express delivery).",
+        "Nha Trang city and neighbouring districts (Diên Lạc, Cam Lâm, Ninh Hoà): Flat 20,000đ per order (1 – 2 days).",
+        "Other provinces and cities nationwide: Flat 30,000đ per order (3 – 5 days).",
+        "FREESHIP: 100% free shipping nationwide on orders from 400,000đ and above.",
+      ],
+    },
+    {
+      heading: "4. Returns and refund policy.",
+      lead: "To guarantee safe hygiene and to respect the specific nature of each product group we sell, the returns policy at Shop Bảo Ngọc is set out in detail below:",
+      paragraphs: [],
+      bullets: [
+        "For underwear (panties, shaping briefs...): To protect community health and personal hygiene, we do not accept any form of return or exchange on underwear, except in the case of a serious manufacturing defect or where the wrong item or wrong size was sent compared with the order.",
+        "For bras and nightdresses: We support size or item exchange within 2 days of receiving your order. The item must still have its original tags, be unused, unwashed and free of any strange smell.",
+        "For cosmetics: Returns are only accepted where the product is damaged in transit (dented, cracked or leaking) or where the wrong product type was sent. Please record an unboxing video as evidence for any complaint. Customers will receive a replacement product or a 100% refund if the fault is ours or the courier's.",
+      ],
+    },
+    {
+      heading: "5. Offers and promotions.",
+      lead: null,
+      paragraphs: [],
+      bullets: [
+        "Free shipping offer (Freeship): Free delivery nationwide on every order worth 400,000đ and above. Customers inside Diên Khánh receive our best possible shipping rate.",
+        "Loyalty programme: Every order you place on the website is automatically credited with points using the phone number used to order. Those points are converted into direct discount vouchers of 5% or 10%, or into lovely cosmetics and lingerie gifts during your birthday month.",
+        "Holiday sales: On celebratory days for women (8 March, 20 October), the shop runs programmes such as \"Buy 1 Get 1\", \"Value lingerie combos\" or \"Up to 30% off cosmetics\". Please keep an eye on the \"Bestsellers / Promotions\" section of the website so you don't miss out.",
+      ],
+    },
+  ],
+  closing: [
+    "Contact: 0793578058 - 0702307948",
+    "Store address: Chung Cư Chợ Thành, Xã Diên Khánh, Tỉnh Khánh Hoà.",
+    "Shop Bảo Ngọc would like to sincerely thank you.",
   ],
 };
 

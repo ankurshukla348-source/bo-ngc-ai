@@ -1,6 +1,6 @@
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { placeholderArt } from "@/lib/art";
+
 import { CATEGORIES, SIZE_OPTIONS, type Category } from "@/lib/catalog";
 import { ADMIN_EMAIL } from "@/lib/admin";
 import { useAuth } from "@/hooks/use-auth";
@@ -106,7 +106,7 @@ async function uploadFile(
    New product form: dropzone + camera capture + fields
    ──────────────────────────────────────────────────────────────── */
 
-function NewProductForm({ variantSeed }: { variantSeed: number }) {
+function NewProductForm() {
   const { t, lang, categoryLabel } = useI18n();
   const convex = useConvex();
 
@@ -128,13 +128,34 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
+  // Every blob URL this form has ever minted. They are revoked when a photo is
+  // removed, when the form resets, and on unmount.
+  //
+  // This deliberately does NOT use a `[previews]` effect: such an effect runs
+  // its cleanup with the PREVIOUS array every time previews changes, so adding
+  // a second photo revoked the first photo's blob while it was still on
+  // screen — the thumbnail went blank as soon as you picked a second file.
+  const blobUrls = useRef<string[]>([]);
+
+  const releaseBlobs = (urls: string[]) => {
+    for (const url of urls) {
+      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+    }
+    blobUrls.current = blobUrls.current.filter((url) => !urls.includes(url));
+  };
+
   useEffect(() => {
+    // Read `blobUrls.current` INSIDE the cleanup, not at effect setup. Capturing
+    // it here would snapshot the empty array from mount, and since every add
+    // REASSIGNS the ref to a new array, unmount would revoke nothing and leak
+    // every blob the seller picked.
     return () => {
-      for (const url of previews) {
+      for (const url of blobUrls.current) {
         if (url.startsWith("blob:")) URL.revokeObjectURL(url);
       }
+      blobUrls.current = [];
     };
-  }, [previews]);
+  }, []);
 
   const acceptFiles = (list: FileList | null) => {
     const incoming = Array.from(list ?? []);
@@ -150,15 +171,17 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
     }
     const next = incoming.slice(0, room);
     if (incoming.length > room) toast.error(t("tooManyImages"));
+    const urls = next.map((f) => URL.createObjectURL(f));
+    blobUrls.current = [...blobUrls.current, ...urls];
     setFiles((prev) => [...prev, ...next]);
-    setPreviews((prev) => [...prev, ...next.map((f) => URL.createObjectURL(f))]);
+    setPreviews((prev) => [...prev, ...urls]);
   };
 
   const removeFileAt = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => {
       const url = prev[index];
-      if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+      if (url) releaseBlobs([url]);
       return prev.filter((_, i) => i !== index);
     });
   };
@@ -185,15 +208,18 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
     setPrice("");
     setSizes(["S", "M", "L", "XL"]);
     setInStock(true);
-    setPreviews((prev) => {
-      for (const url of prev) {
-        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
-      }
-      return [];
-    });
+    // Release every blob and empty the native file inputs. Clearing the
+    // inputs matters: without it the browser keeps the last selection, so
+    // re-opening the form and picking the SAME file fires no `change` event
+    // and the new product silently goes up with no photo at all.
+    releaseBlobs(blobUrls.current);
+    setPreviews([]);
     setFiles([]);
     setDescription("");
     setStock("");
+    setDragging(false);
+    if (fileRef.current) fileRef.current.value = "";
+    if (cameraRef.current) cameraRef.current.value = "";
   };
 
   const handlePublish = async (event: FormEvent) => {
@@ -215,7 +241,6 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
     setPublishing(true);
     try {
       let imageStorageId: Id<"_storage"> | undefined;
-      let imageSrc: string | undefined;
       const imageIds: string[] = [];
 
       if (files.length > 0) {
@@ -237,10 +262,19 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
           imageStorageId = imageIds[0] as Id<"_storage">;
         }
       }
-      if (imageIds.length === 0) {
-        imageSrc = placeholderArt(trimmedEn || trimmedVi, variantSeed);
-      }
 
+      // No stock photo is ever invented here. Previously a product saved with
+      // no photo was given `imageSrc = placeholderArt(...)` — a fixed
+      // Pexels lingerie shot (often the black lace bra), stored permanently
+      // against the row. A new product with no photo now stays photo-less and
+      // renders the storefront's clean tint/monogram fallback, so the seller
+      // sees exactly what the customer sees.
+      //
+      // `images` is sent whenever at least one photo exists, INCLUDING a single
+      // one. Sending it only for 2+ left single-photo products with an
+      // `imageStorageId` but no `images` array, so `products:list` returned
+      // `imageIds: []` — the gallery was unrecoverable and the next edit had
+      // to re-upload from scratch.
       await convex.mutation(api.products.add, {
         nameVi: trimmedVi || trimmedEn,
         nameEn: trimmedEn || trimmedVi,
@@ -251,8 +285,7 @@ function NewProductForm({ variantSeed }: { variantSeed: number }) {
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(stock.trim() ? { stock: Number(stock) } : {}),
         ...(imageStorageId ? { imageStorageId } : {}),
-        ...(imageIds.length > 1 ? { images: imageIds } : {}),
-        ...(imageSrc ? { imageSrc } : {}),
+        ...(imageIds.length > 0 ? { images: imageIds } : {}),
       });
 
       toast.success(t("productPublished"));
@@ -657,23 +690,36 @@ function ProductRow({ product }: { product: StoreProduct }) {
   const [addFiles, setAddFiles] = useState<File[]>([]);
   const [addPreviews, setAddPreviews] = useState<string[]>([]);
 
+  // Same blob-lifecycle rule as the new-product form: a `[addPreviews]`
+  // effect would revoke the PREVIOUS array's URLs on every add, blanking the
+  // photos already on screen. Revoke on removal/reset/unmount instead.
+  const blobUrls = useRef<string[]>([]);
+
+  const releaseBlobs = (urls: string[]) => {
+    for (const url of urls) {
+      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+    }
+    blobUrls.current = blobUrls.current.filter((url) => !urls.includes(url));
+  };
+
   useEffect(() => {
+    // Must read the ref inside the cleanup — see the note in NewProductForm.
     return () => {
-      for (const url of addPreviews) {
+      for (const url of blobUrls.current) {
         if (url.startsWith("blob:")) URL.revokeObjectURL(url);
       }
+      blobUrls.current = [];
     };
-  }, [addPreviews]);
+  }, []);
 
   const totalImages = keepIds.length + addFiles.length;
 
   const clearGalleryEdits = () => {
-    for (const url of addPreviews) {
-      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
-    }
+    releaseBlobs(blobUrls.current);
     setAddPreviews([]);
     setAddFiles([]);
     setKeepIds([]);
+    if (replaceRef.current) replaceRef.current.value = "";
   };
 
   const pickAdditions = (list: FileList | null) => {
@@ -690,20 +736,28 @@ function ProductRow({ product }: { product: StoreProduct }) {
     }
     const next = incoming.slice(0, room);
     if (incoming.length > room) toast.error(t("tooManyImages"));
+    const urls = next.map((f) => URL.createObjectURL(f));
+    blobUrls.current = [...blobUrls.current, ...urls];
     setAddFiles((prev) => [...prev, ...next]);
-    setAddPreviews((prev) => [...prev, ...next.map((f) => URL.createObjectURL(f))]);
+    setAddPreviews((prev) => [...prev, ...urls]);
   };
 
   const openEditor = () => {
-    // Seed the gallery from what is stored: the primary blob first, then the
-    // rest, with any duplicate id dropped.
-    const stored = [
-      ...(product.images ?? []),
-      ...(product.image ? [product.image] : []),
-    ].filter((value, index, all) => !!value && all.indexOf(value) === index);
-    setKeepIds(stored);
+    // Seed the gallery from the STORED STORAGE IDs, never from `product.image`.
+    // `image` is a resolved URL, and sending a URL back through `images` makes
+    // `products:update` call `ctx.storage.getUrl()` on it — which throws, so
+    // the photo silently vanished from the gallery on the next save.
+    // `products:list` returns `imageIds` (the real ids) alongside `images`
+    // precisely for this. Fall back to the gallery for pre-multi-image rows.
+    const stored =
+      product.imageIds && product.imageIds.length > 0
+        ? product.imageIds
+        : (product.images ?? []);
+    setKeepIds([...stored]);
     setAddFiles([]);
     setAddPreviews([]);
+    releaseBlobs(blobUrls.current);
+    if (replaceRef.current) replaceRef.current.value = "";
     setEditing(true);
   };
 
@@ -2454,7 +2508,7 @@ function AdminPanel({ onLock }: { onLock: () => Promise<void> }) {
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[400px_1fr]">
         {/* Left: new product + bank settings */}
         <div className="flex flex-col gap-6">
-          <NewProductForm variantSeed={products?.length ?? 0} />
+          <NewProductForm />
           <BankSettings />
         </div>
 
