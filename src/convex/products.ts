@@ -6,6 +6,10 @@ import type { Id } from "./_generated/dataModel";
 
 /** Gallery entries are plain strings; storage helpers want a typed id. */
 const asStorageId = (value: string) => value as Id<"_storage">;
+
+/** Is this plausibly a Convex storage id rather than a stray URL or empty value? */
+const isStorageId = (value: unknown): value is string =>
+  typeof value === "string" && /^kg[a-z0-9]{20,}$/.test(value.trim());
 import { mutation, query } from "./_generated/server";
 
 export const categoryValidator = v.union(
@@ -30,12 +34,16 @@ export const list = query({
     return await Promise.all(
       products.map(async (product) => {
         const row = normalizeProductRow(product);
-        // Resolve every gallery image. A blob deleted out from under us must
-        // degrade to "one image fewer", never reject the whole product list.
+        // Resolve every gallery image. A blob deleted out from under us, or an id that
+        // is not a storage id at all, must degrade to "one image fewer" — never
+        // reject the whole product list.
         const resolved = await Promise.all(
           (row.images ?? []).map(async (id) => {
+            if (!isStorageId(id)) return null;
             try {
-              return { id, url: await ctx.storage.getUrl(asStorageId(id)) };
+              const url = await ctx.storage.getUrl(asStorageId(id));
+              // getUrl resolves to null for a missing blob rather than throwing.
+              return url ? { id, url } : null;
             } catch {
               return null;
             }
@@ -47,16 +55,17 @@ export const list = query({
         const gallery = live.map((entry) => entry.url);
 
         let image: string | null = null;
-        if (row.imageStorageId) {
+        if (row.imageStorageId && isStorageId(row.imageStorageId)) {
           try {
-            image = await ctx.storage.getUrl(row.imageStorageId);
+            // A deleted blob resolves to null here; fall through to the gallery.
+            image = (await ctx.storage.getUrl(row.imageStorageId)) ?? null;
           } catch {
-            // The blob is gone — fall back to the gallery, then the inline art.
-            image = gallery[0] ?? row.imageSrc ?? null;
+            image = null;
           }
-        } else {
-          image = gallery[0] ?? row.imageSrc ?? null;
         }
+        // Always end at a usable value: the live gallery, then the legacy
+        // inline art, then null so the storefront draws its own placeholder.
+        image = image ?? gallery[0] ?? row.imageSrc ?? null;
 
         return {
           _id: row._id,
@@ -124,14 +133,19 @@ export const add = mutation({
     const sizes = Array.from(
       new Set(args.sizes.map((s) => s.trim()).filter(Boolean)),
     );
-    const images = Array.from(new Set(args.images ?? [])).slice(
-      0,
-      MAX_PRODUCT_IMAGES,
-    );
+    const images = Array.from(new Set(args.images ?? []))
+      .filter(isStorageId)
+      .slice(0, MAX_PRODUCT_IMAGES);
     // The first uploaded photo is the thumbnail, so `imageStorageId` and the
     // gallery can never disagree about what the shopfront shows.
+    //
+    // `imageStorageId` is validated too: storing a URL or a stale id there left
+    // a product whose thumbnail silently resolved to nothing.
+    const incomingPrimary = args.imageStorageId;
     const primary =
-      args.imageStorageId ?? (images[0] as Id<"_storage"> | undefined);
+      incomingPrimary && isStorageId(incomingPrimary)
+        ? incomingPrimary
+        : (images[0] as Id<"_storage"> | undefined);
     // A photo-less product is NEVER given an inline image URL. `imageSrc` is
     // only meaningful for the one-time legacy seed; letting a create call set
     // it is what let a stock photo (the black lace bra) get stored against a
@@ -208,25 +222,36 @@ export const update = mutation({
     // deleted, and the thumbnail always follows the first remaining image.
     const previous = existing.images ?? [];
     if (images !== undefined) {
-      const next = Array.from(new Set(images)).slice(0, MAX_PRODUCT_IMAGES);
+      // Validate before storing: a URL or empty string in this array used to be
+      // persisted and then silently dropped at render, losing the real photos.
+      const next = Array.from(new Set(images))
+        .filter(isStorageId)
+        .slice(0, MAX_PRODUCT_IMAGES);
       patch.images = next;
       const first = next[0] as Id<"_storage"> | undefined;
       if (first) {
         patch.imageStorageId = first;
         patch.imageSrc = undefined;
       }
+      // Only ever delete a blob we are confident is one: `previous` is trusted
+      // row data, but guarding costs nothing and `delete` is irreversible.
       for (const old of previous) {
-        if (!next.includes(old)) {
+        if (isStorageId(old) && !next.includes(old)) {
           await ctx.storage.delete(asStorageId(old)).catch(() => {});
         }
       }
-    } else if (imageStorageId) {
+    } else if (imageStorageId && isStorageId(imageStorageId)) {
       patch.imageStorageId = imageStorageId;
       patch.imageSrc = undefined;
     }
 
     // A single-photo replace from an older client: drop the blob it replaces.
-    if (imageStorageId && images === undefined && existing.imageStorageId) {
+    if (
+      imageStorageId &&
+      isStorageId(imageStorageId) &&
+      images === undefined &&
+      existing.imageStorageId
+    ) {
       const stillReferenced =
         imageStorageId === existing.imageStorageId ||
         (previous ?? []).includes(imageStorageId);

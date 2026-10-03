@@ -88,18 +88,72 @@ function StockToggle({
 /** Must stay in step with MAX_PRODUCT_IMAGES in src/convex/products.ts. */
 const MAX_PRODUCT_IMAGES = 10;
 
+/**
+ * Upload one file to Convex storage and return its storage id.
+ *
+ * `Content-Type` MUST be the file's own MIME type (image/jpeg, image/png, …).
+ * Convex's upload endpoint takes the raw bytes as the request body and derives
+ * the stored content type from this header — it is not a multipart form, so
+ * sending `multipart/form-data` would store a wrapper instead of the image.
+ *
+ * Throws an Error carrying the real HTTP status and response body, so the
+ * seller sees WHY it failed instead of a generic "upload failed".
+ */
 async function uploadFile(
   uploadUrl: string,
   file: File,
 ): Promise<Id<"_storage">> {
-  const res = await fetch(uploadUrl, {
-    method: "POST",
-    headers: { "Content-Type": file.type },
-    body: file,
-  });
-  if (!res.ok) throw new Error(`upload failed: ${res.status}`);
-  const data = (await res.json()) as { storageId: Id<"_storage"> };
-  return data.storageId;
+  // An empty `file.type` happens for some HEIC/extension-less picks on iOS.
+  // Convex rejects an empty Content-Type, so fall back to a safe image type
+  // rather than sending a header it will refuse.
+  const contentType =
+    file.type && file.type.startsWith("image/")
+      ? file.type
+      : "image/jpeg";
+
+  let res: Response;
+  try {
+    res = await fetch(uploadUrl, {
+      method: "POST",
+      headers: { "Content-Type": contentType },
+      body: file,
+    });
+  } catch (e) {
+    // A thrown fetch is a network/CORS/DNS failure, not an HTTP error.
+    throw new Error(
+      `Network error reaching the upload endpoint (${contentType}, ${file.size} bytes): ${
+        (e as Error).message
+      }`,
+    );
+  }
+
+  if (!res.ok) {
+    // Include the body: Convex returns the actual reason here (e.g. an
+    // oversized body or a bad content type), and it is the only clue.
+    let detail = "";
+    try {
+      detail = (await res.text()).slice(0, 300);
+    } catch {
+      detail = "<response body unreadable>";
+    }
+    throw new Error(`HTTP ${res.status} ${res.statusText} — ${detail}`);
+  }
+
+  let data: { storageId?: string };
+  try {
+    data = (await res.json()) as { storageId?: string };
+  } catch {
+    throw new Error(
+      `Upload returned ${res.status} but the body was not JSON — the deployment may be paused`,
+    );
+  }
+
+  if (!data.storageId) {
+    throw new Error(
+      `Upload returned ${res.status} with no storageId: ${JSON.stringify(data)}`,
+    );
+  }
+  return data.storageId as Id<"_storage">;
 }
 
 /* ────────────────────────────────────────────────────────────────
@@ -122,6 +176,9 @@ function NewProductForm() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  // The verbatim reason the last upload or publish failed, shown inline. A
+  // generic toast disappears before it can be read or copied.
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [stock, setStock] = useState("");
 
@@ -160,8 +217,12 @@ function NewProductForm() {
   const acceptFiles = (list: FileList | null) => {
     const incoming = Array.from(list ?? []);
     if (incoming.length === 0) return;
-    if (incoming.some((f) => !f.type.startsWith("image/"))) {
-      toast.error(t("uploadFailed"));
+    // Reject only what is definitely not an image. An EMPTY file.type happens on
+    // some iOS/HEIC picks and in a few drag sources; `uploadFile` already
+    // substitutes image/jpeg for those, so rejecting here would block a photo
+    // the upload would have handled fine.
+    if (incoming.some((f) => f.type && !f.type.startsWith("image/"))) {
+      toast.error(t("notAnImage"));
       return;
     }
     const room = MAX_PRODUCT_IMAGES - files.length;
@@ -171,6 +232,9 @@ function NewProductForm() {
     }
     const next = incoming.slice(0, room);
     if (incoming.length > room) toast.error(t("tooManyImages"));
+    // A fresh selection supersedes any previous failure, so clear the panel
+    // rather than leaving a stale error next to the new photo.
+    setUploadError(null);
     const urls = next.map((f) => URL.createObjectURL(f));
     blobUrls.current = [...blobUrls.current, ...urls];
     setFiles((prev) => [...prev, ...next]);
@@ -178,11 +242,16 @@ function NewProductForm() {
   };
 
   const removeFileAt = (index: number) => {
+    // Read the url OUTSIDE the updater. Revoking inside a setState updater is a
+    // side effect in what must be a pure function: React may invoke the
+    // updater more than once (StrictMode double-invokes it), which revokes a
+    // blob other previews are still using and blanks them.
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => {
-      const url = prev[index];
-      if (url) releaseBlobs([url]);
-      return prev.filter((_, i) => i !== index);
+      const next = prev.filter((_, i) => i !== index);
+      const dropped = prev[index];
+      if (dropped && !next.includes(dropped)) queueMicrotask(() => releaseBlobs([dropped]));
+      return next;
     });
   };
 
@@ -218,6 +287,7 @@ function NewProductForm() {
     setDescription("");
     setStock("");
     setDragging(false);
+    setUploadError(null);
     if (fileRef.current) fileRef.current.value = "";
     if (cameraRef.current) cameraRef.current.value = "";
   };
@@ -239,13 +309,20 @@ function NewProductForm() {
     }
 
     setPublishing(true);
+    setUploadError(null);
     try {
       let imageStorageId: Id<"_storage"> | undefined;
       const imageIds: string[] = [];
 
       if (files.length > 0) {
-        // Uploaded one at a time: a single failed upload must not discard the
+        // Uploaded one at a time so a single failure does not discard the
         // photos that already succeeded.
+        //
+        // Crucially: if EVERY upload fails, publishing is ABORTED. Previously
+        // the loop swallowed the error and `products.add` still ran, so the
+        // seller got "published!" for a product with no photo at all — and the
+        // real reason had already been thrown away into console.error.
+        const failures: string[] = [];
         for (const file of files) {
           try {
             const uploadUrl = await convex.mutation(
@@ -254,13 +331,24 @@ function NewProductForm() {
             );
             imageIds.push(await uploadFile(uploadUrl, file));
           } catch (error) {
-            console.error(error);
-            toast.error(t("uploadFailed"));
+            const detail =
+              error instanceof Error ? error.message : String(error);
+            console.error("[upload] failed", file.name, file.type, file.size, error);
+            failures.push(`${file.name}: ${detail}`);
           }
         }
-        if (imageIds.length > 0) {
-          imageStorageId = imageIds[0] as Id<"_storage">;
+
+        if (imageIds.length === 0) {
+          setUploadError(failures.join(" · "));
+          toast.error(t("uploadAllFailed"));
+          return; // nothing stored — do not create a photo-less product
         }
+        if (failures.length > 0) {
+          // Partial success: say which photos did not make it, then continue.
+          setUploadError(failures.join(" · "));
+          toast.error(t("uploadSomeFailed"));
+        }
+        imageStorageId = imageIds[0] as Id<"_storage">;
       }
 
       // No stock photo is ever invented here. Previously a product saved with
@@ -291,8 +379,12 @@ function NewProductForm() {
       toast.success(t("productPublished"));
       reset();
     } catch (error) {
-      console.error(error);
-      toast.error(t("uploadFailed"));
+      // Surface the real reason. A failed mutation here is usually an auth or
+      // deployment problem, and the seller needs the message to act on it.
+      const detail = error instanceof Error ? error.message : String(error);
+      console.error("[publish] failed", error);
+      setUploadError(detail);
+      toast.error(t("publishFailed"));
     } finally {
       setPublishing(false);
     }
@@ -576,6 +668,23 @@ function NewProductForm() {
           />
         </label>
 
+        {/* Verbatim failure reason. A toast vanishes in a few seconds and cannot
+            be copied, so the real HTTP status / Convex message stays on screen
+            until the seller changes something. */}
+        {uploadError && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-destructive/40 bg-destructive/5 p-3"
+          >
+            <p className="text-xs font-bold uppercase tracking-wide text-destructive">
+              {t("uploadErrorTitle")}
+            </p>
+            <p className="mt-1 break-words text-xs leading-relaxed text-foreground/80">
+              {uploadError}
+            </p>
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={publishing}
@@ -673,6 +782,8 @@ function ProductRow({ product }: { product: StoreProduct }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Verbatim upload/publish failure shown in the edit panel.
+  const [editError, setEditError] = useState<string | null>(null);
   const [draft, setDraft] = useState({
     nameVi: product.nameVi,
     nameEn: product.nameEn,
@@ -725,8 +836,9 @@ function ProductRow({ product }: { product: StoreProduct }) {
   const pickAdditions = (list: FileList | null) => {
     const incoming = Array.from(list ?? []);
     if (incoming.length === 0) return;
-    if (incoming.some((f) => !f.type.startsWith("image/"))) {
-      toast.error(t("uploadFailed"));
+    // Empty file.type is tolerated — see acceptFiles.
+    if (incoming.some((f) => f.type && !f.type.startsWith("image/"))) {
+      toast.error(t("notAnImage"));
       return;
     }
     const room = MAX_PRODUCT_IMAGES - totalImages;
@@ -736,6 +848,7 @@ function ProductRow({ product }: { product: StoreProduct }) {
     }
     const next = incoming.slice(0, room);
     if (incoming.length > room) toast.error(t("tooManyImages"));
+    setEditError(null);
     const urls = next.map((f) => URL.createObjectURL(f));
     blobUrls.current = [...blobUrls.current, ...urls];
     setAddFiles((prev) => [...prev, ...next]);
@@ -743,6 +856,7 @@ function ProductRow({ product }: { product: StoreProduct }) {
   };
 
   const openEditor = () => {
+    setEditError(null);
     // Seed the gallery from the STORED STORAGE IDs, never from `product.image`.
     // `image` is a resolved URL, and sending a URL back through `images` makes
     // `products:update` call `ctx.storage.getUrl()` on it — which throws, so
@@ -773,18 +887,33 @@ function ProductRow({ product }: { product: StoreProduct }) {
       return;
     }
     setBusy(true);
+    setEditError(null);
     try {
       // Upload any newly picked photos first, then send the whole ordered set.
       // A failed upload leaves the stored photos untouched.
       const uploaded: string[] = [];
+      const failures: string[] = [];
       for (const file of addFiles) {
         try {
           const url = await convex.mutation(api.products.generateUploadUrl, {});
           uploaded.push(await uploadFile(url, file));
         } catch (error) {
-          console.error(error);
-          toast.error(t("uploadFailed"));
+          const detail = error instanceof Error ? error.message : String(error);
+          console.error("[upload:edit] failed", file.name, error);
+          failures.push(`${file.name}: ${detail}`);
         }
+      }
+
+      // If the seller picked new photos and NONE of them stored, stop: saving
+      // now would silently discard their selection and keep the old gallery.
+      if (addFiles.length > 0 && uploaded.length === 0) {
+        setEditError(failures.join(" · "));
+        toast.error(t("uploadAllFailed"));
+        return;
+      }
+      if (failures.length > 0) {
+        setEditError(failures.join(" · "));
+        toast.error(t("uploadSomeFailed"));
       }
 
       const gallery = [...keepIds, ...uploaded].slice(0, MAX_PRODUCT_IMAGES);
@@ -804,10 +933,16 @@ function ProductRow({ product }: { product: StoreProduct }) {
       });
       setEditing(false);
       clearGalleryEdits();
+      setEditError(null);
       toast.success(t("productUpdated"));
     } catch (error) {
-      console.error(error);
-      toast.error(t("fillNames"));
+      // Surface the real reason. This previously showed t("fillNames") —
+      // "fill in the product names" — for a save that had already passed that
+      // check, which sent the seller looking for the wrong problem entirely.
+      const detail = error instanceof Error ? error.message : String(error);
+      console.error("[update] failed", error);
+      setEditError(detail);
+      toast.error(t("publishFailed"));
     } finally {
       setBusy(false);
     }
@@ -1120,6 +1255,20 @@ function ProductRow({ product }: { product: StoreProduct }) {
 
         {editing ? (
           <>
+            {editError && (
+              <div
+                role="alert"
+                className="w-full rounded-xl border border-destructive/40 bg-destructive/5 p-2.5"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wide text-destructive">
+                  {t("uploadErrorTitle")}
+                </p>
+                <p className="mt-0.5 break-words text-[11px] leading-relaxed text-foreground/80">
+                  {editError}
+                </p>
+              </div>
+            )}
+
             <button
               type="button"
               onClick={save}
@@ -1133,6 +1282,7 @@ function ProductRow({ product }: { product: StoreProduct }) {
               onClick={() => {
                 setEditing(false);
                 clearGalleryEdits();
+                setEditError(null);
                 setDraft({
                   nameVi: product.nameVi,
                   nameEn: product.nameEn,
