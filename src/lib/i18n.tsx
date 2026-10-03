@@ -243,10 +243,18 @@ const vi = {
   productDeleted: "Đã xóa sản phẩm",
   uploadFailed: "Tải ảnh thất bại — thử lại",
   notAnImage: "Chỉ chấp nhận tệp ảnh (JPG, PNG, WEBP).",
-  uploadAllFailed: "Không tải được ảnh nào. Sản phẩm chưa được đăng.",
-  uploadSomeFailed: "Một số ảnh không tải được — sản phẩm đã đăng với ảnh còn lại.",
+  uploadAllFailed:
+    "Chưa tải được ảnh nào — kiểm tra mạng rồi nhấn Đăng bán để thử lại. Sản phẩm chưa được đăng.",
+  uploadSomeFailed:
+    "Một số ảnh chưa tải được. Nhấn Đăng bán để thử lại (các ảnh đã tải không bị tải lại) hoặc xóa ảnh bị lỗi.",
   publishFailed: "Không đăng được sản phẩm.",
   uploadErrorTitle: "Lỗi tải ảnh",
+  offlineUpload:
+    "Thiết bị đang ngoại tuyến — kiểm tra Wi-Fi hoặc dữ liệu di động rồi thử lại.",
+  uploadRetriesExhausted:
+    "Mạng chập chờn nên đã thử lại 3 lần. Nhấn Đăng bán để thử tiếp — các ảnh đã tải không bị tải lại.",
+  uploadingPhotos: "Đang tải ảnh",
+  retrying: "thử lại",
   noProducts: "Chưa có sản phẩm nào.",
   fillNames: "Cần ít nhất một tên sản phẩm.",
   orderCodeLabel: "Đơn hàng",
@@ -770,10 +778,18 @@ const en: Record<TKey, string> = {
   productDeleted: "Product deleted",
   uploadFailed: "Image upload failed — try again",
   notAnImage: "Only image files are accepted (JPG, PNG, WEBP).",
-  uploadAllFailed: "No images could be uploaded. The product was not created.",
-  uploadSomeFailed: "Some images failed to upload — the product was created with the rest.",
+  uploadAllFailed:
+    "No images uploaded yet — check your connection and tap Publish to retry. The product was not created.",
+  uploadSomeFailed:
+    "Some images did not upload. Tap Publish to retry (already-uploaded photos are kept) or remove the failing photo.",
   publishFailed: "Could not create the product.",
   uploadErrorTitle: "Image upload error",
+  offlineUpload:
+    "You're offline — check Wi-Fi or mobile data, then try again.",
+  uploadRetriesExhausted:
+    "Unstable connection: 3 attempts failed. Tap Publish to try again — photos that already uploaded won't be re-sent.",
+  uploadingPhotos: "Uploading photos",
+  retrying: "retry",
   noProducts: "No products yet.",
   fillNames: "At least one product name is required.",
   orderCodeLabel: "Order",

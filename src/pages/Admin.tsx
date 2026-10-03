@@ -89,6 +89,40 @@ function StockToggle({
 const MAX_PRODUCT_IMAGES = 10;
 
 /**
+ * An upload failure, classified so the retry loop can tell "the connection
+ * blipped — try again" from "the server rejected this file, trying again
+ * would fail the same way".
+ *
+ * A plain `Error` subclass rather than a result union, because both flows
+ * already sit in a try/catch that renders the verbatim message.
+ */
+class UploadError extends Error {
+  readonly retryable: boolean;
+  readonly status?: number;
+
+  constructor(message: string, opts: { retryable: boolean; status?: number }) {
+    super(message);
+    this.name = "UploadError";
+    this.retryable = opts.retryable;
+    this.status = opts.status;
+  }
+}
+
+/** Copy the upload helpers need but cannot look up through `useI18n`. */
+type UploadTexts = { offline: string; exhausted: string };
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** Attempts per photo, and the pause before attempt 2 and 3. */
+const UPLOAD_ATTEMPTS = 3;
+const UPLOAD_BACKOFF_MS = [0, 900, 2500];
+
+/** A stalled mobile connection otherwise hangs the spinner forever; turning
+ * the stall into a failure is what lets the retry loop rescue it. */
+const UPLOAD_TIMEOUT_MS = 60_000;
+
+/**
  * Upload one file to Convex storage and return its storage id.
  *
  * `Content-Type` MUST be the file's own MIME type (image/jpeg, image/png, …).
@@ -96,12 +130,13 @@ const MAX_PRODUCT_IMAGES = 10;
  * the stored content type from this header — it is not a multipart form, so
  * sending `multipart/form-data` would store a wrapper instead of the image.
  *
- * Throws an Error carrying the real HTTP status and response body, so the
- * seller sees WHY it failed instead of a generic "upload failed".
+ * Throws an UploadError carrying the real HTTP status and response body, so
+ * the seller sees WHY it failed instead of a generic "upload failed".
  */
 async function uploadFile(
   uploadUrl: string,
   file: File,
+  texts: UploadTexts,
 ): Promise<Id<"_storage">> {
   // An empty `file.type` happens for some HEIC/extension-less picks on iOS.
   // Convex rejects an empty Content-Type, so fall back to a safe image type
@@ -111,19 +146,35 @@ async function uploadFile(
       ? file.type
       : "image/jpeg";
 
+  // Read BEFORE the request: if the radio is already off, the fetch below
+  // would just say "Failed to fetch", which hides the actual problem.
+  const offline =
+    typeof navigator !== "undefined" && navigator.onLine === false;
+
   let res: Response;
   try {
     res = await fetch(uploadUrl, {
       method: "POST",
       headers: { "Content-Type": contentType },
       body: file,
+      signal:
+        typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+          ? AbortSignal.timeout(UPLOAD_TIMEOUT_MS)
+          : undefined,
     });
   } catch (e) {
-    // A thrown fetch is a network/CORS/DNS failure, not an HTTP error.
-    throw new Error(
-      `Network error reaching the upload endpoint (${contentType}, ${file.size} bytes): ${
-        (e as Error).message
-      }`,
+    if (offline) {
+      throw new UploadError(texts.offline, { retryable: false });
+    }
+    // A thrown fetch is a network/CORS/timeout failure, not an HTTP error.
+    const timedOut = (e as Error).name === "TimeoutError";
+    throw new UploadError(
+      timedOut
+        ? `Upload timed out after ${UPLOAD_TIMEOUT_MS / 1000}s (${contentType}, ${file.size} bytes)`
+        : `Network error reaching the upload endpoint (${contentType}, ${file.size} bytes): ${
+            (e as Error).message
+          }`,
+      { retryable: true },
     );
   }
 
@@ -136,24 +187,173 @@ async function uploadFile(
     } catch {
       detail = "<response body unreadable>";
     }
-    throw new Error(`HTTP ${res.status} ${res.statusText} — ${detail}`);
+    // 429/5xx are the server having a bad day — retrying can work. Any other
+    // 4xx is this file or request being wrong, and would fail identically.
+    const retryable = res.status === 429 || res.status >= 500;
+    throw new UploadError(`HTTP ${res.status} ${res.statusText} — ${detail}`, {
+      retryable,
+      status: res.status,
+    });
   }
 
   let data: { storageId?: string };
   try {
     data = (await res.json()) as { storageId?: string };
   } catch {
-    throw new Error(
+    throw new UploadError(
       `Upload returned ${res.status} but the body was not JSON — the deployment may be paused`,
+      { retryable: true, status: res.status },
     );
   }
 
   if (!data.storageId) {
-    throw new Error(
+    throw new UploadError(
       `Upload returned ${res.status} with no storageId: ${JSON.stringify(data)}`,
+      { retryable: true, status: res.status },
     );
   }
   return data.storageId as Id<"_storage">;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Client-side downscale — 7 full-resolution camera photos at once is
+   what made the upload slow enough to be interrupted on mobile data.
+   ──────────────────────────────────────────────────────────────── */
+
+/** Longest edge we store. The storefront never renders wider than ~1000px,
+ * so 1600 keeps zoom/sharply-lit detail while cutting the payload hard. */
+const MAX_UPLOAD_EDGE = 1600;
+const JPEG_QUALITY = 0.85;
+/** Files under this are already small enough; re-encoding them is all cost. */
+const COMPRESS_BELOW_BYTES = 250_000;
+
+/**
+ * Shrink and re-encode a picked photo as JPEG. Best-effort by contract:
+ * anything that cannot be decoded (HEIC on a browser without support, a
+ * truncated file, no 2d canvas) returns the ORIGINAL, so this can never be
+ * the reason an upload fails.
+ */
+async function compressForUpload(file: File): Promise<File> {
+  try {
+    if (file.size <= COMPRESS_BELOW_BYTES) return file;
+    if (!file.type.startsWith("image/")) return file;
+
+    let bitmap: ImageBitmap;
+    try {
+      // `from-image` applies EXIF orientation, so a portrait shot taken on a
+      // phone is not uploaded rotated. Older engines that reject the option
+      // fall through to the plain decode below.
+      bitmap = await createImageBitmap(file, {
+        imageOrientation: "from-image",
+      } as ImageBitmapOptions);
+    } catch {
+      bitmap = await createImageBitmap(file);
+    }
+
+    try {
+      const { width, height } = bitmap;
+      if (!width || !height) return file;
+      const scale = Math.min(
+        1,
+        MAX_UPLOAD_EDGE / Math.max(width, height),
+      );
+      const w = Math.max(1, Math.round(width * scale));
+      const h = Math.max(1, Math.round(height * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
+      // JPEG has no alpha: fill white first so a PNG with transparency does
+      // not come out on black.
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(bitmap, 0, 0, w, h);
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
+      );
+      // Only take the re-encode if it actually saves bytes.
+      if (!blob || blob.size >= file.size) return file;
+
+      const stem = file.name.replace(/\.[^.]+$/, "") || file.name;
+      return new File([blob], `${stem}.jpg`, {
+        type: "image/jpeg",
+        lastModified: file.lastModified,
+      });
+    } finally {
+      bitmap.close();
+    }
+  } catch (error) {
+    console.warn("[upload] compression skipped", file.name, error);
+    return file;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Retry — the actual fix for the intermittent "Failed to fetch".
+   ──────────────────────────────────────────────────────────────── */
+
+/** Identity of a picked file, so pressing publish again after a partial
+ * failure does NOT re-upload the photos that already stored. */
+const fileKey = (file: File) =>
+  `${file.name}:${file.size}:${file.lastModified}`;
+
+/**
+ * Upload with up to three attempts and backoff between them.
+ *
+ * The backend was never the problem: on a phone, a weak or hand-off network
+ * drops a single POST and `fetch` rejects with "Failed to fetch". One photo
+ * failing that way used to poison the whole batch, so seven photos produced
+ * seven errors even though every one would succeed a second later. A fresh
+ * upload URL is fetched per attempt (signed URLs expire), and compression
+ * runs once, before the loop.
+ */
+async function uploadFileWithRetry(opts: {
+  file: File;
+  getUploadUrl: () => Promise<string>;
+  texts: UploadTexts;
+  onAttempt?: (attempt: number, total: number) => void;
+}): Promise<Id<"_storage">> {
+  const { file, getUploadUrl, texts, onAttempt } = opts;
+  const body = await compressForUpload(file);
+
+  let last: unknown;
+  for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt++) {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      // Fail fast with a message the seller can act on instead of burning all
+      // three attempts while the radio is off.
+      throw new UploadError(texts.offline, { retryable: false });
+    }
+    onAttempt?.(attempt, UPLOAD_ATTEMPTS);
+    try {
+      // Fresh per attempt: the signed URL has a limited lifetime and the
+      // mutation itself can be the thing that dropped.
+      const uploadUrl = await getUploadUrl();
+      return await uploadFile(uploadUrl, body, texts);
+    } catch (error) {
+      last = error;
+      // Unknown errors (a failed mutation, say) are treated as transient.
+      const retryable = !(error instanceof UploadError) || error.retryable;
+      console.warn(
+        `[upload] ${file.name} attempt ${attempt}/${UPLOAD_ATTEMPTS} failed`,
+        error,
+      );
+      if (!retryable || attempt === UPLOAD_ATTEMPTS) break;
+      await sleep(UPLOAD_BACKOFF_MS[attempt] ?? 2500);
+    }
+  }
+
+  if (last instanceof UploadError && last.retryable) {
+    // Say it was already tried, and that tapping again will not resend the
+    // photos that did make it — otherwise "try again" reads like a risk.
+    throw new UploadError(`${last.message} — ${texts.exhausted}`, {
+      retryable: true,
+      status: last.status,
+    });
+  }
+  throw last;
 }
 
 /* ────────────────────────────────────────────────────────────────
@@ -179,6 +379,13 @@ function NewProductForm() {
   // The verbatim reason the last upload or publish failed, shown inline. A
   // generic toast disappears before it can be read or copied.
   const [uploadError, setUploadError] = useState<string | null>(null);
+  // "Đang tải ảnh 3/7" — without it a multi-photo upload on mobile data looks
+  // like a frozen button, which is when people tap again or give up.
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  // Photos that already stored during a FAILED publish attempt, keyed by
+  // fileKey. Retrying only sends what is missing instead of paying for the
+  // whole batch again on a metered connection.
+  const uploadedRef = useRef(new Map<string, Id<"_storage">>());
   const [description, setDescription] = useState("");
   const [stock, setStock] = useState("");
 
@@ -242,6 +449,11 @@ function NewProductForm() {
   };
 
   const removeFileAt = (index: number) => {
+    // Drop any stored id for the photo being removed, so the gallery never
+    // references a file the seller just discarded. Ref mutation in an event
+    // handler (not inside the updater) keeps the updater pure.
+    const dropped = files[index];
+    if (dropped) uploadedRef.current.delete(fileKey(dropped));
     // Read the url OUTSIDE the updater. Revoking inside a setState updater is a
     // side effect in what must be a pure function: React may invoke the
     // updater more than once (StrictMode double-invokes it), which revokes a
@@ -288,6 +500,8 @@ function NewProductForm() {
     setStock("");
     setDragging(false);
     setUploadError(null);
+    setUploadStatus(null);
+    uploadedRef.current.clear();
     if (fileRef.current) fileRef.current.value = "";
     if (cameraRef.current) cameraRef.current.value = "";
   };
@@ -310,26 +524,57 @@ function NewProductForm() {
 
     setPublishing(true);
     setUploadError(null);
+    setUploadStatus(null);
     try {
       let imageStorageId: Id<"_storage"> | undefined;
       const imageIds: string[] = [];
 
       if (files.length > 0) {
         // Uploaded one at a time so a single failure does not discard the
-        // photos that already succeeded.
+        // photos that already succeeded — those land in `uploadedRef` and are
+        // skipped when the seller taps publish again.
         //
-        // Crucially: if EVERY upload fails, publishing is ABORTED. Previously
-        // the loop swallowed the error and `products.add` still ran, so the
-        // seller got "published!" for a product with no photo at all — and the
-        // real reason had already been thrown away into console.error.
+        // Crucially: if ANY upload fails after its retries, publishing is
+        // ABORTED. Publishing a partial gallery silently drops the missing
+        // photos (and `reset()` then clears the form, taking the evidence
+        // with it), so the seller would never notice — see uploadSomeFailed.
         const failures: string[] = [];
-        for (const file of files) {
+        for (let i = 0; i < files.length; i++) {
+          // Stop early once the connection is provably gone: re-running the
+          // backoff for every remaining photo just delays the honest error.
+          // Always guarded by `failures.length > 0` so the panel below has
+          // something real to show.
+          const offlineNow =
+            typeof navigator !== "undefined" && navigator.onLine === false;
+          if (failures.length > 0 && offlineNow) break;
+          // Three photos in a row failing THEIR OWN retries with nothing
+          // stored is nine failed attempts — the network, not the photos.
+          if (failures.length >= 3 && imageIds.length === 0) break;
+          const file = files[i]!;
+          const key = fileKey(file);
+          const alreadyStored = uploadedRef.current.get(key);
+          if (alreadyStored) {
+            imageIds.push(alreadyStored);
+            continue;
+          }
           try {
-            const uploadUrl = await convex.mutation(
-              api.products.generateUploadUrl,
-              {},
-            );
-            imageIds.push(await uploadFile(uploadUrl, file));
+            const id = await uploadFileWithRetry({
+              file,
+              getUploadUrl: () =>
+                convex.mutation(api.products.generateUploadUrl, {}),
+              texts: {
+                offline: t("offlineUpload"),
+                exhausted: t("uploadRetriesExhausted"),
+              },
+              onAttempt: (attempt, total) =>
+                setUploadStatus(
+                  attempt > 1
+                    ? `${t("uploadingPhotos")} ${i + 1}/${files.length} — ${t("retrying")} ${attempt}/${total}`
+                    : `${t("uploadingPhotos")} ${i + 1}/${files.length}`,
+                ),
+            });
+            uploadedRef.current.set(key, id);
+            imageIds.push(id);
           } catch (error) {
             const detail =
               error instanceof Error ? error.message : String(error);
@@ -338,15 +583,14 @@ function NewProductForm() {
           }
         }
 
-        if (imageIds.length === 0) {
-          setUploadError(failures.join(" · "));
-          toast.error(t("uploadAllFailed"));
-          return; // nothing stored — do not create a photo-less product
-        }
         if (failures.length > 0) {
-          // Partial success: say which photos did not make it, then continue.
+          // Nothing is created: the seller retries from an intact form, and
+          // only the photos that actually failed are sent again.
           setUploadError(failures.join(" · "));
-          toast.error(t("uploadSomeFailed"));
+          toast.error(
+            imageIds.length === 0 ? t("uploadAllFailed") : t("uploadSomeFailed"),
+          );
+          return;
         }
         imageStorageId = imageIds[0] as Id<"_storage">;
       }
@@ -387,6 +631,7 @@ function NewProductForm() {
       toast.error(t("publishFailed"));
     } finally {
       setPublishing(false);
+      setUploadStatus(null);
     }
   };
 
@@ -693,7 +938,7 @@ function NewProductForm() {
           {publishing ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              {t("publishing")}
+              {uploadStatus ?? t("publishing")}
             </>
           ) : (
             t("publish")
@@ -784,6 +1029,12 @@ function ProductRow({ product }: { product: StoreProduct }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   // Verbatim upload/publish failure shown in the edit panel.
   const [editError, setEditError] = useState<string | null>(null);
+  // "Đang tải ảnh 2/5" while saving, so the small Save button does not look
+  // frozen during a multi-photo upload on mobile data.
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  // Newly picked photos that already stored during a failed save; the next
+  // save skips them instead of paying for the whole batch again.
+  const uploadedRef = useRef(new Map<string, Id<"_storage">>());
   const [draft, setDraft] = useState({
     nameVi: product.nameVi,
     nameEn: product.nameEn,
@@ -830,6 +1081,8 @@ function ProductRow({ product }: { product: StoreProduct }) {
     setAddPreviews([]);
     setAddFiles([]);
     setKeepIds([]);
+    uploadedRef.current.clear();
+    setUploadStatus(null);
     if (replaceRef.current) replaceRef.current.value = "";
   };
 
@@ -870,6 +1123,8 @@ function ProductRow({ product }: { product: StoreProduct }) {
     setKeepIds([...stored]);
     setAddFiles([]);
     setAddPreviews([]);
+    uploadedRef.current.clear();
+    setUploadStatus(null);
     releaseBlobs(blobUrls.current);
     if (replaceRef.current) replaceRef.current.value = "";
     setEditing(true);
@@ -890,30 +1145,59 @@ function ProductRow({ product }: { product: StoreProduct }) {
     setEditError(null);
     try {
       // Upload any newly picked photos first, then send the whole ordered set.
-      // A failed upload leaves the stored photos untouched.
+      // Each photo retries with backoff on its own, and anything that stored
+      // during an earlier failed save is reused rather than re-sent.
       const uploaded: string[] = [];
       const failures: string[] = [];
-      for (const file of addFiles) {
+      for (let i = 0; i < addFiles.length; i++) {
+        // Same early stop as the create form: once the connection is gone,
+        // finish quickly and report it instead of retrying every photo.
+        const offlineNow =
+          typeof navigator !== "undefined" && navigator.onLine === false;
+        if (failures.length > 0 && offlineNow) break;
+        if (failures.length >= 3 && uploaded.length === 0) break;
+        const file = addFiles[i]!;
+        const key = fileKey(file);
+        const alreadyStored = uploadedRef.current.get(key);
+        if (alreadyStored) {
+          uploaded.push(alreadyStored);
+          continue;
+        }
         try {
-          const url = await convex.mutation(api.products.generateUploadUrl, {});
-          uploaded.push(await uploadFile(url, file));
+          const id = await uploadFileWithRetry({
+            file,
+            getUploadUrl: () =>
+              convex.mutation(api.products.generateUploadUrl, {}),
+            texts: {
+              offline: t("offlineUpload"),
+              exhausted: t("uploadRetriesExhausted"),
+            },
+            onAttempt: (attempt, total) =>
+              setUploadStatus(
+                attempt > 1
+                  ? `${t("uploadingPhotos")} ${i + 1}/${addFiles.length} — ${t("retrying")} ${attempt}/${total}`
+                  : `${t("uploadingPhotos")} ${i + 1}/${addFiles.length}`,
+              ),
+          });
+          uploadedRef.current.set(key, id);
+          uploaded.push(id);
         } catch (error) {
           const detail = error instanceof Error ? error.message : String(error);
           console.error("[upload:edit] failed", file.name, error);
           failures.push(`${file.name}: ${detail}`);
         }
       }
+      setUploadStatus(null);
 
-      // If the seller picked new photos and NONE of them stored, stop: saving
-      // now would silently discard their selection and keep the old gallery.
-      if (addFiles.length > 0 && uploaded.length === 0) {
-        setEditError(failures.join(" · "));
-        toast.error(t("uploadAllFailed"));
-        return;
-      }
+      // ANY failed upload stops the save: continuing would silently drop that
+      // photo from the gallery while telling the seller the edit went through.
+      // The kept photos are untouched, so the next save only retries the gap.
       if (failures.length > 0) {
         setEditError(failures.join(" · "));
-        toast.error(t("uploadSomeFailed"));
+        toast.error(
+          uploaded.length === 0 ? t("uploadAllFailed") : t("uploadSomeFailed"),
+        );
+        return;
       }
 
       const gallery = [...keepIds, ...uploaded].slice(0, MAX_PRODUCT_IMAGES);
@@ -945,6 +1229,7 @@ function ProductRow({ product }: { product: StoreProduct }) {
       toast.error(t("publishFailed"));
     } finally {
       setBusy(false);
+      setUploadStatus(null);
     }
   };
 
@@ -1138,6 +1423,10 @@ function ProductRow({ product }: { product: StoreProduct }) {
                     fallback={keepIds.length === 0 && index === 0}
                     onRemove={() => {
                       URL.revokeObjectURL(url);
+                      // Forget its stored id too, so a save never references
+                      // a photo the seller just discarded.
+                      const dropped = addFiles[index];
+                      if (dropped) uploadedRef.current.delete(fileKey(dropped));
                       setAddPreviews((prev) => prev.filter((v) => v !== url));
                       setAddFiles((prev) => prev.filter((_, i) => i !== index));
                     }}
@@ -1255,6 +1544,12 @@ function ProductRow({ product }: { product: StoreProduct }) {
 
         {editing ? (
           <>
+            {uploadStatus && (
+              <p className="w-full text-[11px] text-muted-foreground">
+                {uploadStatus}
+              </p>
+            )}
+
             {editError && (
               <div
                 role="alert"
