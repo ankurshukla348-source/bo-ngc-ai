@@ -229,7 +229,7 @@ export function ProductCard({
           </div>
 
           <div className="mt-auto flex items-center justify-between gap-2">
-            <p className="text-base font-semibold tabular-nums">
+            <p className="text-base font-semibold tabular-nums text-brand-ink">
               {formatVnd(product.price)}
             </p>
 
@@ -340,7 +340,7 @@ export function ProductCard({
                 </h2>
               </div>
 
-              <p className="text-lg font-semibold tabular-nums">
+              <p className="text-lg font-semibold tabular-nums text-brand-ink">
                 {formatVnd(product.price)}
               </p>
 

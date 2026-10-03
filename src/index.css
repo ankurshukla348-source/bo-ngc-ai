@@ -47,22 +47,31 @@
 
    Brand purples. `--accent` is a *light* lilac surface, so anything that needs a
    saturated purple uses these instead:
-     brand-rose → icons, fills, hearts, large accents (#b794f6)
-     brand-ink  → small text/eyebrows, high-contrast accent (#7c3aed) */
+     brand-rose → icons, fills, hearts, large accents (#AD68FF)
+     brand-ink  → small text/eyebrows, high-contrast accent (#9333EA)
+
+   `--primary-foreground` is deliberately NOT white. White on #AD68FF measures
+   3.39:1, which fails WCAG AA (4.5:1) for body-size text; the deep violet ink
+   #2b1b3d measures 4.67:1 and passes. Buttons keep dark text on purple. */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
-  --color-brand-rose: #b794f6;
-  --color-brand-ink: #7c3aed;
+  --color-brand-rose: #ad68ff;
+  --color-brand-ink: #9333ea;
+  --color-brand-tint: #f3e8ff;
 }
 
-/* CHANGE VALUES FOR THEME — Light Purple (BTS lilac):
+/* CHANGE VALUES FOR THEME — Primary Purple #AD68FF:
    airy lavender canvas #faf7ff, pure white cards, lilac hairline borders,
-   deep violet ink for text, light #b794f6 primary surfaces with the
-   #7c3aed accent for focus rings and small text, soft #f3eeff tints,
-   rounded corners (radius 1rem) and soft diffuse shadows instead of hard
-   offsets. Contrast on every text pair below is >= 4.5:1 (violet #2b1b3d on
-   #b794f6 = 6.5:1). */
+   deep violet ink for text, #AD68FF primary surfaces with #9333EA as the
+   hover / focus / small-text accent, and #F3E8FF for tints and badges.
+
+   Contrast notes (measured, not assumed):
+     #2b1b3d on #AD68FF = 4.67:1  AA  ← button text on purple
+     #9333EA on #FFFFFF  = 5.38:1  AA  ← links, prices, small text
+     #9333EA on #F3E8FF  = 4.86:1  AA  ← text on a tint badge
+     #AD68FF text on any light surface = 3.2-3.4:1, AA-large only — so purple
+       is used as a FILL, and #9333EA is used wherever purple is TEXT. */
 :root {
   /* The store is a light-only design. This single declaration stops Chrome,
      Edge and Safari auto-inverting the page (and native widgets — scrollbars,
@@ -79,18 +88,18 @@
   --card-foreground: #2b1b3d;
   --popover: #ffffff;
   --popover-foreground: #2b1b3d;
-  --primary: #b794f6;
+  --primary: #ad68ff;
   --primary-foreground: #2b1b3d;
-  --secondary: rgb(183 148 246 / 0.12);
+  --secondary: rgb(173 104 255 / 0.12);
   --secondary-foreground: #2b1b3d;
-  --muted: #f4f0ff;
-  --muted-foreground: #6b6182;
-  --accent: #f3eeff;
-  --accent-foreground: #33234a;
+  --muted: #f7f2ff;
+  --muted-foreground: #63577a;
+  --accent: #f3e8ff;
+  --accent-foreground: #3a2352;
   --destructive: #b23a48;
-  --border: #e7dffa;
-  --input: #ece4fb;
-  --ring: #7c3aed;
+  --border: #e9dcff;
+  --input: #eee3ff;
+  --ring: #9333ea;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -152,9 +161,9 @@
      * `.dark`, or a future dark-mode toggle, would silently erase the brand.
      * Keeping the purple means that if dark mode is ever turned on it looks
      * deliberate instead of broken. */
-  --primary: #b794f6;
+  --primary: #ad68ff;
   --primary-foreground: #2b1b3d;
-  --ring: #7c3aed;
+  --ring: #9333ea;
 }
 
 @layer base {
@@ -180,7 +189,7 @@
     cursor: pointer;
   }
   ::selection {
-    background: #b794f6;
+    background: #ad68ff;
     color: #2b1b3d;
   }
 }

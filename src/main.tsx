@@ -146,7 +146,7 @@ function renderFatalConfigError(detail: string) {
   const detailEl = document.createElement("code");
   detailEl.textContent = detail;
   detailEl.style.cssText =
-    "display:block;padding:.75rem;border-radius:.5rem;background:#f3eeff;" +
+    "display:block;padding:.75rem;border-radius:.5rem;background:#f3e8ff;" +
     "font-size:.8rem;opacity:.85;word-break:break-word";
   inner.append(heading, body, detailEl);
   box.append(inner);

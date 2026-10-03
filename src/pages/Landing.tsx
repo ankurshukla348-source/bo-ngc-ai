@@ -20,12 +20,12 @@ import { useEffect, useMemo, useState } from "react";
 
 /** Warm tints used when a category/card has no product photo yet. */
 const TINTS = [
-  "#f4f0ff",
-  "#efe9fe",
-  "#eae2fd",
-  "#e5dcfc",
-  "#e0d5fb",
-  "#dbcef9",
+  "#f7f2ff",
+  "#f3e8ff",
+  "#efdfff",
+  "#ebd6ff",
+  "#e7cdff",
+  "#e3c4ff",
 ];
 
 const HERO_TRUST = [
@@ -294,7 +294,7 @@ export default function Landing() {
                         ? "border border-border bg-secondary text-foreground"
                         : "text-foreground/80",
                       isActive &&
-                        "ring-2 ring-ring ring-offset-2 ring-offset-card",
+                        "bg-primary text-primary-foreground ring-2 ring-ring ring-offset-2 ring-offset-card",
                     )}
                   >
                     {label.charAt(0)}
@@ -449,7 +449,7 @@ export default function Landing() {
                       className="absolute inset-0 h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#f3eeff] to-brand-rose/45" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#f3e8ff] to-brand-rose/45" />
                   )}
                 </div>
               </div>
@@ -611,7 +611,7 @@ export default function Landing() {
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#f3eeff] to-brand-rose/40" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#f3e8ff] to-brand-rose/40" />
               )}
             </div>
             <div className="flex flex-col justify-center gap-4 p-8 sm:p-12">
