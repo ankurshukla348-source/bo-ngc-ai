@@ -45,33 +45,39 @@
 /* Fonts for the Soft Minimal theme: Inter for UI, Playfair Display
    for the editorial serif headlines.
 
-   Brand purples. `--accent` is a *light* lilac surface, so anything that needs a
-   saturated purple uses these instead:
-     brand-rose → icons, fills, hearts, large accents (#AD68FF)
-     brand-ink  → small text/eyebrows, high-contrast accent (#9333EA)
+   Brand pinks. `--accent` is a *light* blush surface, so anything that needs a
+   saturated pink uses these instead:
+     brand-rose → icons, fills, hearts, large accents (#FC60AA)
+     brand-ink  → small text/eyebrows, high-contrast accent (#C2255C)
 
-   `--primary-foreground` is deliberately NOT white. White on #AD68FF measures
-   3.39:1, which fails WCAG AA (4.5:1) for body-size text; the deep violet ink
-   #2b1b3d measures 4.67:1 and passes. Buttons keep dark text on purple. */
+   `--primary-foreground` is deliberately NOT white. White on #FC60AA measures
+   2.84:1, which fails WCAG AA (4.5:1) badly; the deep plum ink #2b1b3d measures
+   5.57:1 and passes. Buttons keep dark text on pink.
+
+   `--brand-ink` is #C2255C rather than the requested #E04090 because that pink
+   only reaches 3.96:1 on white as TEXT — fine as a hover fill, unreadable as
+   body copy. #C2255C is the nearest same-hue shade clearing AA (5.66:1 on
+   white, 4.97:1 on the #FFEBF4 tint). */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
-  --color-brand-rose: #ad68ff;
-  --color-brand-ink: #9333ea;
-  --color-brand-tint: #f3e8ff;
+  --color-brand-rose: #fc60aa;
+  --color-brand-ink: #c2255c;
+  --color-brand-tint: #ffebf4;
 }
 
-/* CHANGE VALUES FOR THEME — Primary Purple #AD68FF:
-   airy lavender canvas #faf7ff, pure white cards, lilac hairline borders,
-   deep violet ink for text, #AD68FF primary surfaces with #9333EA as the
-   hover / focus / small-text accent, and #F3E8FF for tints and badges.
+/* CHANGE VALUES FOR THEME — Primary Pink #FC60AA:
+   airy blush canvas #fdf5f9, pure white cards, pink hairline borders,
+   deep plum ink for text, #FC60AA primary surfaces with #E04090 as the
+   hover / focus accent, and #FFEBF4 for tints and badges.
 
    Contrast notes (measured, not assumed):
-     #2b1b3d on #AD68FF = 4.67:1  AA  ← button text on purple
-     #9333EA on #FFFFFF  = 5.38:1  AA  ← links, prices, small text
-     #9333EA on #F3E8FF  = 4.86:1  AA  ← text on a tint badge
-     #AD68FF text on any light surface = 3.2-3.4:1, AA-large only — so purple
-       is used as a FILL, and #9333EA is used wherever purple is TEXT. */
+     #2b1b3d on #FC60AA = 5.57:1  AA  ← button text on pink
+     #C2255C on #FFFFFF = 5.66:1  AA  ← links, prices, small text
+     #C2255C on #FFEBF4 = 4.97:1  AA  ← text on a tint badge
+     #E04090 as text = 3.96:1, AA-large only — so it is used as a hover FILL
+     #FC60AA as text on any light surface = 2.65-2.84:1, FAILS — so the pink
+       is always a FILL, and #C2255C is used wherever pink is TEXT. */
 :root {
   /* The store is a light-only design. This single declaration stops Chrome,
      Edge and Safari auto-inverting the page (and native widgets — scrollbars,
@@ -82,24 +88,24 @@
   color-scheme: light;
 
   --radius: 1rem;
-  --background: #faf7ff;
+  --background: #fdf5f9;
   --foreground: #2b1b3d;
   --card: #ffffff;
   --card-foreground: #2b1b3d;
   --popover: #ffffff;
   --popover-foreground: #2b1b3d;
-  --primary: #ad68ff;
+  --primary: #fc60aa;
   --primary-foreground: #2b1b3d;
-  --secondary: rgb(173 104 255 / 0.12);
+  --secondary: rgb(252 96 170 / 0.12);
   --secondary-foreground: #2b1b3d;
-  --muted: #f7f2ff;
-  --muted-foreground: #63577a;
-  --accent: #f3e8ff;
-  --accent-foreground: #3a2352;
+  --muted: #fef4f8;
+  --muted-foreground: #7a6472;
+  --accent: #ffebf4;
+  --accent-foreground: #4a2136;
   --destructive: #b23a48;
-  --border: #e9dcff;
-  --input: #eee3ff;
-  --ring: #9333ea;
+  --border: #f9d8e7;
+  --input: #fbe4ee;
+  --ring: #e04090;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -161,9 +167,9 @@
      * `.dark`, or a future dark-mode toggle, would silently erase the brand.
      * Keeping the purple means that if dark mode is ever turned on it looks
      * deliberate instead of broken. */
-  --primary: #ad68ff;
+  --primary: #fc60aa;
   --primary-foreground: #2b1b3d;
-  --ring: #9333ea;
+  --ring: #e04090;
 }
 
 @layer base {
@@ -189,7 +195,7 @@
     cursor: pointer;
   }
   ::selection {
-    background: #ad68ff;
+    background: #fc60aa;
     color: #2b1b3d;
   }
 }

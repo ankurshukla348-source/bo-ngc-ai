@@ -54,7 +54,7 @@ export function StoreFooter({
   return (
     <footer
       id="contact"
-      className="scroll-mt-32 rounded-t-[2rem] bg-[#2b1b3d] text-[#f7f2ff]"
+      className="scroll-mt-32 rounded-t-[2rem] bg-[#2b1b3d] text-[#fef4f8]"
     >
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-8 lg:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">

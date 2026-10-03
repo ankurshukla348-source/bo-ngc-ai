@@ -113,13 +113,21 @@ export function LiveChatWidget() {
 
   return (
     <>
-      {/* Floating bubble */}
+      {/* Floating bubble
+
+          Lifted to `bottom-20` because the Netlify badge renders in the bottom
+          -right corner, roughly 32-40px tall. At `bottom-5` this 56px bubble
+          sat directly on top of it and the watermark swallowed the tap target.
+
+          Kept on the right rather than moved to `left-5`: bottom-right is where
+          shoppers expect a chat launcher, and the left edge already carries the
+          cart/account controls on mobile. */}
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-label={open ? t("chatClose") : t("chatOpen")}
         aria-expanded={open}
-        className="fixed bottom-5 right-5 z-50 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft-lg transition-transform hover:scale-105 active:scale-95"
+        className="fixed bottom-20 right-5 z-50 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft-lg transition-transform hover:scale-105 active:scale-95"
       >
         {open ? (
           <X className="size-6" />
@@ -127,7 +135,9 @@ export function LiveChatWidget() {
           <MessageCircle className="size-6" />
         )}
         {!open && unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-foreground ring-2 ring-background">
+          // Sits ON the primary bubble, so it inverts: plum on pink. Using
+          // bg-primary here would make the count invisible against the bubble.
+          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1 text-[10px] font-bold text-primary ring-2 ring-background">
             {unread}
           </span>
         )}
@@ -138,7 +148,7 @@ export function LiveChatWidget() {
         <div
           role="dialog"
           aria-label={t("chatTitle")}
-          className="fixed bottom-24 right-5 z-50 flex h-[min(32rem,70vh)] w-[min(22rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft-lg"
+          className="fixed bottom-[9.5rem] right-5 z-50 flex h-[min(32rem,70vh)] w-[min(22rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft-lg"
         >
           {/* Head */}
           <div className="flex items-center gap-3 bg-primary px-4 py-3.5 text-primary-foreground">

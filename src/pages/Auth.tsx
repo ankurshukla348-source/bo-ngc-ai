@@ -110,14 +110,14 @@ function AuthInner({
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
       {/* Brand panel */}
-      <section className="relative hidden overflow-hidden bg-[#2b1b3d] px-10 py-14 text-[#f7f2ff] lg:flex lg:flex-col lg:justify-between">
+      <section className="relative hidden overflow-hidden bg-[#2b1b3d] px-10 py-14 text-[#fef4f8] lg:flex lg:flex-col lg:justify-between">
         <div
           aria-hidden
           className="pointer-events-none absolute -right-24 -top-24 size-[28rem] rounded-full bg-brand-rose/20 blur-3xl"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-32 -left-16 size-[26rem] rounded-full bg-[#9333ea]/40 blur-3xl"
+          className="pointer-events-none absolute -bottom-32 -left-16 size-[26rem] rounded-full bg-[#e04090]/40 blur-3xl"
         />
         <div className="relative">
           <span className="font-display text-2xl font-bold leading-tight tracking-[0.06em]">

@@ -132,7 +132,7 @@ function renderFatalConfigError(detail: string) {
   const box = document.createElement("div");
   box.style.cssText =
     "min-height:100vh;display:flex;align-items:center;justify-content:center;" +
-    "padding:2rem;background:#faf7ff;color:#2b1b3d;" +
+    "padding:2rem;background:#fdf5f9;color:#2b1b3d;" +
     "font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif";
   const inner = document.createElement("div");
   inner.style.cssText = "max-width:34rem;text-align:center";
@@ -146,7 +146,7 @@ function renderFatalConfigError(detail: string) {
   const detailEl = document.createElement("code");
   detailEl.textContent = detail;
   detailEl.style.cssText =
-    "display:block;padding:.75rem;border-radius:.5rem;background:#f3e8ff;" +
+    "display:block;padding:.75rem;border-radius:.5rem;background:#ffebf4;" +
     "font-size:.8rem;opacity:.85;word-break:break-word";
   inner.append(heading, body, detailEl);
   box.append(inner);
